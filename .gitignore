@@ -1,0 +1,6 @@
+*.pyc
+.p4config
+database/
+uploads/
+password.txt
+venv/
