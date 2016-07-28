@@ -55,7 +55,7 @@ inside the main `Autopsy` folder. A `venv` folder should be created.
 
 ### Setting up Perforce
 
-Create a file called `.p4config` inside `Autopsy` folder. The contents of this file should look like
+Create a file called `.p4config` inside the `Autopsy` folder. The contents of this file should look like
 ```
 export P4CONFIG=
 export P4CLIENT=
