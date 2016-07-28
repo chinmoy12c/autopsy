@@ -91,7 +91,11 @@ While you are in the virtual environment, run
 ```
 pip install Flask
 ```
-to install Flask. You should now be able to run `flask initdb` to create a file called `cores.db` inside the `database` folder.
+to install Flask. You should now be able to run
+```
+flask initdb
+```
+to create a file called `cores.db` inside the `database` folder.
 
 ### Launching and quitting Autopsy
 
