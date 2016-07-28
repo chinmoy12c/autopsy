@@ -75,6 +75,7 @@ with each variable set to the appropriate value. `P4CONFIG` is the path to the `
 * Sets up the Perforce parameters from `.p4config`
 * Exports a Flask variable pointing to `autopsy.py`
 * Sets up debug mode for Flask
+
 Run
 ```
 . launch.sh
