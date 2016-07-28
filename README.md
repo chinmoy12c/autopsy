@@ -64,7 +64,7 @@ export P4USER=
 export P4EDITOR=
 export P4DIFF=
 ```
-with each variable set to the appropriate values. `P4CONFIG` is the path to the `.p4config` file. Then, create a file called `password.txt` inside the `Autopsy` folder and enter your Perforce password inside.
+with each variable set to the appropriate value. `P4CONFIG` is the path to the `.p4config` file. Then, create a file called `password.txt` inside the `Autopsy` folder and enter your Perforce password inside.
 
 ### Using `launch.sh`
 
