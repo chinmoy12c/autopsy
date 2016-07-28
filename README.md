@@ -103,4 +103,4 @@ to access the application at `127.0.0.1:5000`. You can quit the application with
 ```
 fk
 ```
-after to compelely kill the application.
+after to completely kill the application.
