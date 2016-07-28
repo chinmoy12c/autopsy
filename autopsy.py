@@ -65,7 +65,7 @@ def run_gdb(uuid, count):
     while True:
         try:
             print 'run_gdb: waiting'
-            coredump = coredump_queues[count].get(True, 120)
+            coredump = coredump_queues[count].get()#True, 120)
             if current_coredump != coredump:
                 coredump_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid, coredump, coredump)
                 lina_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid, coredump, coredump + '_workspace', 'Xpix', 'target', 'smp', 'asa', 'bin', 'lina')
@@ -365,6 +365,15 @@ def getreport():
     print 'getreport: exit'
     return escape(coredumps[0][3])
 
+@app.route('/backtrace', methods=['POST'])
+def backtrace():
+    print 'backtrace: start'
+    if not 'uuid' in session:
+        return 'missing session'
+    backtrace_file = os.path.join(app.config['UPLOAD_FOLDER'], session['uuid'], request.form['coredump'], request.form['coredump'] + '.backtrace.txt')
+    with open(backtrace_file) as f:
+        return f.read()
+
 @app.route('/commandinput', methods=['POST'])
 def commandinput():
     print 'commandinput: start'
@@ -384,6 +393,7 @@ def commandinput():
         if not request.form['command'].split(" ")[0] in COMMANDS:
             print 'commandinput: invalid command'
             return 'invalid commmand'
+        print 'commandinput: ' + request.form['command']
         coredump_queues[session['count']].put(request.form['coredump'])
         command_queues[session['count']].put(request.form['command'])
     return escape(output_queues[session['count']].get())

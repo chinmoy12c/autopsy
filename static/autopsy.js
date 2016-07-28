@@ -13,6 +13,8 @@ var downloaded = document.getElementById("downloaded");
 var progress = document.getElementById("progress");
 var cores = document.getElementById("cores");
 var gen_report = document.getElementById("gen-report");
+var backtrace = document.getElementById("backtrace");
+var clear_output = document.getElementById("clear-output");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
@@ -81,6 +83,7 @@ function addCoredumpListeners() {
 
 function disableCommandButtons(setting) {
     gen_report.disabled = setting;
+    backtrace.disabled = setting;
     command_input.disabled = setting;
 }
 
@@ -385,6 +388,25 @@ gen_report.addEventListener("click", function() {
     xhr.send(fd);
 });
 
+backtrace.addEventListener("click", function() {
+    output_text.innerHTML = "Loading…";
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("coredump", checked);
+    xhr.open("POST", "/backtrace", true);
+    xhr.responseType = "text";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            output_text.innerHTML = xhr.responseText;
+        }
+    });
+    xhr.send(fd);
+});
+
+clear_output.addEventListener("click", function() {
+    output_text.innerHTML = "";
+});
+
 function updateAutocomplete() {
     var command = command_input.value.toLowerCase();
     current_commands = [];
@@ -440,7 +462,6 @@ command_input.addEventListener("keydown", function(evt) {
                     command_input.value += " ";
                 }
             }
-            console.log("tab pressed");
             break;
         case "Enter":
             output_text.innerHTML = "Loading…";
