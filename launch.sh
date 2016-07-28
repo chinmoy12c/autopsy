@@ -2,7 +2,7 @@
 
 mkdir -p database
 mkdir -p uploads
-alias kf="pkill -9 python; pkill -9 flask"
+alias fk="pkill -9 python; pkill -9 flask"
 alias fr="flask run --with-threads"
 source $PWD/venv/bin/activate
 source $PWD/.p4config
