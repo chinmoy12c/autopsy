@@ -22,9 +22,11 @@ var output_text = document.getElementById("output-text");
 var filename;
 var checked = null;
 var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispcacheinfo", "dispclhash", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstats", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreadinfo", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showblocks", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "webvpn_print_block_failures"];
-    var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreadinfo": "[&lt;verbosity&gt;]", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
+var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreadinfo": "[&lt;verbosity&gt;]", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
 
 var current_commands = [];
+var autocomplete_text;
+var currently_selected = null;
 
 input.onchange = function() {
     filename = this.value;
@@ -408,8 +410,10 @@ clear_output.addEventListener("click", function() {
 });
 
 function updateAutocomplete() {
-    var command = command_input.value.toLowerCase();
+    autocomplete_text = command_input.value;
+    var command = autocomplete_text.toLowerCase();
     current_commands = [];
+    currently_selected = null;
     if (command === "") {
         autocomplete.style.display = "none";
     }
@@ -453,6 +457,7 @@ command_input.addEventListener("keydown", function(evt) {
     if (evt.defaultPrevented) {
         return;
     }
+    var selected_index;
     switch (evt.key) {
         case "Tab":
             if (current_commands.length > 0) {
@@ -479,6 +484,70 @@ command_input.addEventListener("keydown", function(evt) {
             xhr.send(fd);
             command_input.value = "";
             updateAutocomplete();
+            break;
+        case "ArrowDown":
+            if (currently_selected === null) {
+                if (current_commands.length !== 0) {
+                    autocomplete.children[0].classList.add("autocomplete-item-selected");
+                    currently_selected = autocomplete.children[0].id;
+                    command_input.value = currently_selected;
+                    autocomplete.scrollTop = 0;
+                }
+            }
+            else if (currently_selected !== current_commands[current_commands.length - 1]) {
+                selected_index = current_commands.indexOf(currently_selected);
+                autocomplete.children[selected_index].classList.remove("autocomplete-item-selected");
+                var next_option = autocomplete.children[selected_index + 1];
+                next_option.classList.add("autocomplete-item-selected");
+                currently_selected = next_option.id;
+                command_input.value = currently_selected;
+                if (next_option.offsetTop + 24 + 2 > autocomplete.scrollTop + 160 || next_option.offsetTop < autocomplete.scrollTop) {
+                    if (selected_index + 1 === current_commands.length - 1) {
+                        autocomplete.scrollTop = autocomplete.scrollHeight + 2 - 160;
+                    }
+                    else {
+                        autocomplete.scrollTop = next_option.offsetTop + 24 + 2 - 160;
+                    }
+                }
+            }
+            else {
+                selected_index = current_commands[current_commands.length - 1];
+                autocomplete.children[selected_index].classList.remove("autocomplete-item-selected");
+                currently_selected = null;
+                command_input.value = autocomplete_text;
+            }
+            break;
+        case "ArrowUp":
+            if (currently_selected === null) {
+                if (current_commands.length !== 0) {
+                    autocomplete.children[current_commands.length - 1].classList.add("autocomplete-item-selected");
+                    currently_selected = autocomplete.children[current_commands.length - 1].id;
+                    command_input.value = currently_selected;
+                    autocomplete.scrollTop = autocomplete.scrollHeight + 2 - 160;
+                }
+            }
+            else if (currently_selected !== current_commands[0]) {
+                selected_index = current_commands.indexOf(currently_selected);
+                autocomplete.children[selected_index].classList.remove("autocomplete-item-selected");
+                var prev_option = autocomplete.children[selected_index - 1];
+                prev_option.classList.add("autocomplete-item-selected");
+                currently_selected = prev_option.id;
+                command_input.value = currently_selected;
+                if (prev_option.offsetTop < autocomplete.scrollTop || prev_option.offsetTop + 24 + 2 > autocomplete.scrollTop + 160) {
+                    if (selected_index - 1 === 0) {
+                        autocomplete.scrollTop = 0;
+                    }
+                    else {
+                        autocomplete.scrollTop = prev_option.offsetTop;
+                    }
+                }
+            }
+            else {
+                selected_index = current_commands[0];
+                autocomplete.children[selected_index].classList.remove("autocomplete-item-selected");
+                currently_selected = null;
+                command_input.value = autocomplete_text;
+            }
             break;
         default:
             return;

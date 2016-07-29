@@ -147,15 +147,6 @@ def delete_queues(count):
 
 @app.route('/', methods=['GET'])
 def index():
-    global count
-    with count_lock:
-        print 'index: count is ' + str(count)
-        set_queues(count)
-        worker = Thread(target=run_gdb, args=(session['uuid'], count))
-        worker.start()
-        session['count'] = count
-        running_counts.add(count)
-        count += 1
     if 'uuid' in session:
         uuid = session['uuid']
         print 'index: uuid in session, value is ' + uuid
@@ -183,11 +174,21 @@ def index():
                         shutil.rmtree(entry_path)
                     else:
                         os.remove(entry_path)
-        return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
-    new_uuid = str(uuid4())
-    session['uuid'] = new_uuid
-    print 'index: uuid NOT in session, value is ' + new_uuid
-    return render_template('autopsy.html', uuid=new_uuid, coredumps='')
+    else:
+        uuid = str(uuid4())
+        session['uuid'] = uuid
+        print 'index: uuid NOT in session, value is ' + uuid
+        coredumps = ''
+    global count
+    with count_lock:
+        print 'index: count is ' + str(count)
+        set_queues(count)
+        worker = Thread(target=run_gdb, args=(session['uuid'], count))
+        worker.start()
+        session['count'] = count
+        running_counts.add(count)
+        count += 1
+    return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
 @app.route('/delete', methods=['POST'])
 def delete():
