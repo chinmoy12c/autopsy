@@ -92,7 +92,7 @@ While you are in the virtual environment, run
 ```
 pip install Flask
 ```
-to install Flask. You should now be able to run
+to install Flask. Autopsy works with Flask version 0.11.1; ensure that the correct version is installed. You should now be able to run
 ```
 flask initdb
 ```
