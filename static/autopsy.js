@@ -469,21 +469,29 @@ command_input.addEventListener("keydown", function(evt) {
             }
             break;
         case "Enter":
-            output_text.innerHTML = "Loading…";
-            var xhr = new XMLHttpRequest();
-            var fd = new FormData();
-            fd.append("coredump", checked);
-            fd.append("command", command_input.value);
-            xhr.open("POST", "/commandinput", true);
-            xhr.responseType = "text";
-            xhr.addEventListener("readystatechange", function() {
-                if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                    output_text.innerHTML = xhr.responseText;
+            if (currently_selected !== null) {
+                updateAutocomplete();
+                if (current_commands.length === 1 && command_input.value in options) {
+                    command_input.value += " ";
                 }
-            });
-            xhr.send(fd);
-            command_input.value = "";
-            updateAutocomplete();
+            }
+            else {
+                output_text.innerHTML = "Loading…";
+                var xhr = new XMLHttpRequest();
+                var fd = new FormData();
+                fd.append("coredump", checked);
+                fd.append("command", command_input.value);
+                xhr.open("POST", "/commandinput", true);
+                xhr.responseType = "text";
+                xhr.addEventListener("readystatechange", function() {
+                    if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                        output_text.innerHTML = xhr.responseText;
+                    }
+                });
+                xhr.send(fd);
+                command_input.value = "";
+                updateAutocomplete();
+            }
             break;
         case "ArrowDown":
             if (currently_selected === null) {
