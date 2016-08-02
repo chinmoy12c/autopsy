@@ -18,10 +18,11 @@ UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
 DATABASE = os.path.join(app.root_path, 'database', 'cores.db')
 CLIENTLESS_GDB = os.path.join(os.path.dirname(app.root_path), 'clientlessgdb', 'clientlessGdb.py')
 GEN_CORE_REPORT = os.path.join(os.path.dirname(app.root_path), 'clientlessgdb', 'gen_core_report.sh')
-COMMANDS = ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispcacheinfo', 'dispclhash', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstats', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreadinfo', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'webvpn_print_block_failures'];
+COMMANDS = ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'webvpn_print_block_failures'];
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+uuid_queues = {}
 coredump_queues = {}
 command_queues = {}
 output_queues = {}
@@ -48,9 +49,13 @@ def perforce_login():
     print perforce_login.communicate(get_pass())[0].rstrip()
     print 'perforce_login: exit'
 
-def run_gdb(uuid, count):
+def run_gdb(count):
     print 'run_gdb: start with count ' + str(count)
-    gdb = Popen(['/auto/stbu-tools/wrlinux/poc/wrl6/wrlinux-6/layers/binary-toolchain-4.8-27/bin/i686-wrs-linux-gnu-gdb'], stdin=PIPE, stdout=PIPE, stderr=STDOUT, bufsize=1)
+    global uuid_queues, coredump_queues, command_queues, output_queues
+    start_uuid = uuid_queues[count].get()
+    start_coredump = coredump_queues[count].get()
+    coredump_path = os.path.join(app.config['UPLOAD_FOLDER'], start_uuid, start_coredump, start_coredump)
+    gdb = Popen(['/auto/stbu-tools/wrlinux/poc/wrl6/wrlinux-6/layers/binary-toolchain-4.8-27/bin/i686-wrs-linux-gnu-gdb', os.path.join(os.path.dirname(coredump_path), start_coredump + '_workspace', 'Xpix', 'target', 'smp', 'asa', 'bin', 'lina')], stdin=PIPE, stdout=PIPE, stderr=STDOUT, bufsize=1)
     read_queue = Queue()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
     t.daemon = True
@@ -59,51 +64,46 @@ def run_gdb(uuid, count):
     entered_commands = []
     gdb.stdin.write('source ' + CLIENTLESS_GDB + '\n')
     entered_commands += ['source ' + CLIENTLESS_GDB]
-    current_coredump = ''
-    global coredump_queues, command_queues, output_queues
+    gdb.stdin.write('core-file ' + coredump_path + '\n')
+    entered_commands += ['core-file ' + coredump_path]
     print 'run_gdb: entering while'
-    while True:
+    running = True
+    while running:
         try:
             print 'run_gdb: waiting'
+            uuid = uuid_queues[count].get()
             coredump = coredump_queues[count].get()#True, 120)
-            if current_coredump != coredump:
-                coredump_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid, coredump, coredump)
-                lina_path = os.path.join(app.config['UPLOAD_FOLDER'], uuid, coredump, coredump + '_workspace', 'Xpix', 'target', 'smp', 'asa', 'bin', 'lina')
-                gdb.stdin.write('exec-file ' + lina_path + '\n')
-                entered_commands += ['exec-file ' + lina_path]
-                gdb.stdin.write('symbol-file ' + lina_path + '\n')
-                entered_commands += ['symbol-file ' + lina_path]
-                gdb.stdin.write('core-file ' + coredump_path + '\n')
-                entered_commands += ['core-file ' + coredump_path]
-                current_coredump = coredump
-            command = command_queues[count].get()
-            gdb.stdin.write(command + '\n')
-            gdb.stdin.write('0\n')
-            entered_commands += [command]
-            print 'run_gdb: wrote into gdb'
-            output = ''
-            while True:
-                try:
-                    line = read_queue.get_nowait()
-                except Empty:
-                    pass
-                else:
-                    undefined_index = line.find('(gdb) Undefined command: "0"')
-                    if undefined_index >= 0:
-                        output += line[:undefined_index]
-                        print 'run_gdb: reached end'
-                        break
+            if start_uuid != uuid or start_coredump != coredump:
+                output_queues[count].put("restart")
+                runnning = False
+            else:
+                command = command_queues[count].get()
+                gdb.stdin.write(command + '\n')
+                gdb.stdin.write('0\n')
+                entered_commands += [command]
+                print 'run_gdb: wrote into gdb'
+                output = ''
+                while True:
+                    try:
+                        line = read_queue.get_nowait()
+                    except Empty:
+                        pass
                     else:
-                        command_index = line.find('(gdb)')
-                        while command_index >= 0:
-                            line = line[:command_index + 5] + ' ' + entered_commands.pop(0) + '\n' + line[command_index + 6:]
-                            command_index = line.find('(gdb)', command_index + 5)
-                        output += line
-            command_queues[count].task_done()
-            output_queues[count].put(output)
-            entered_commands = []
+                        undefined_index = line.find('(gdb) Undefined command: "0"')
+                        if undefined_index >= 0:
+                            output += line[:undefined_index]
+                            print 'run_gdb: reached end'
+                            break
+                        else:
+                            command_index = line.find('(gdb)')
+                            while command_index >= 0:
+                                line = line[:command_index + 5] + ' ' + entered_commands.pop(0) + '\n' + line[command_index + 6:]
+                                command_index = line.find('(gdb)', command_index + 5)
+                            output += line
+                output_queues[count].put(output)
+                entered_commands = []
         except:
-            break
+            running = False
     delete_queues(count)
     running_counts.remove(count)
     print 'run_gdb: exit with count ' + str(count)
@@ -134,13 +134,15 @@ def initdb_command():
     print 'initdb_command: initialized database'
 
 def set_queues(count):
-    global coredump_queues, command_queues, output_queues
+    global uuid_queues, coredump_queues, command_queues, output_queues
+    uuid_queues[count] = Queue(maxsize=0)
     coredump_queues[count] = Queue(maxsize=0)
     command_queues[count] = Queue(maxsize=0)
     output_queues[count] = Queue(maxsize=0)
 
 def delete_queues(count):
-    global coredump_queues, command_queues, output_queues
+    global uuid_queues, coredump_queues, command_queues, output_queues
+    del uuid_queues[count]
     del coredump_queues[count]
     del command_queues[count]
     del output_queues[count]
@@ -181,13 +183,10 @@ def index():
         coredumps = ''
     global count
     with count_lock:
-        print 'index: count is ' + str(count)
-        set_queues(count)
-        worker = Thread(target=run_gdb, args=(session['uuid'], count))
-        worker.start()
         session['count'] = count
-        running_counts.add(count)
         count += 1
+    print 'index: count is ' + str(session['count'])
+    set_queues(session['count'])
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
 @app.route('/delete', methods=['POST'])
@@ -234,13 +233,10 @@ def loadkey():
     session.pop('current', None)
     global count
     with count_lock:
-        print 'index: count is ' + str(count)
-        set_queues(count)
-        worker = Thread(target=run_gdb, args=(session['uuid'], count))
-        worker.start()
         session['count'] = count
-        running_counts.add(count)
         count += 1
+    print 'loadkey: count is ' + str(session['count'])
+    set_queues(session['count'])
     return jsonify(coredumps)
 
 @app.route('/generatekey', methods=['POST'])
@@ -251,13 +247,10 @@ def generatekey():
     session.pop('current', None)
     global count
     with count_lock:
-        print 'index: count is ' + str(count)
-        set_queues(count)
-        worker = Thread(target=run_gdb, args=(session['uuid'], count))
-        worker.start()
         session['count'] = count
-        running_counts.add(count)
         count += 1
+    print 'generatekey: count is ' + str(session['count'])
+    set_queues(session['count'])
     return new_uuid
 
 def allowed_file(uuid, filename):
@@ -380,23 +373,35 @@ def commandinput():
     print 'commandinput: start'
     if not 'count' in session:
         return 'missing session'
-    global COMMANDS, count, running_counts, coredump_queues, command_queues, output_queues
-    if not session['count'] in running_counts:
-        with count_lock:
-            print 'commandinput: count is ' + str(count)
-            set_queues(count)
-            worker = Thread(target=run_gdb, args=(session['uuid'], count))
-            worker.start()
-            session['count'] = count
-            running_counts.add(count)
-            count += 1
-    with queues_lock:
-        if not request.form['command'].split(" ")[0] in COMMANDS:
-            print 'commandinput: invalid command'
-            return 'invalid commmand'
-        print 'commandinput: ' + request.form['command']
+    global COMMANDS, count, running_counts, uuid_queues, coredump_queues, command_queues, output_queues
+    print 'commandinput: ' + request.form['command']
+    if not request.form['command'].split(" ")[0] in COMMANDS:
+        print 'commandinput: invalid command'
+        return 'invalid commmand'
+    print 'commandinput: count is ' + str(session['count'])
+    def startup():
+        print 'commandinput: startup'
+        set_queues(session['count'])
+        running_counts.add(session['count'])
+        uuid_queues[session['count']].put(session['uuid'])
         coredump_queues[session['count']].put(request.form['coredump'])
-        command_queues[session['count']].put(request.form['command'])
-    return escape(output_queues[session['count']].get())
+        worker = Thread(target=run_gdb, args=(session['count'],))
+        worker.start()
+    def queue_add():
+        with queues_lock:
+            uuid_queues[session['count']].put(session['uuid'])
+            coredump_queues[session['count']].put(request.form['coredump'])
+            command_queues[session['count']].put(request.form['command'])
+    if not session['count'] in running_counts:
+        print 'commandinput: starting'
+        startup()
+    queue_add()
+    result = output_queues[session['count']].get()
+    if result == 'restart':
+        print 'commandinput: restart'
+        startup()
+        queue_add()
+        return escape(output_queues[session['count']].get())
+    return escape(result)
 
 app.secret_key = 'supersecrettemporarykey'
