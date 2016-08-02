@@ -319,7 +319,6 @@ input {
     height: 100%;
     width: 100%;
     margin-top: 1rem;
-    padding: 1rem;
     overflow-x: auto;
     overflow-y: auto;
 }
@@ -328,4 +327,6 @@ input {
     font-family: "Menlo Regular", monospace;
     font-size: 10pt;
     white-space: pre;
+    margin: 1rem;
+    display: inline-block;
 }
