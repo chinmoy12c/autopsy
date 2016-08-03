@@ -50,15 +50,27 @@ input.onchange = function() {
 
 function humanFileSize(size) {
     if (size === 0) {
-        return '0 bytes';
+        return "0 bytes";
     }
-    var i = Math.floor( Math.log(size) / Math.log(1024) );
-    return ( size / Math.pow(1024, i) ).toFixed(2) * 1 + ' ' + ['bytes', 'KB', 'MB', 'GB', 'TB'][i];
+    var i = Math.floor(Math.log(size) / Math.log(1024));
+    return (size / Math.pow(1024, i)).toFixed(2) * 1 + " " + ["bytes", "KB", "MB", "GB", "TB"][i];
+}
+
+function date(timestamp) {
+    var d = new Date(timestamp);
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    return months[d.getMonth()] + " " + d.getDate() + ", " + hours + ":" + minutes + " " + ampm;
 }
 
 function loadCoredumps(coredumps) {
     for (var i = 0; i < coredumps.length; i++) {
-        var s = "<div class=\"coredump-box not-clicked\" id=\"" + coredumps[i][1] + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + coredumps[i][1] + "</p><p class=\"coresize\">" + humanFileSize(coredumps[i][2]) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+        var s = "<div class=\"coredump-box not-clicked\" id=\"" + coredumps[i][1] + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + coredumps[i][1] + "</p><p class=\"coresize\">" + humanFileSize(coredumps[i][2]) + "</p><p class=\"coredate\">" + date(coredumps[i][3]) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
         var corediv = document.createElement("div");
         corediv.classList.add("coredump-noanim");
         corediv.innerHTML = s;
@@ -208,7 +220,6 @@ load_button.addEventListener("click", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             $("#load-modal").modal("hide");
             uuid.innerHTML = this.response[0][0];
-            console.log(this.response);
             reset();
             loadCoredumps(this.response);
         }
@@ -253,6 +264,14 @@ upload_button.addEventListener("click", function() {
                 file_picker.style.cursor = "pointer";
                 upload_button.className = "btn btn-danger";
                 upload_button.innerHTML = "Duplicate File";
+            }
+            else if (xhr.responseText === "type") {
+                browse.className = "browse-clickable";
+                browse.style.cursor = "pointer";
+                input.disabled = false;
+                file_picker.style.cursor = "pointer";
+                upload_button.className = "btn btn-danger";
+                upload_button.innerHTML = "Invalid File";
             }
             else {
                 browse.innerHTML = "Cancel";
@@ -356,7 +375,7 @@ function build() {
             file_name.innerHTML = "Choose file…";
             upload_button.disabled = true;
             var new_filename = this.response.filename;
-            var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(this.response.filesize) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+            var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(this.response.filesize) + "</p><p class=\"coredate\">" + date(this.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
             var corediv = document.createElement("div");
             corediv.classList.add("coredump");
             corediv.innerHTML = s;

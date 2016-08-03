@@ -101,17 +101,34 @@ p {
 
 .coredump-inner {
     flex-grow: 1;
+    font-size: 0;
 }
 
 .corename {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-size: 1rem;
 }
 
 .coresize {
     font-size: 10pt;
     color: #818a91;
+    display: inline-block;
+}
+
+.coresize::after {
+    content: "·";
+    font-size: 10pt;
+    color: #818a91;
+    margin-left: 0.3rem;
+    margin-right: 0.3rem;
+}
+
+.coredate {
+    font-size: 10pt;
+    color: #818a91;
+    display: inline-block;
 }
 
 .delete-box {

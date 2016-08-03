@@ -10,7 +10,7 @@ from threading import Lock, Thread
 from Queue import Queue, Empty
 from cgi import escape
 from uuid import uuid4
-from time import sleep
+from time import time
 
 app = Flask(__name__)
 
@@ -50,7 +50,7 @@ def perforce_login():
     print 'perforce_login: exit'
 
 def run_gdb(count):
-    print 'run_gdb: start with count ' + str(count)
+    print 'run_gdb: count ' + str(count) + ' - start'
     global uuid_queues, coredump_queues, command_queues, output_queues
     start_uuid = uuid_queues[count].get()
     start_coredump = coredump_queues[count].get()
@@ -60,28 +60,30 @@ def run_gdb(count):
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
     t.daemon = True
     t.start()
-    print 'run_gdb: thread started'
+    print 'run_gdb: count ' + str(count) + ' - thread started'
     entered_commands = []
     gdb.stdin.write('source ' + CLIENTLESS_GDB + '\n')
     entered_commands += ['source ' + CLIENTLESS_GDB]
     gdb.stdin.write('core-file ' + coredump_path + '\n')
     entered_commands += ['core-file ' + coredump_path]
-    print 'run_gdb: entering while'
+    print 'run_gdb: count ' + str(count) + ' - entering while'
     running = True
+    restart = False
     while running:
         try:
-            print 'run_gdb: waiting'
+            print 'run_gdb: count ' + str(count) + ' - waiting'
             uuid = uuid_queues[count].get()
             coredump = coredump_queues[count].get()#True, 120)
             if start_uuid != uuid or start_coredump != coredump:
-                output_queues[count].put("restart")
-                runnning = False
+                running = False
+                restart = True
+                print 'run_gdb: count ' + str(count) + ' - restart'
             else:
                 command = command_queues[count].get()
                 gdb.stdin.write(command + '\n')
                 gdb.stdin.write('0\n')
                 entered_commands += [command]
-                print 'run_gdb: wrote into gdb'
+                print 'run_gdb: count ' + str(count) + ' - wrote into gdb'
                 output = ''
                 while True:
                     try:
@@ -92,7 +94,7 @@ def run_gdb(count):
                         undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
                             output += line[:undefined_index]
-                            print 'run_gdb: reached end'
+                            print 'run_gdb: count ' + str(count) + ' - reached end'
                             break
                         else:
                             command_index = line.find('(gdb)')
@@ -104,9 +106,14 @@ def run_gdb(count):
                 entered_commands = []
         except:
             running = False
-    delete_queues(count)
     running_counts.remove(count)
-    print 'run_gdb: exit with count ' + str(count)
+    if restart:
+        output_queues[count].put('restart')
+        print 'run_gdb: count ' + str(count) + ' - inserted restart into output_queues'
+    else:
+        delete_queues(count)
+        print 'run_gdb: count ' + str(count) + ' - no restart'
+    print 'run_gdb: count ' + str(count) + ' - exit'
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -152,7 +159,7 @@ def index():
     if 'uuid' in session:
         uuid = session['uuid']
         print 'index: uuid in session, value is ' + uuid
-        cur = get_db().execute('SELECT * FROM cores WHERE uuid = ?', (uuid,))
+        cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
         coredumps = cur.fetchall()
         cur.close()
         valid_directories = []
@@ -163,7 +170,7 @@ def index():
             row = coredumps[i]
             valid_directories += [row[1]]
             for obj in row:
-                print 'index: ' + obj.splitlines()[0]
+                print 'index: ' + str(obj)
         print 'index: **********'
         directory = os.path.join(app.config['UPLOAD_FOLDER'], session['uuid'])
         if os.path.exists(directory):
@@ -186,6 +193,7 @@ def index():
         session['count'] = count
         count += 1
     print 'index: count is ' + str(session['count'])
+    print 'index: running_counts is ' + str(running_counts)
     set_queues(session['count'])
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
@@ -213,7 +221,7 @@ def delete():
 def testkey():
     testkey = request.form['testkey']
     print 'testkey: ' + testkey
-    cur = get_db().execute('SELECT * FROM cores WHERE uuid = ?', (testkey,))
+    cur = get_db().execute('SELECT uuid FROM cores WHERE uuid = ?', (testkey,))
     coredumps = cur.fetchall()
     cur.close()
     if len(coredumps) != 0:
@@ -226,7 +234,7 @@ def testkey():
 def loadkey():
     loadkey = request.form['loadkey']
     print 'loadkey: ' + loadkey
-    cur = get_db().execute('SELECT * FROM cores WHERE uuid = ?', (loadkey,))
+    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (loadkey,))
     coredumps = cur.fetchall()
     cur.close()
     session['uuid'] = loadkey
@@ -236,6 +244,7 @@ def loadkey():
         session['count'] = count
         count += 1
     print 'loadkey: count is ' + str(session['count'])
+    print 'loadkey: running_counts is ' + str(running_counts)
     set_queues(session['count'])
     return jsonify(coredumps)
 
@@ -250,11 +259,12 @@ def generatekey():
         session['count'] = count
         count += 1
     print 'generatekey: count is ' + str(session['count'])
+    print 'generatekey: running_counts is ' + str(running_counts)
     set_queues(session['count'])
     return new_uuid
 
 def allowed_file(uuid, filename):
-    cur = get_db().execute('SELECT * FROM cores WHERE uuid = ? AND coredump = ?', (uuid, secure_filename(filename)[:-3]))
+    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ? AND coredump = ?', (uuid, secure_filename(filename)[:-3]))
     coredumps = cur.fetchall()
     cur.close()
     if len(coredumps) != 0:
@@ -266,8 +276,12 @@ def allowed_file(uuid, filename):
 @app.route('/testfilename', methods=['POST'])
 def testfilename():
     print 'testfilename: start'
+    print 'testfilename: testing ' + request.form['filename']
     if not 'uuid' in session:
         return 'missing session'
+    if request.form['filename'][-3:] != '.gz':
+        print 'testfilename: type'
+        return 'type'
     if allowed_file(session['uuid'], request.form['filename']):
         print 'testfilename: ok'
         return 'ok'
@@ -341,23 +355,24 @@ def build():
     report = check_output([GEN_CORE_REPORT, '-g', '-c', filepath], cwd=directory)
     print report
     filesize = os.path.getsize(filepath)
+    timestamp = int(time() * 1000)
     db = get_db()
-    db.execute('INSERT INTO cores VALUES (?, ?, ?, ?)', (session['uuid'], filename, filesize, report))
+    db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, report))
     db.commit()
-    print 'build: inserted ' + session['uuid'], filename, str(filesize) + ' and report into cores'
+    print 'build: inserted ' + session['uuid'], filename, str(filesize), str(timestamp) + ' and report into cores'
     session.pop('current', None)
-    return jsonify(filename=filename, filesize=os.path.getsize(filepath))
+    return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
 def getreport():
     print 'getreport: start'
     if not 'uuid' in session:
         return 'missing session'
-    cur = get_db().execute('SELECT * FROM cores WHERE uuid = ? AND coredump = ?', (session['uuid'], request.form['coredump']))
+    cur = get_db().execute('SELECT report FROM cores WHERE uuid = ? AND coredump = ?', (session['uuid'], request.form['coredump']))
     coredumps = cur.fetchall()
     cur.close()
     print 'getreport: exit'
-    return escape(coredumps[0][3])
+    return escape(coredumps[0][0])
 
 @app.route('/backtrace', methods=['POST'])
 def backtrace():
@@ -375,10 +390,11 @@ def commandinput():
         return 'missing session'
     global COMMANDS, count, running_counts, uuid_queues, coredump_queues, command_queues, output_queues
     print 'commandinput: ' + request.form['command']
-    if not request.form['command'].split(" ")[0] in COMMANDS:
+    if not request.form['command'].split(' ')[0] in COMMANDS:
         print 'commandinput: invalid command'
         return 'invalid commmand'
     print 'commandinput: count is ' + str(session['count'])
+    print 'commandinput: running_counts is ' + str(running_counts)
     def startup():
         print 'commandinput: startup'
         set_queues(session['count'])
@@ -387,6 +403,7 @@ def commandinput():
         coredump_queues[session['count']].put(request.form['coredump'])
         worker = Thread(target=run_gdb, args=(session['count'],))
         worker.start()
+        print 'commandinput: startup - running_counts is ' + str(running_counts)
     def queue_add():
         with queues_lock:
             uuid_queues[session['count']].put(session['uuid'])
@@ -399,6 +416,7 @@ def commandinput():
     result = output_queues[session['count']].get()
     if result == 'restart':
         print 'commandinput: restart'
+        delete_queues(session['count'])
         startup()
         queue_add()
         return escape(output_queues[session['count']].get())
