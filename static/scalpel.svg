@@ -1,0 +1,15 @@
+<svg version="1.1" baseProfile="full" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="100" fill="white"/>
+    <defs>
+        <clipPath id="circle-border">
+            <circle cx="100" cy="100" r="90"/>
+        </clipPath>
+    </defs>
+    <g transform="rotate(45 100 100)">
+        <polygon points="85 0, 115 0, 115 25, 85 40" stroke="#4fc3f7" fill="#4fc3f7" clip-path="url(#circle-border)"/>
+        <path d="M 88 190 C 98 187, 125 160, 125 130 S 112 85, 112 70 Z" stroke="#90a4ae" fill="#90a4ae"/>
+        <path d="M 88 46 L 88 190 C 94 187, 121 160, 121 130 S 112 85, 112 70 L 112 34 Z" stroke="#b0bec5" fill="#b0bec5"/>
+        <line x1="97" y1="160" x2="97" y2="100" stroke="#eceff1" stroke-width="4" stroke-linecap="round"/>
+        <line x1="96.5" y1="160.3" x2="96.5" y2="99.7" stroke="#cfd8dc" stroke-width="3" stroke-linecap="round"/>
+    </g>
+</svg>

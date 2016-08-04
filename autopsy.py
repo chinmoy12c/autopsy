@@ -66,14 +66,20 @@ def run_gdb(count):
     entered_commands += ['source ' + CLIENTLESS_GDB]
     gdb.stdin.write('core-file ' + coredump_path + '\n')
     entered_commands += ['core-file ' + coredump_path]
+    gdb.stdin.write('cd ' + os.path.join(os.path.dirname(coredump_path), start_coredump + '_workspace', 'Xpix', 'target', 'smp') + '\n')
+    entered_commands += ['cd ' + os.path.join(os.path.dirname(coredump_path), start_coredump + '_workspace', 'Xpix', 'target', 'smp')]
+    gdb.stdin.write('pwd\n')
+    entered_commands += ['pwd']
+    gdb.stdin.write('source .gdbinit\n')
+    entered_commands += ['source .gdbinit']
     print 'run_gdb: count ' + str(count) + ' - entering while'
     running = True
     restart = False
     while running:
         try:
             print 'run_gdb: count ' + str(count) + ' - waiting'
-            uuid = uuid_queues[count].get()
-            coredump = coredump_queues[count].get()#True, 120)
+            uuid = uuid_queues[count].get(True, 30)
+            coredump = coredump_queues[count].get()
             if start_uuid != uuid or start_coredump != coredump:
                 running = False
                 restart = True

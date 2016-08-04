@@ -26,6 +26,18 @@ p {
     padding: 0.5rem 2rem;
 }
 
+.navbar-brand::before {
+    background-image: url("scalpel.svg");
+    background-size: 1.75rem 1.75rem;
+    display: inline-block;
+    width: 1.75rem;
+    height: 1.75rem;
+    content: "";
+    vertical-align: middle;
+    margin-right: 1rem;
+    margin-left: -1rem;
+}
+
 .nav-item {
     padding-top: 0.425rem;
     padding-bottom: 0.425rem;
