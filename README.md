@@ -7,7 +7,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 * [What's Included](#whats-included)
 * [What's Not Included](#whats-not-included)
 * [Getting Started](#getting-started)
- * [Cloning the repository](#cloning-the-repository)
+ * [Cloning repositories](#cloning-repositories)
  * [Creating a virtual environment](#creating-a-virtual-environment)
  * [Setting up Perforce](#setting-up-perforce)
  * [Using `launch.sh`](#using-launchsh)
@@ -33,13 +33,19 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 
 ## Getting Started
 
-### Cloning the repository
+### Cloning repositories
 
 Run
 ```
 git clone http://gitlab.cisco.com/clientlessvpn/Autopsy.git
 ```
-to clone the repository. The files should be in a folder called `Autopsy`.
+to clone the Autopsy repository. The files should be in a folder called `Autopsy`.
+
+Next, in the parent folder to `Autopsy`, run
+```
+git clone http://gitlab.cisco.com/clientlessvpn/clientlessgdb.git
+```
+to clone the clientlessGDB repository, which is necessary for analyzing core dumps. The two folders `Autopsy` and `clientlessGDB` should be in the same directory.
 
 ### Creating a virtual environment
 
