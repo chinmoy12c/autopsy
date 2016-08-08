@@ -59,6 +59,7 @@ def run_gdb(count):
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / start_uuid / start_coredump / start_coredump
     smp_path = coredump_path.parent / (start_coredump + '_workspace') / 'Xpix' / 'target' / 'smp'
+    info(str(smp_path))
     gdb = Popen(['/auto/stbu-tools/wrlinux/poc/wrl6/wrlinux-6/layers/binary-toolchain-4.8-27/bin/i686-wrs-linux-gnu-gdb', str(smp_path / 'asa' / 'bin' / 'lina')], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(smp_path), universal_newlines=True)
     read_queue = Queue()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
@@ -71,17 +72,14 @@ def run_gdb(count):
         gdb.stdin.write(command + '\n')
         entered_commands += [command]
     enter_command('source ' + str(CLIENTLESS_GDB))
-    enter_command('pwd')
-    enter_command('source .gdbinit')
     enter_command('core-file ' + str(coredump_path))
     info('count %d - entering while', count)
     running = True
     restart = False
-    info(str(entered_commands))
     while running:
         try:
             info('count %d - waiting', count)
-            uuid = uuid_queues[count].get()#True, 30)
+            uuid = uuid_queues[count].get(True, 30)
             coredump = coredump_queues[count].get()
             if start_uuid != uuid or start_coredump != coredump:
                 running = False
@@ -99,20 +97,16 @@ def run_gdb(count):
                     except Empty:
                         pass
                     else:
-                        info(str(entered_commands))
                         undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
                             output += line[:undefined_index]
                             info('run_gdb: count %d - reached end', count)
                             break
                         else:
-                            command_index = line.find('(gdb)')
+                            command_index = line.find('(gdb) ')
                             while command_index >= 0:
-                                try:
-                                    line = line[:command_index + 5] + ' ' + entered_commands.pop(0) + '\n' + line[command_index + 6:]
-                                except:
-                                    pass
-                                command_index = line.find('(gdb)', command_index + 5)
+                                line = line[:command_index + 6]  + entered_commands.pop(0) + '\n' + line[command_index + 6:]
+                                command_index = line.find('(gdb)', command_index + 6)
                             output += line
                 output_queues[count].put(output)
                 entered_commands = []

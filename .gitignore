@@ -1,5 +1,6 @@
 *.pyc
 .p4config
+__pycache__/
 database/
 uploads/
 password.txt
