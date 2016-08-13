@@ -98,3 +98,15 @@ to access the application at `127.0.0.1:5000`. You can quit the application with
 fk
 ```
 after to completely kill the application. Note that running `fr` will automatically run `fk` before launching the application, so you can just use <kbd>Ctrl-C</kbd> and `fr` to restart the application.
+
+### Launch process
+
+After completing the steps above, only two steps are needed — running
+```
+. launch.sh
+```
+and
+```
+fr
+```
+to launch Autopsy.
