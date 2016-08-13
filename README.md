@@ -12,6 +12,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Using `launch.sh`](#using-launchsh)
  * [Installing Flask and setting up the database](#installing-flask-and-setting-up-the-database)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
+ * [Launch process](#launch-process)
 
 ## What's Included
 
