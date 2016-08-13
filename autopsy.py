@@ -40,17 +40,6 @@ running_counts = set()
 count = 0
 count_lock = Lock()
 
-def get_pass():
-    logger.info('opening password.txt')
-    with open('password.txt') as f:
-        return f.readline()
-
-def perforce_login():
-    logger.info('start')
-    perforce_login = Popen(['p4', 'login'], stdin=PIPE, stdout=PIPE, universal_newlines=True)
-    logger.info(perforce_login.communicate(get_pass())[0].rstrip())
-    logger.info('exit')
-
 def enqueue_output(out, queue):
     for line in iter(out.readline, ''):
         queue.put(line)
