@@ -31,8 +31,6 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 ## What's Not Included
 
 * `database` and `uploads` folders will be created when running `launch.sh`.
-* A `.p4config` file will need to be created, which stores Perforce parameters.
-* A `password.txt` file will store the password for the Perforce account to be used to create the workspace for a core dump.
 * A `venv` folder will be generated after using `virtualenv` to create an isolated Python environment.
 
 ## Getting Started
@@ -59,23 +57,12 @@ virtualenv -p <path to Python executable> venv
 ```
 inside the main `Autopsy` folder. A `venv` folder should be created. If the `virtualenv` command is not defined, you will need to download `virtualenv` using your package manager.
 
-### Setting up Perforce
-
-Create a file called `.p4config` inside the `Autopsy` folder. The contents of this file should look like
-```
-export P4CONFIG=$PWD/.p4config
-export P4PORT=tuscan:1666
-export P4USER=
-```
-with `P4USER` set to your Perforce username. Then, create a file called `password.txt` inside the `Autopsy` folder and enter your Perforce password inside.
-
 ### Using `launch.sh`
 
 `launch.sh` does several things:
 * Creates the `database` and `uploads` folders
 * Sets up two useful aliases (`fk`, short for "flask kill", to completely kill the application and `fr`, short for "flask run", to launch the application)
 * Launches the virtual environment
-* Sets up the Perforce parameters from `.p4config`
 * Exports a Flask variable pointing to `autopsy.py`
 * Sets up debug mode for Flask
 
