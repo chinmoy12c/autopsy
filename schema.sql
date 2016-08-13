@@ -4,5 +4,6 @@ CREATE TABLE cores (
     coredump TEXT NOT NULL,
     filesize INT NOT NULL,
     timestamp INT NOT NULL,
-    report TEXT NOT NULL
+    workspace TEXT NOT NULL,
+    gdb TEXT NOT NULL
 );

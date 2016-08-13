@@ -25,14 +25,14 @@
                 </div>
             </div>
         </nav>
-        <div class="modal fade" id="load-modal" tabindex="-1" role="dialog" aria-labelledby="load-modal" aria-hidden="true">
+        <div class="modal fade" id="load-modal" tabindex="-1" role="dialog" aria-labelledby="load-modal-label" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
-                        <h4 class="modal-title" id="load-modal">Load key</h4>
+                        <h4 class="modal-title" id="load-modal-label">Load key</h4>
                     </div>
                     <div class="modal-body">
                         <label for="load-key">A key must be in valid version 4 <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier" target="_blank">UUID</a>  format, including hyphens.</label>
@@ -48,14 +48,14 @@
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="generate-modal" tabindex="-1" role="dialog" aria-labelledby="generate-modal" aria-hidden="true">
+        <div class="modal fade" id="generate-modal" tabindex="-1" role="dialog" aria-labelledby="generate-modal-label" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
-                        <h4 class="modal-title" id="generate-modal">Generate new key</h4>
+                        <h4 class="modal-title" id="generate-modal-label">Generate new key</h4>
                     </div>
                     <div class="modal-body">
                         <p>Remember to save your old key before generating a new key if you wish to revisit these core files.</p>
@@ -63,6 +63,18 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" id="generate-button">Generate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="expire-modal" tabindex="-1" role="dialog" aria-labelledby="expire-modal-label" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="expire-modal-label">Expired session</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p id="expire-text"></p>
                     </div>
                 </div>
             </div>

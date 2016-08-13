@@ -355,7 +355,15 @@ function unzip() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.responseText === "finished") {
+            if (xhr.responseText === "unzip failed") {
+                input.disabled = false;
+                file_picker.style.cursor = "pointer";
+                upload_button.className = "btn btn-danger";
+                upload_button.innerHTML = "Unzip Failed";
+                downloaded.innerHTML = "";
+                progress.style.opacity = 0;
+            }
+            else {
                 upload_button.innerHTML = "Building…";
                 build();
             }
@@ -394,16 +402,27 @@ function build() {
     xhr.send();
 }
 
+function showOutput(output, coredump, timestamp) {
+    console.log(timestamp);
+    var coredump_box = document.getElementById(coredump);
+    if (coredump_box !== null) {
+        var coredate = coredump_box.firstChild.lastChild;
+        coredate.innerHTML = date(timestamp);
+    }
+    output_text.innerHTML = output;
+}
+
 gen_report.addEventListener("click", function() {
     output_text.innerHTML = "Loading…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
+    var coredump = checked;
     fd.append("coredump", checked);
     xhr.open("POST", "/getreport", true);
-    xhr.responseType = "text";
+    xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            output_text.innerHTML = xhr.responseText;
+            showOutput(this.response.output, coredump, this.response.timestamp);
         }
     });
     xhr.send(fd);
@@ -413,12 +432,13 @@ backtrace.addEventListener("click", function() {
     output_text.innerHTML = "Loading…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
+    var coredump = checked;
     fd.append("coredump", checked);
     xhr.open("POST", "/backtrace", true);
-    xhr.responseType = "text";
+    xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            output_text.innerHTML = xhr.responseText;
+            showOutput(this.response.output, coredump, this.response.timestamp);
         }
     });
     xhr.send(fd);
@@ -498,13 +518,14 @@ command_input.addEventListener("keydown", function(evt) {
                 output_text.innerHTML = "Loading…";
                 var xhr = new XMLHttpRequest();
                 var fd = new FormData();
+                var coredump = checked;
                 fd.append("coredump", checked);
                 fd.append("command", command_input.value);
                 xhr.open("POST", "/commandinput", true);
-                xhr.responseType = "text";
+                xhr.responseType = "json";
                 xhr.addEventListener("readystatechange", function() {
                     if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                        output_text.innerHTML = xhr.responseText;
+                        showOutput(this.response.output, coredump, this.response.timestamp);
                     }
                 });
                 xhr.send(fd);
@@ -607,3 +628,23 @@ function addAutocompleteListeners() {
         })();
     }
 }
+
+window.addEventListener("focus", function() {
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("uuid", uuid.innerHTML);
+    xhr.open("POST", "/checksession", true);
+    xhr.responseType = "text";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            if (xhr.responseText === "bad") {
+                var expire_text = document.getElementById("expire-text");
+                expire_text.innerHTML = "Your key, " + uuid.innerHTML + ", has expired. Please refresh the page. To recover this session, load this key after refreshing.";
+                $("#load-modal").modal("hide");
+                $("#generate-modal").modal("hide");
+                $("#expire-modal").modal("show");
+            }
+        }
+    });
+    xhr.send(fd);
+});
