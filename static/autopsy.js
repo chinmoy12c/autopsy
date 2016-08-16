@@ -28,7 +28,6 @@ var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
-var loading;
 
 input.onchange = function() {
     filename = this.value;
