@@ -1,20 +1,20 @@
 html {
     position: relative;
     height: 100%;
-    width: 100%:
+    width: 100%;
 }
 
 body {
     height: 100%;
     width: 100%;
     min-width: 62em;
-    min-height: 300px;
+    min-height: 350px;
     display: flex;
     flex-direction: column;
 }
 
 button, div, label, p {
-    font-family: "Avenir", sans-serif;
+    font-family: "Avenir Next", sans-serif;
 }
 
 p {
@@ -156,7 +156,7 @@ p {
 }
 
 .not-clicked .delete-icon {
-    color: rgba(0, 0, 0, 0);;
+    color: rgba(0, 0, 0, 0);
 }
 
 .not-clicked:hover {
@@ -264,7 +264,7 @@ input {
 
 #browse {
     flex: none;
-    width: 86px;
+    width: 90px;
     text-align: center;
     padding: 0.5rem 1rem;
     background-color: #eee;
@@ -291,6 +291,7 @@ input {
 }
 
 #commands {
+    flex: none;
     margin-top: 3rem;
 }
 
@@ -300,6 +301,7 @@ input {
 }
 
 #command-form {
+    flex: none;
     margin-top: 1rem;
     position: relative;
 }
@@ -338,6 +340,10 @@ input {
     padding: 0 1rem;
 }
 
+.autocomplete-bold {
+    font-weight: 600;
+}
+
 .autocomplete-option {
     color: #999;
 }
@@ -345,11 +351,37 @@ input {
 .output {
     border: 1px solid #ccc;
     border-radius: 0.25rem;
-    height: 100%;
+    flex-grow: 1;
     width: 100%;
     margin-top: 1rem;
     overflow-x: auto;
     overflow-y: auto;
+}
+
+@keyframes dots-1 {
+    from {
+        opacity: 0;
+    }
+    33.3% {
+        opacity: 1;
+    }
+}
+
+@keyframes dots-2 {
+    from {
+        opacity: 0;
+    }
+    66.6% {
+        opacity: 1;
+    }
+}
+
+#dots span {
+    animation: dots-1 1.5s infinite steps(1);
+}
+
+#dots span:last-child {
+    animation-name: dots-2;
 }
 
 #output-text {

@@ -14,6 +14,7 @@ var progress = document.getElementById("progress");
 var cores = document.getElementById("cores");
 var gen_report = document.getElementById("gen-report");
 var backtrace = document.getElementById("backtrace");
+var siginfo = document.getElementById("siginfo");
 var clear_output = document.getElementById("clear-output");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
@@ -27,6 +28,7 @@ var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
+var loading;
 
 input.onchange = function() {
     filename = this.value;
@@ -98,6 +100,7 @@ function addCoredumpListeners() {
 function disableCommandButtons(setting) {
     gen_report.disabled = setting;
     backtrace.disabled = setting;
+    siginfo.disabled = setting;
     command_input.disabled = setting;
 }
 
@@ -402,8 +405,11 @@ function build() {
     xhr.send();
 }
 
+function showLoading() {
+    output_text.innerHTML = "Loading.<span id=\"dots\"><span>.</span><span>.</span></span>";
+}
+
 function showOutput(output, coredump, timestamp) {
-    console.log(timestamp);
     var coredump_box = document.getElementById(coredump);
     if (coredump_box !== null) {
         var coredate = coredump_box.firstChild.lastChild;
@@ -413,7 +419,7 @@ function showOutput(output, coredump, timestamp) {
 }
 
 gen_report.addEventListener("click", function() {
-    output_text.innerHTML = "Loading…";
+    showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     var coredump = checked;
@@ -429,7 +435,7 @@ gen_report.addEventListener("click", function() {
 });
 
 backtrace.addEventListener("click", function() {
-    output_text.innerHTML = "Loading…";
+    showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     var coredump = checked;
@@ -444,8 +450,26 @@ backtrace.addEventListener("click", function() {
     xhr.send(fd);
 });
 
+siginfo.addEventListener("click", function() {
+    showLoading();
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var coredump = checked;
+    fd.append("coredump", checked);
+    xhr.open("POST", "/siginfo", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            showOutput(this.response.output, coredump, this.response.timestamp);
+        }
+    });
+    xhr.send(fd);
+});
+
 clear_output.addEventListener("click", function() {
-    output_text.innerHTML = "";
+    if (!loading) {
+        output_text.innerHTML = "";
+    }
 });
 
 function updateAutocomplete() {
@@ -461,9 +485,9 @@ function updateAutocomplete() {
         var autocomplete_items = "";
         for (var i = 0; i < commands.length; i++) {
             var command_split = command.split(" ");
-            if (commands[i].startsWith(command_split[0]) && (command_split.length === 1 || commands[i] === command_split[0])) {
+            if (commands[i].toLowerCase().startsWith(command_split[0]) && (command_split.length === 1 || commands[i].toLowerCase() === command_split[0])) {
                 current_commands.push(commands[i]);
-                var command_string = command_split[0] + "<b>" + commands[i].substring(command_split[0].length) + "</b>";
+                var command_string = commands[i].substring(0, command_split[0].length) + "<span class=\"autocomplete-bold\">" + commands[i].substring(command_split[0].length) + "</span>";
                 if (commands[i] in options) {
                     command_string += " <span class=\"autocomplete-option\">" + options[commands[i]] + "</span>";
                 }
@@ -497,8 +521,8 @@ command_input.addEventListener("keydown", function(evt) {
         return;
     }
     var selected_index;
-    switch (evt.key) {
-        case "Tab":
+    switch (evt.keyCode) {
+        case 9://"Tab":
             if (current_commands.length > 0) {
                 command_input.value = commonPrefix(current_commands);
                 updateAutocomplete();
@@ -507,15 +531,15 @@ command_input.addEventListener("keydown", function(evt) {
                 }
             }
             break;
-        case "Enter":
+        case 13://"Enter":
             if (currently_selected !== null) {
                 updateAutocomplete();
                 if (current_commands.length === 1 && command_input.value in options) {
                     command_input.value += " ";
                 }
             }
-            else {
-                output_text.innerHTML = "Loading…";
+            else if (command_input.value !== "") {
+                showLoading();
                 var xhr = new XMLHttpRequest();
                 var fd = new FormData();
                 var coredump = checked;
@@ -533,7 +557,7 @@ command_input.addEventListener("keydown", function(evt) {
                 updateAutocomplete();
             }
             break;
-        case "ArrowDown":
+        case 40://"ArrowDown":
             if (currently_selected === null) {
                 if (current_commands.length !== 0) {
                     autocomplete.children[0].classList.add("autocomplete-item-selected");
@@ -565,7 +589,7 @@ command_input.addEventListener("keydown", function(evt) {
                 command_input.value = autocomplete_text;
             }
             break;
-        case "ArrowUp":
+        case 38://"ArrowUp":
             if (currently_selected === null) {
                 if (current_commands.length !== 0) {
                     autocomplete.children[current_commands.length - 1].classList.add("autocomplete-item-selected");
@@ -647,4 +671,10 @@ window.addEventListener("focus", function() {
         }
     });
     xhr.send(fd);
+});
+
+window.addEventListener("beforeunload", function() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/quit", true);
+    xhr.send();
 });

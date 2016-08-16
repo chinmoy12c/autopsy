@@ -28,8 +28,8 @@ UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
 DATABASE = Path(app.root_path) / 'database' / 'cores.db'
 CLIENTLESS_GDB = Path(app.root_path).parent / 'clientlessgdb' / 'clientlessGdb.py'
 GEN_CORE_REPORT = Path(app.root_path).parent / 'clientlessgdb' / 'gen_core_report.sh'
-COMMANDS = ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'webvpn_print_block_failures'];
-DELETE_MIN = 2880
+COMMANDS = [c.lower() for c in ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'webvpn_print_block_failures']]
+DELETE_MIN = 5760
 
 coredump_queues = {}
 command_queues = {}
@@ -75,8 +75,11 @@ def run_gdb(count, uuid, workspace, gdb_location):
     while running:
         try:
             logger.info('count %d - waiting', count)
-            coredump = coredump_queues[count].get(timeout=120)
-            if start_coredump != coredump:
+            coredump = coredump_queues[count].get(timeout=600)
+            if coredump == '':
+                running = False
+                logger.info('count %d - quit', count)
+            elif start_coredump != coredump:
                 running = False
                 restart = True
                 logger.info('count %d - restart', count)
@@ -99,7 +102,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             break
                         else:
                             command_index = line.find('(gdb) ')
-                            while command_index >= 0:
+                            while entered_commands and command_index >= 0:
                                 line = line[:command_index + 6]  + entered_commands.pop(0) + '\n' + line[command_index + 6:]
                                 command_index = line.find('(gdb)', command_index + 6)
                             output += line
@@ -432,6 +435,19 @@ def backtrace():
     with backtrace_file.open() as f:
         return jsonify(output=escape(f.read()), timestamp=timestamp)
 
+@app.route('/siginfo', methods=['POST'])
+def siginfo():
+    logger.info('start')
+    if not 'uuid' in session:
+        return jsonify(output='missing session', timestamp=int(time() * 1000))
+    if no_such_file(session['uuid'], request.form['coredump']):
+        logger.info('no such coredump')
+        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
+    with siginfo_file.open() as f:
+        return jsonify(output=escape(f.read()), timestamp=timestamp)
+
 @app.route('/commandinput', methods=['POST'])
 def commandinput():
     logger.info('start')
@@ -439,7 +455,7 @@ def commandinput():
         return jsonify(output='missing session', timestamp=int(time() * 1000))
     global count, running_counts, coredump_queues, command_queues, output_queues
     logger.info('%s', request.form['command'])
-    if not request.form['command'].split(' ')[0] in COMMANDS:
+    if not request.form['command'].split(' ')[0].lower() in COMMANDS:
         logger.info('invalid command')
         return jsonify(output='invalid commmand', timestamp=int(time() * 1000))
     if no_such_file(session['uuid'], request.form['coredump']):
@@ -475,6 +491,20 @@ def commandinput():
         queue_add()
         return jsonify(output=escape(output_queues[session['count']].get()), timestamp=timestamp)
     return jsonify(output=escape(result), timestamp=timestamp)
+
+@app.route('/quit', methods=['POST'])
+def quit():
+    logger.info('start')
+    if not 'count' in session:
+        return 'missing session'
+    global running_counts, coredump_queues
+    if not session['count'] in running_counts:
+        logger.info('not running')
+        return 'not running'
+    with queues_lock:
+        coredump_queues[session['count']].put('')
+    logger.info('ok')
+    return 'ok'
 
 @app.route('/checksession', methods=['POST'])
 def checksession():
