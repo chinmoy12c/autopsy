@@ -202,7 +202,7 @@ def index():
     if 'uuid' in session:
         uuid = session['uuid']
         logger.info('uuid in session, value is %s', uuid)
-        cur = get_db().execute('SELECT * FROM cores WHERE uuid = ?', (uuid,))
+        cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
         coredumps = cur.fetchall()
         cur.close()
         logger.info('contents of coredumps')
@@ -270,14 +270,18 @@ def loadkey():
     cur.close()
     session['uuid'] = loadkey
     session.pop('current', None)
-    global count
+    global count, running_counts, coredump_queues
+    if session['count'] in running_counts:
+        with queues_lock:
+            logger.info('quitting count %d', session['count'])
+            coredump_queues[session['count']].put('')
     with count_lock:
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
     set_queues(session['count'])
-    return jsonify(coredumps)
+    return jsonify(uuid=loadkey, coredumps=coredumps)
 
 @app.route('/generatekey', methods=['POST'])
 def generatekey():
@@ -285,7 +289,11 @@ def generatekey():
     session['uuid'] = new_uuid
     logger.info('%s', new_uuid)
     session.pop('current', None)
-    global count
+    global count, running_counts, coredump_queues
+    if session['count'] in running_counts:
+        with queues_lock:
+            logger.info('quitting count %d', session['count'])
+            coredump_queues[session['count']].put('')
     with count_lock:
         session['count'] = count
         count += 1
@@ -456,8 +464,8 @@ def commandinput():
     global count, running_counts, coredump_queues, command_queues, output_queues
     logger.info('%s', request.form['command'])
     if not request.form['command'].split(' ')[0].lower() in COMMANDS:
-        logger.info('invalid command')
-        return jsonify(output='invalid commmand', timestamp=int(time() * 1000))
+        logger.info('%s: invalid command', request.form['command'])
+        return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=int(time() * 1000))
     if no_such_file(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))

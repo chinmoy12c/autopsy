@@ -1,5 +1,7 @@
 "use strict";
 var uuid = document.getElementById("uuid");
+var uuids = document.getElementById("uuids");
+var previous_button = document.getElementById("previous-button");
 var key_group = document.getElementById("key-group");
 var load_key = document.getElementById("load-key");
 var load_button = document.getElementById("load-button");
@@ -20,14 +22,43 @@ var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
 
+var uuid_value = uuid.innerHTML;
+var checked_uuid = null;
 var filename;
+var coredump_list;
 var checked = null;
 var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstats", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showblocks", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "webvpn_print_block_failures"];
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
+var loading = false;
 
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
+
+function updateLocalStorage(uuid, coredumps) {
+    var core_history_string = localStorage.getItem("history");
+    var core_order_string = localStorage.getItem("order");
+    if (core_history_string === null) {
+        core_history_string = "{}";
+    }
+    if (core_order_string === null) {
+        core_order_string = "[]";
+    }
+    var core_history = JSON.parse(core_history_string);
+    var core_order = JSON.parse(core_order_string);
+    core_history[uuid] = coredumps;
+    var prev_index = core_order.indexOf(uuid);
+    if (prev_index !== -1) {
+        core_order.splice(prev_index, 1);
+    }
+    core_order.unshift(uuid);
+    var removed = core_order.splice(16);
+    for (var i = 0; i < removed.length; i++) {
+        delete core_history[removed[i]];
+    }
+    localStorage.setItem("history", JSON.stringify(core_history));
+    localStorage.setItem("order", JSON.stringify(core_order));
+}
 
 input.onchange = function() {
     filename = this.value;
@@ -78,6 +109,10 @@ function loadCoredumps(coredumps) {
         cores.insertBefore(corediv, cores.firstChild);
     }
     addCoredumpListeners();
+    coredump_list = coredumps.map(function(coredump) {
+        return coredump[1];
+    }).reverse();
+    updateLocalStorage(uuid_value, coredump_list);
 }
 
 function addCoredumpListeners() {
@@ -113,6 +148,11 @@ function deleteCoredump(id) {
         }
     });
     id_box.className = "coredump-leave";
+    var delete_index = coredump_list.indexOf(id);
+    if (delete_index !== -1) {
+        coredump_list.splice(delete_index, 1);
+    }
+    updateLocalStorage(uuid_value, coredump_list);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("coredump", id);
@@ -141,8 +181,136 @@ function check(id) {
     }
 }
 
+function addUUIDListeners() {
+    for (var i = 0; i < uuids.childElementCount; i++) {
+        (function() {
+            var uuid_box = uuids.children[i];
+            var delete_icon = uuid_box.lastChild.firstChild;
+            delete_icon.addEventListener("click", function(evt) {
+                deleteUUID(uuid_box.id);
+                evt.stopImmediatePropagation();
+            });
+            uuid_box.addEventListener("click", function() {
+                checkUUID(uuid_box.id);
+            });
+        })();
+    }
+}
+
+function deleteUUID(id) {
+    $("[data-toggle='popover']").popover("dispose");
+    document.getElementById(id).remove();
+    if (checked_uuid === id) {
+        checked_uuid = null;
+        previous_button.disabled = true;
+    }
+   $("[data-toggle='popover']").popover();
+    var core_history = JSON.parse(localStorage.getItem("history"));
+    var core_order = JSON.parse(localStorage.getItem("order"));
+    delete core_history[id];
+    var delete_index = core_order.indexOf(id);
+    if (delete_index !== -1) {
+        core_order.splice(delete_index, 1);
+    }
+    if (core_order.length <= 1) {
+        uuids.innerHTML = "<p class=\"uuid-none\">No previous keys.</p>";
+    }
+    localStorage.setItem("history", JSON.stringify(core_history));
+    localStorage.setItem("order", JSON.stringify(core_order));
+}
+
+function checkUUID(id) {
+    var id_box = document.getElementById(id);
+    if (checked_uuid !== id) {
+        id_box.classList.remove("not-clicked");
+        id_box.classList.add("clicked");
+        if (checked_uuid !== null) {
+            var checked_box = document.getElementById(checked_uuid);
+            checked_box.classList.remove("clicked");
+            checked_box.classList.add("not-clicked");
+        }
+        checked_uuid = id;
+        previous_button.disabled = false;
+    }
+    else {
+        id_box.classList.remove("clicked");
+        id_box.classList.add("not-clicked");
+        checked_uuid = null;
+        previous_button.disabled = true;
+    }
+}
+
+$("#previous-modal").on("show.bs.modal", function() {
+    previous_button.disabled = true;
+    var core_history_string = localStorage.getItem("history");
+    var core_order_string = localStorage.getItem("order");
+    var core_history = JSON.parse(core_history_string);
+    var core_order = JSON.parse(core_order_string);
+    if (core_history_string === null || core_order.length <= 1) {
+        uuids.innerHTML = "<p class=\"uuid-none\">No previous keys.</p>";
+    }
+    else {
+        var uuid_list = "";
+        for (var i = 1; i < core_order.length; i++) {
+            var uuid_string = core_order[i];
+            var content_string = "";
+            if (core_history[uuid_string].length === 0) {
+                content_string = "<p class='cores-none'>No core dumps</p>";
+            }
+            else {
+                for (var j = 0; j < core_history[uuid_string].length; j++) {
+                    content_string += "<p>" + core_history[uuid_string][j] + "</p>";
+                }
+            }
+            uuid_list += "<div class=\"uuid-box not-clicked\" id=\"" + uuid_string + "\" data-toggle=\"popover\" data-animation=\"false\" data-content=\"" + content_string + "\" data-html=\"true\" data-trigger=\"hover\"><div class=\"uuid-inner\"><i class=\"fa fa-key\" aria-hidden=\"true\"></i><span class=\"uuid-item\">" + uuid_string + "</span></div><div class=\"delete-box delete-uuid\"><p class=\"delete-icon\">×</p></div></div>";
+        }
+        uuids.innerHTML = uuid_list;
+        addUUIDListeners();
+    }
+});
+
+$("#previous-modal").on("shown.bs.modal", function() {
+    $("[data-toggle='popover']").popover();
+});
+
+$("#previous-modal").on("hide.bs.modal", function() {
+    $("[data-toggle='popover']").popover("dispose");
+});
+
+$("#previous-modal").on("hidden.bs.modal", function() {
+    previous_button.innerHTML = "Load";
+});
+
+previous_button.addEventListener("click", function() {
+    previous_button.disabled = true;
+    previous_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Loading…";
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("loadkey", checked_uuid);
+    xhr.open("POST", "/loadkey", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            $("#previous-modal").modal("hide");
+            uuid.innerHTML = this.response.uuid;
+            uuid_value = this.response.uuid;
+            reset();
+            loadCoredumps(this.response.coredumps);
+        }
+    });
+    xhr.send(fd);
+});
+
 $("#load-modal").on("shown.bs.modal", function() {
     $("#load-key").focus();
+});
+
+$("#load-modal").on("hidden.bs.modal", function() {
+    load_button.innerHTML = "Load";
+});
+
+$("#generate-modal").on("hidden.bs.modal", function() {
+    generate_button.innerHTML = "Generate";
 });
 
 load_key.addEventListener("input", function() {
@@ -201,18 +369,23 @@ function reset() {
     key_group.className = "input-group";
     load_key.className = "form-control";
     load_button.disabled = true;
+    generate_button.disabled = false;
     output_text.innerHTML = "";
     resetFileUpload();
     input.value = "";
     file_name.innerHTML = "Choose file…";
     upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
+    checked_uuid = null;
     checked = null;
     command_input.value = "";
+    loading = false;
     disableCommandButtons(true);
 }
 
 load_button.addEventListener("click", function() {
+    load_button.disabled = true;
+    load_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Loading…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("loadkey", load_key.value.toLowerCase());
@@ -221,15 +394,18 @@ load_button.addEventListener("click", function() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             $("#load-modal").modal("hide");
-            uuid.innerHTML = this.response[0][0];
+            uuid.innerHTML = this.response.uuid;
+            uuid_value = this.response.uuid;
             reset();
-            loadCoredumps(this.response);
+            loadCoredumps(this.response.coredumps);
         }
     });
     xhr.send(fd);
 });
 
 generate_button.addEventListener("click", function() {
+    generate_button.disabled = true;
+    generate_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Generating…";
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/generatekey", true);
     xhr.responseType = "text";
@@ -237,7 +413,10 @@ generate_button.addEventListener("click", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             $("#generate-modal").modal("hide");
             uuid.innerHTML = xhr.responseText;
+            uuid_value = xhr.responseText;
             reset();
+            coredump_list = [];
+            updateLocalStorage(uuid_value, coredump_list);
         }
     });
     xhr.send();
@@ -341,10 +520,12 @@ function upload() {
         upload_button.disabled = false;
     }
     function removeListeners() {
+        previous_button.removeEventListener("click", abort);
         load_button.removeEventListener("click", abort);
         generate_button.removeEventListener("click", abort);
         browse.removeEventListener("click", cancel);
     }
+    previous_button.addEventListener("click", abort);
     load_button.addEventListener("click", abort);
     generate_button.addEventListener("click", abort);
     browse.addEventListener("click", cancel);
@@ -399,6 +580,8 @@ function build() {
             coredump_box.addEventListener("click", function() {
                 check(coredump_box.id);
             });
+            coredump_list.unshift(new_filename);
+            updateLocalStorage(uuid_value, coredump_list);
         }
     });
     xhr.send();
@@ -406,6 +589,7 @@ function build() {
 
 function showLoading() {
     output_text.innerHTML = "Loading.<span id=\"dots\"><span>.</span><span>.</span></span>";
+    loading = true;
 }
 
 function showOutput(output, coredump, timestamp) {
@@ -415,6 +599,7 @@ function showOutput(output, coredump, timestamp) {
         coredate.innerHTML = date(timestamp);
     }
     output_text.innerHTML = output;
+    loading = false;
 }
 
 gen_report.addEventListener("click", function() {
@@ -494,7 +679,7 @@ function updateAutocomplete() {
             }
         }
         if (autocomplete_items === "") {
-            autocomplete.innerHTML = "<div class=\"autocomplete-none\"><span class=\"autocomplete-option\">No matching commands</span";
+            autocomplete.innerHTML = "<div class=\"autocomplete-none\"><span class=\"autocomplete-option\">No matching commands</span></div>";
         }
         else {
             autocomplete.innerHTML = autocomplete_items;
@@ -523,7 +708,9 @@ command_input.addEventListener("keydown", function(evt) {
     switch (evt.keyCode) {
         case 9://"Tab":
             if (current_commands.length > 0) {
-                command_input.value = commonPrefix(current_commands);
+                var command_split = command_input.value.split(" ");
+                command_split[0] = commonPrefix(current_commands);
+                command_input.value = command_split.join(" ");
                 updateAutocomplete();
                 if (current_commands.length === 1 && command_input.value in options) {
                     command_input.value += " ";
@@ -655,14 +842,16 @@ function addAutocompleteListeners() {
 window.addEventListener("focus", function() {
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
-    fd.append("uuid", uuid.innerHTML);
+    fd.append("uuid", uuid_value);
     xhr.open("POST", "/checksession", true);
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             if (xhr.responseText === "bad") {
                 var expire_text = document.getElementById("expire-text");
-                expire_text.innerHTML = "Your key, " + uuid.innerHTML + ", has expired. Please refresh the page. To recover this session, load this key after refreshing.";
+                expire_text.innerHTML = "Your key, " + uuid_value + ", has expired. Please refresh the page. To recover this session, load this key after refreshing.";
+                $("#help-modal").modal("hide");
+                $("#previous-modal").modal("hide");
                 $("#load-modal").modal("hide");
                 $("#generate-modal").modal("hide");
                 $("#expire-modal").modal("show");
