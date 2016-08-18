@@ -227,6 +227,10 @@ def index():
     set_queues(session['count'])
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
+@app.route('/help', methods=['GET'])
+def help():
+    return render_template('help.html')
+
 @app.route('/delete', methods=['POST'])
 def delete():
     logger.info('start')

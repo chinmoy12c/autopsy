@@ -10,11 +10,11 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
-    <body>
+    <body class="fixed">
         <nav class="navbar navbar-full navbar-dark bg-inverse">
             <p class="navbar-brand">Autopsy</p>
             <div class="nav navbar-nav">
-                <div class="nav-item" data-toggle="modal" data-target="#help-modal">Help</div>
+                <a class="nav-item nav-link" href="help" target="_blank">Help</a>
                 <div class="dropdown">
                     <div class="nav-item pull-xs-right dropdown-toggle" id="change-key" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span></div>
@@ -27,21 +27,6 @@
                 </div>
             </div>
         </nav>
-        <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4 class="modal-title" id="help-modal-label">Help</h4>
-                    </div>
-                    <div class="modal-body">
-                        Welcome to Autopsy, a web-based core dump analyzer for Cisco ASA software.
-                    </div>
-                </div>
-            </div>
-        </div>
         <div class="modal fade" id="previous-modal" tabindex="-1" role="dialog" aria-labelledby="previous-modal-label" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -123,7 +108,7 @@
                 <div class="upload">
                     <div class="form">
                         <label class="file">
-                            <input type="file" name="thefile" id="file-input">
+                            <input type="file" id="file-input">
                             <span id="file-picker">
                                 <div id="downloaded">
                                 </div>

@@ -7,14 +7,39 @@ html {
 body {
     height: 100%;
     width: 100%;
-    min-width: 62em;
-    min-height: 350px;
     display: flex;
     flex-direction: column;
 }
 
+.fixed {
+    min-width: 62em;
+    min-height: 350px;
+}
+
 button, div, h3, label, p {
     font-family: "Avenir Next", sans-serif;
+}
+
+.container {
+    margin-top: 8rem;
+    margin-bottom: 8rem;
+    max-width: 992px;
+}
+
+h2 {
+    margin-top: 3rem;
+}
+
+.h3-margin {
+    margin-top: 2rem;
+}
+
+ol, ul {
+    margin-top: 1rem;
+}
+
+.bold {
+    font-weight: 600;
 }
 
 p {
@@ -373,10 +398,6 @@ input {
     padding: 0 1rem;
 }
 
-.autocomplete-bold {
-    font-weight: 600;
-}
-
 .autocomplete-option {
     color: #818a91;
 }
@@ -423,4 +444,27 @@ input {
     white-space: pre;
     margin: 1rem;
     display: inline-block;
+}
+
+.figure-center {
+    text-align: center;
+}
+
+figure {
+    margin-top: 1rem;
+    text-align: left;
+}
+
+.width-400 {
+    width: 400px;
+    margin-bottom: 0.5rem;
+}
+
+.width-700 {
+    width: 700px;
+    margin-bottom: 3rem;
+}
+
+.coredump-box-border {
+    border: 1px solid #ccc;
 }

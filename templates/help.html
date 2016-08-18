@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="x-ua-compatible" content="ie-edge">
+        <title>Help – Autopsy</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/css/bootstrap.min.css" integrity="sha384-MIwDKRSSImVFAZCVLtU0LMDdON6KVCrZHyVQQj6e8wIEJkW4tvwqXrbMIya1vriY" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="display-1">Autopsy</h1>
+            <p class="lead">
+                A web-based core dump analyzer for Cisco ASA software
+            </p>
+            <h2>Overview</h2>
+            <p>Autopsy is designed to be a user-friendly way to analyze core dumps while maintaining a robust feature set. Autopsy can be split up into four main components: the core dump list, the file uploader, the command interface, and the key manager. These components are summarized below and are fully discussed later.<p>
+            <ul>
+                <li><span class="bold">Core dump list</span>: lists core dumps that you have uploaded, along with their file size and last-accessed date. The core dump list is located on the left side of the interface.</li>
+                <li><span class="bold">File uploader</span>: allows you to upload files and see upload progress. The file uploader can be found at the top of the interface.</li>
+                <li><span class="bold">Command interface</span>: lets you type in commands to analyze core dumps and view other related files. The interface is underneath the file uploader.</li>
+                <li><span class="bold">Key manager</span>: allows you to access core dumps that other people have uploaded that are associated with a different key.</li> The key manager is the menu shown when clicking on the key in the top-right corner of the interface.</li>
+            </ul>
+            <h2>Analyzing a core dump</h2>
+            <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
+            <ol>
+                <li>Click on the file uploader and select a core dump to analyze. The core dump filename must end in <code>.gz</code>; i.e., it must be a <a href="https://en.wikipedia.org/wiki/Gzip" target="_blank">gzip</a> file. Then, click the blue "Upload" button.</li>
+                <li>Wait for the core dump to finish uploading and processing, which will take a couple of minutes. <!--Once the core dump is uploaded, it is unzipped, and an environment to analyze the core dump (otherwise known as a workspace) is built.-->Once this procedure has finished, you should see the core dump at the top of the core dump list.</li>
+                <li>Click the core dump, which should enable the command interface. The core dump should be highlighted with a light blue background.</li>
+                <li>Type in a command in the command interface text box, which supports tab completion, and press <kbd>Enter</kbd> to submit the command. You should see the output in the output box below.</li>
+            </ol>
+            <h2>Components</h2>
+            <p>This section will explore each of the components of Autopsy in detail.
+            <h3 class="h3-margin">Core dump list</h3>
+            <p>The core dump list displays all the core dumps that are associated with a particular key, and it updates when you upload a core dump. A sample core dump item in the list displays the name, unzipped size, and last-accessed date. You can delete the core dump by clicking the × to the right of the core dump item.</p>
+            <div class="figure-center">
+                <figure class="figure">
+                    <div class="width-400">
+                        <div class="coredump-noanim">
+                            <div class="coredump-box coredump-box-border not-clicked">
+                                <div class="coredump-inner">
+                                    <p class="corename">asa-5525-coredump</p>
+                                    <p class="coresize">1.23 GB</p>
+                                    <p class="coredate">Jan 1, 12:00 AM</p>
+                                </div>
+                                <div class="delete-box">
+                                    <p class="delete-icon">×</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <figcaption class="figure-caption">A sample core dump item.</figcaption>
+                </figure>
+            </div>
+            <p>Selecting a core dump will enable the command interface for that core dump. Every time you analyze a core dump via the command interface, the last-accessed date for that core dump is updated. If a core dump has not been accessed within four days, it will be deleted automatically to conserve space.</p>
+            <h3 class="h3-margin">File uploader</h3>
+            <p>The file uploader allows you to upload core dumps in gzip format; other formats are not accepted. You can upload a file by clicking on the upload bar. Core dumps that are uploaded must also not share a name with any existing core dumps associated with the current key; you will receive an error if this is the case. Once a file begins the upload process, upload progress indicators appear, as shown below:</p>
+            <div class="figure-center">
+                <figure class="figure">
+                    <div class="width-700">
+                        <div class="upload">
+                            <div class="form">
+                                <label class="file">
+                                    <input type="file" id="file-input" disabled>
+                                    <span id="file-picker" style="cursor: not-allowed;">
+                                        <div id="downloaded">92.59 MB of 123.45 MB</div>
+                                        <div id="file-container">
+                                            <div id="progress" style="width: 75%; opacity: 1;"></div>
+                                            <div id="file-name">asa-5525-coredump.gz</div>
+                                        </div>
+                                        <div class="browse-clickable" id="browse" style="cursor: pointer;">Cancel</div>
+                                    </span>
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-primary" id="upload-button" disabled="">Uploading…</button>
+                        </div>
+                    </div>
+                    <figcaption class="figure-caption">A sample file upload in progress.</figcaption>
+                </figure>
+            </div>
+            <p>You can cancel a file upload by clicking the "Cancel" button, which takes the place of the "Browse" button during the upload process. Once the core dump has been uploaded, you will still need to wait for the unzipping and workspace-building processes to finish, as indicated by the labels on the "Upload" button. The file uploader resets to allow further core dumps to be uploaded after a core dump has completed this procedure.</p>
+            <h3 class="h3-margin">Command interface</h3>
+            <p>There are two main ways to analyze a core dump: using the buttons on the top row of the interface or the text box below. Each button performs a unique action and is described by its label.</p>
+            <ul>
+                <li><span class="bold">gen_core_report</span>: displays the output produced by <code>gen_core_report.sh</code> when building the workspace.</li>
+                <li><span class="bold">backtrace</span>: displays a backtrace of core dump. This file is generated by <code>gen_core_report.sh</code>.</li>
+                <li><span class="bold">siginfo</span>: displays information about the signals from the core dump. This file is also generated by <code>gen_core_report.sh</code>.</li>
+                <li><span class="bold">clear</span>: clears the output window.</li>
+            </ul>
+            <p>You can also use the text box to submit commands from <code>clientlessGdb.py</code>. The text box supports tab completion and also automatically suggests commands based on the current input. You can use the command <code>asacommands</code> (also from <code>clientlessGdb.py</code>) to see a list of all available commands, along with a short description.</p>
+            <h3 class="h3-margin">Key manager</h3>
+            <p>The key manager contains three options:</p>
+            <p>Test</p>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.4/js/tether.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.3/js/bootstrap.min.js" integrity="sha384-ux8v3A6CPtOTqOzMKiuo3d/DomGaaClxFYdCu2HPMBEkf6x2xiDyJ7gkXU0MWwaD" crossorigin="anonymous"></script>
+    </body>
+</html>

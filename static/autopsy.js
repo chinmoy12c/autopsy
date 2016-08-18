@@ -671,7 +671,7 @@ function updateAutocomplete() {
             var command_split = command.split(" ");
             if (commands[i].toLowerCase().startsWith(command_split[0]) && (command_split.length === 1 || commands[i].toLowerCase() === command_split[0])) {
                 current_commands.push(commands[i]);
-                var command_string = commands[i].substring(0, command_split[0].length) + "<span class=\"autocomplete-bold\">" + commands[i].substring(command_split[0].length) + "</span>";
+                var command_string = commands[i].substring(0, command_split[0].length) + "<span class=\"bold\">" + commands[i].substring(command_split[0].length) + "</span>";
                 if (commands[i] in options) {
                     command_string += " <span class=\"autocomplete-option\">" + options[commands[i]] + "</span>";
                 }
@@ -850,7 +850,6 @@ window.addEventListener("focus", function() {
             if (xhr.responseText === "bad") {
                 var expire_text = document.getElementById("expire-text");
                 expire_text.innerHTML = "Your key, " + uuid_value + ", has expired. Please refresh the page. To recover this session, load this key after refreshing.";
-                $("#help-modal").modal("hide");
                 $("#previous-modal").modal("hide");
                 $("#load-modal").modal("hide");
                 $("#generate-modal").modal("hide");
