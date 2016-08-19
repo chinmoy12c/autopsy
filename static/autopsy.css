@@ -446,6 +446,10 @@ input {
     display: inline-block;
 }
 
+.p-second {
+    margin-top: 1rem;
+}
+
 .figure-center {
     text-align: center;
 }
@@ -467,4 +471,14 @@ figure {
 
 .coredump-box-border {
     border: 1px solid #ccc;
+}
+
+.width-dropdown {
+    margin-bottom: 0.5rem;
+}
+
+.figure .dropdown-menu {
+    display: block;
+    position: static;
+    float: none;
 }
