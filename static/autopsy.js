@@ -18,6 +18,7 @@ var gen_report = document.getElementById("gen-report");
 var backtrace = document.getElementById("backtrace");
 var siginfo = document.getElementById("siginfo");
 var clear_output = document.getElementById("clear-output");
+var abort_gdb = document.getElementById("abort-gdb");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
@@ -31,6 +32,7 @@ var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymou
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
 var loading = false;
 
+var enter_just_pressed = false;
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
@@ -381,6 +383,7 @@ function reset() {
     command_input.value = "";
     loading = false;
     disableCommandButtons(true);
+    abort_gdb.disabled = true;
 }
 
 load_button.addEventListener("click", function() {
@@ -656,13 +659,20 @@ clear_output.addEventListener("click", function() {
     }
 });
 
+abort_gdb.addEventListener("click", function() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/abort", true);
+    xhr.send();
+});
+
 function updateAutocomplete() {
     autocomplete_text = command_input.value;
     var command = autocomplete_text.toLowerCase();
     current_commands = [];
     currently_selected = null;
-    if (command === "") {
+    if (enter_just_pressed) {
         autocomplete.style.display = "none";
+        enter_just_pressed = false;
     }
     else {
         autocomplete.style.display = "block";
@@ -718,14 +728,10 @@ command_input.addEventListener("keydown", function(evt) {
             }
             break;
         case 13://"Enter":
-            if (currently_selected !== null) {
-                updateAutocomplete();
-                if (current_commands.length === 1 && command_input.value in options) {
-                    command_input.value += " ";
-                }
-            }
-            else if (command_input.value !== "") {
+            if ((currently_selected === null && command_input.value !== "") || (currently_selected !== null && !(currently_selected in options))) {
                 showLoading();
+                abort_gdb.disabled = false;
+                enter_just_pressed = true;
                 var xhr = new XMLHttpRequest();
                 var fd = new FormData();
                 var coredump = checked;
@@ -736,11 +742,18 @@ command_input.addEventListener("keydown", function(evt) {
                 xhr.addEventListener("readystatechange", function() {
                     if (xhr.readyState === xhr.DONE && xhr.status === 200) {
                         showOutput(this.response.output, coredump, this.response.timestamp);
+                        abort_gdb.disabled = true;
                     }
                 });
                 xhr.send(fd);
                 command_input.value = "";
                 updateAutocomplete();
+            }
+            else if (currently_selected !== null) {
+                updateAutocomplete();
+                if (current_commands.length === 1) {
+                    command_input.value += " ";
+                }
             }
             break;
         case 40://"ArrowDown":

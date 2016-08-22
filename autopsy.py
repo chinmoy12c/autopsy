@@ -1,8 +1,10 @@
 from cgi import escape
 from logging import DEBUG, Formatter, getLogger, StreamHandler
+from os import kill
 from pathlib import Path
 from queue import Queue, Empty
 from sched import scheduler
+import signal
 from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
 from sqlite3 import connect
@@ -33,6 +35,7 @@ DELETE_MIN = 5760
 
 coredump_queues = {}
 command_queues = {}
+abort_queues = {}
 output_queues = {}
 queues_lock = Lock()
 
@@ -47,7 +50,7 @@ def enqueue_output(out, queue):
 
 def run_gdb(count, uuid, workspace, gdb_location):
     logger.info('count %d - start', count)
-    global coredump_queues, command_queues, output_queues
+    global coredump_queues, command_queues, abort_queues, output_queues
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
     smp_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
@@ -56,6 +59,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
     lina_path = smp_path / 'asa' / 'bin' / 'lina'
     if not lina_path.exists():
         lina_path = smp_path / 'smp'
+    logger.info(str(lina_path))
     gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(smp_path), universal_newlines=True)
     read_queue = Queue()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
@@ -89,25 +93,30 @@ def run_gdb(count, uuid, workspace, gdb_location):
                 gdb.stdin.write('0\n')
                 logger.info('count %d - wrote into gdb', count)
                 output = ''
-                while True:
+                end = False
+                while not end:
                     try:
                         line = read_queue.get_nowait()
                     except Empty:
-                        pass
+                        try:
+                            abort = abort_queues[count].get_nowait()
+                            kill(gdb.pid, signal.SIGINT)
+                        except Empty:
+                            pass
                     else:
                         undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
-                            output += line[:undefined_index]
+                            line = line[:undefined_index]
                             logger.info('run_gdb: count %d - reached end', count)
-                            break
-                        else:
-                            command_index = line.find('(gdb) ')
-                            while entered_commands and command_index >= 0:
-                                line = line[:command_index + 6]  + entered_commands.pop(0) + '\n' + line[command_index + 6:]
-                                command_index = line.find('(gdb)', command_index + 6)
-                            output += line
+                            end = True
+                        command_index = line.find('(gdb) ')
+                        while entered_commands and command_index >= 0:
+                            line = line[:command_index + 6] + entered_commands.pop(0) + '\n' + line[command_index + 6:]
+                            command_index = line.find('(gdb)', command_index + 6)
+                        output += line
                 output_queues[count].put(output)
                 entered_commands = []
+                abort_queues[count] = Queue()
         except Empty:
             running = False
     running_counts.remove(count)
@@ -147,15 +156,17 @@ def initdb_command():
     logger.info('initialized database')
 
 def set_queues(count):
-    global coredump_queues, command_queues, output_queues
-    coredump_queues[count] = Queue(maxsize=0)
-    command_queues[count] = Queue(maxsize=0)
-    output_queues[count] = Queue(maxsize=0)
+    global coredump_queues, command_queues, abort_queues, output_queues
+    coredump_queues[count] = Queue()
+    command_queues[count] = Queue()
+    abort_queues[count] = Queue()
+    output_queues[count] = Queue()
 
 def delete_queues(count):
-    global coredump_queues, command_queues, output_queues
+    global coredump_queues, command_queues, abort_queues, output_queues
     del coredump_queues[count]
     del command_queues[count]
+    del abort_queues[count]
     del output_queues[count]
 
 def empty_remove(path):
@@ -459,6 +470,17 @@ def siginfo():
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     with siginfo_file.open() as f:
         return jsonify(output=escape(f.read()), timestamp=timestamp)
+
+@app.route('/abort', methods=['POST'])
+def abort():
+    logger.info('start')
+    if not 'uuid' in session:
+        return 'missing session'
+    global abort_queues
+    if session['count'] in running_counts:
+        with queues_lock:
+            abort_queues[session['count']].put('abort')
+    return 'ok'
 
 @app.route('/commandinput', methods=['POST'])
 def commandinput():
