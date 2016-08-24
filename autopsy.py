@@ -427,9 +427,8 @@ def build():
         return 'invalid filename'
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     logger.info(report.splitlines()[0])
-    report_file = open(str(directory / 'gen_core_report.txt'), 'w')
-    report_file.write(report)
-    report_file.close()
+    report_file = directory / 'gen_core_report.txt'
+    report_file.write_text(report)
     filesize = filepath.stat().st_size
     timestamp = int(time() * 1000)
     session.pop('current', None)
@@ -456,8 +455,7 @@ def get_report():
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     gen_core_report_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'gen_core_report.txt'
-    with gen_core_report_file.open() as f:
-        return jsonify(output=escape(f.read()), timestamp=timestamp)
+    return jsonify(output=escape(gen_core_report_file.read_text()), timestamp=timestamp)
 
 @app.route('/backtrace', methods=['POST'])
 def backtrace():
@@ -469,8 +467,7 @@ def backtrace():
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     backtrace_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.backtrace.txt')
-    with backtrace_file.open() as f:
-        return jsonify(output=escape(f.read()), timestamp=timestamp)
+    return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
 
 @app.route('/siginfo', methods=['POST'])
 def siginfo():
@@ -482,8 +479,7 @@ def siginfo():
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
-    with siginfo_file.open() as f:
-        return jsonify(output=escape(f.read()), timestamp=timestamp)
+    return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
 
 @app.route('/abort', methods=['POST'])
 def abort():

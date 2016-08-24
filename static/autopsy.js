@@ -510,7 +510,7 @@ function upload() {
         removeListeners();
         xhr.abort();
         evt.preventDefault();
-        resetFileUpload();
+        resetFileUpload(false, "Upload");
         upload_button.disabled = false;
     }
     function removeListeners() {
