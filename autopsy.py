@@ -43,10 +43,46 @@ running_counts = set()
 count = 0
 count_lock = Lock()
 
-def enqueue_output(out, queue):
-    for line in iter(out.readline, ''):
-        queue.put(line)
-    out.close()
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = connect(str(DATABASE))
+    return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        logger.info('closing database')
+        db.close()
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.cursor().executescript(f.read())
+            f.seek(0)
+            logger.info(f.read())
+        db.commit()
+
+@app.cli.command('initdb')
+def initdb_command():
+    init_db()
+    logger.info('initialized database')
+
+def set_queues(count):
+    global coredump_queues, command_queues, abort_queues, output_queues
+    coredump_queues[count] = Queue()
+    command_queues[count] = Queue()
+    abort_queues[count] = Queue()
+    output_queues[count] = Queue()
+
+def delete_queues(count):
+    global coredump_queues, command_queues, abort_queues, output_queues
+    del coredump_queues[count]
+    del command_queues[count]
+    del abort_queues[count]
+    del output_queues[count]
 
 def run_gdb(count, uuid, workspace, gdb_location):
     logger.info('count %d - start', count)
@@ -62,10 +98,13 @@ def run_gdb(count, uuid, workspace, gdb_location):
     logger.info(str(lina_path))
     gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(smp_path), universal_newlines=True)
     read_queue = Queue()
+    def enqueue_output(out, queue):
+        for line in iter(out.readline, ''):
+            queue.put(line)
+        out.close()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
     t.daemon = True
     t.start()
-    logger.info('count %d - thread started', count)
     entered_commands = []
     def enter_command(command):
         nonlocal entered_commands
@@ -73,7 +112,6 @@ def run_gdb(count, uuid, workspace, gdb_location):
         entered_commands += [command]
     enter_command('source ' + str(CLIENTLESS_GDB))
     enter_command('core-file ' + str(coredump_path))
-    logger.info('count %d - entering while', count)
     running = True
     restart = False
     while running:
@@ -128,53 +166,26 @@ def run_gdb(count, uuid, workspace, gdb_location):
         logger.info('count %d - no restart', count)
     logger.info('count %d - exit', count)
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = connect(str(DATABASE))
-    return db
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        logger.info('closing database')
-        db.close()
-
-def init_db():
-    with app.app_context():
-        db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-            f.seek(0)
-            logger.info(f.read())
-        db.commit()
-
-@app.cli.command('initdb')
-def initdb_command():
-    init_db()
-    logger.info('initialized database')
-
-def set_queues(count):
-    global coredump_queues, command_queues, abort_queues, output_queues
-    coredump_queues[count] = Queue()
-    command_queues[count] = Queue()
-    abort_queues[count] = Queue()
-    output_queues[count] = Queue()
-
-def delete_queues(count):
-    global coredump_queues, command_queues, abort_queues, output_queues
-    del coredump_queues[count]
-    del command_queues[count]
-    del abort_queues[count]
-    del output_queues[count]
-
-def empty_remove(path):
+def remove_directory_and_parent(directory):
+    rmtree(str(directory))
+    logger.info('directory %s deleted', str(directory))
     try:
-        path.rmdir()
-        logger.info('removed empty folder %s', str(path))
+        directory.parent.rmdir()
+        logger.info('removed empty folder %s', str(directory.parent))
     except:
-        logger.info('folder %s not removed', str(path))
+        logger.info('folder %s not removed', str(directory.parent))
+
+def delete_coredump(uuid, coredump):
+    logger.info('deleting uuid %s and coredump %s', uuid, coredump)
+    db = get_db()
+    db.execute('DELETE FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
+    db.commit()
+    logger.info('removed from database')
+    directory = UPLOAD_FOLDER / uuid / coredump
+    if directory.exists():
+        remove_directory_and_parent(directory)
+    else:
+        logger.info('directory %s does not exist', str(directory))
 
 def clean_uploads():
     with app.app_context():
@@ -184,29 +195,54 @@ def clean_uploads():
         cur.close()
         logger.info('coredumps has %d items', len(coredumps))
         for i in range(0, len(coredumps)):
-            uuid = coredumps[i][0]
-            logger.info('uuid is %s', uuid)
-            filename = coredumps[i][1]
-            logger.info('filename is %s', filename)
-            filepath = UPLOAD_FOLDER / uuid / filename
-            if filepath.exists():
-                logger.info('filepath %s exists', str(filepath))
-                rmtree(str(filepath))
-                logger.info('filepath deleted')
-                db = get_db()
-                db.execute('DELETE FROM cores WHERE uuid = ? AND coredump = ?', (uuid, filename))
-                db.commit()
-                logger.info('deleted %s from database', filename)
-                empty_remove(filepath.parent)
-            else:
-                logger.info('filepath %s does not exist', str(filepath))
+            delete_coredump(coredumps[i][0], coredumps[i][1])
         for uuid in UPLOAD_FOLDER.iterdir():
             logger.info('testing uuid folder %s', uuid.name)
             for coredump in uuid.iterdir():
-                if no_such_file(uuid.name, coredump.name):
+                if no_such_coredump(uuid.name, coredump.name):
                     logger.info('removing directory %s', str(coredump))
                     rmtree(str(coredump))
         logger.info('clean finished')
+
+def no_such_coredump(uuid, coredump):
+    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
+    coredumps = cur.fetchall()
+    cur.close()
+    if len(coredumps) != 0:
+        logger.info('uuid %s and filename %s exist', uuid, coredump)
+        return False
+    logger.info('uuid %s and filename %s do not exist', uuid, coredump)
+    return True
+
+def check_filename(filename):
+    if filename.endswith('.gz'):
+        secure = secure_filename(filename[:-3])
+        logger.info('secure filename is %s', secure)
+        if no_such_coredump(session['uuid'], secure):
+            if secure != '':
+                logger.info('gz ok')
+                return 'ok'
+            logger.info('gz invalid')
+            return 'invalid'
+        logger.info('gz duplicate')
+        return 'duplicate'
+    secure = secure_filename(filename)
+    logger.info('secure filename is %s', secure)
+    if no_such_coredump(session['uuid'], secure):
+        if secure != '':
+            logger.info('other ok')
+            return 'ok'
+        logger.info('other invalid')
+        return 'invalid'
+    logger.info('other duplicate')
+    return 'duplicate'
+
+def update_timestamp(uuid, coredump):
+    timestamp = int(time() * 1000)
+    db = get_db()
+    db.execute('UPDATE cores SET timestamp = ? WHERE uuid = ? AND coredump = ?', (timestamp, uuid, coredump))
+    db.commit()
+    return timestamp
 
 @app.route('/', methods=['GET'])
 def index():
@@ -247,20 +283,7 @@ def delete():
     logger.info('start')
     if not 'uuid' in session:
         return 'missing session'
-    filename = request.form['coredump']
-    logger.info('filename is %s', filename)
-    db = get_db()
-    db.execute('DELETE FROM cores WHERE uuid = ? AND coredump = ?', (session['uuid'], filename))
-    db.commit()
-    logger.info('removed from database')
-    filepath = UPLOAD_FOLDER / session['uuid'] / filename
-    if filepath.exists():
-        logger.info('filepath exists')
-        rmtree(str(filepath))
-        logger.info('removed coredump folder')
-        empty_remove(filepath.parent)
-    else:
-        logger.info('filepath does not exist')
+    delete_coredump(session['uuid'], request.form['coredump'])
     return 'ok'
 
 @app.route('/testkey', methods=['POST'])
@@ -277,13 +300,13 @@ def testkey():
     return 'no'
 
 @app.route('/loadkey', methods=['POST'])
-def loadkey():
-    loadkey = request.form['loadkey']
-    logger.info('%s', loadkey)
-    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (loadkey,))
+def load_key():
+    uuid = request.form['loadkey']
+    logger.info('%s', uuid)
+    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
     coredumps = cur.fetchall()
     cur.close()
-    session['uuid'] = loadkey
+    session['uuid'] = uuid
     session.pop('current', None)
     global count, running_counts, coredump_queues
     if session['count'] in running_counts:
@@ -296,10 +319,10 @@ def loadkey():
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
     set_queues(session['count'])
-    return jsonify(uuid=loadkey, coredumps=coredumps)
+    return jsonify(uuid=uuid, coredumps=coredumps)
 
 @app.route('/generatekey', methods=['POST'])
-def generatekey():
+def generate_key():
     new_uuid = str(uuid4())
     session['uuid'] = new_uuid
     logger.info('%s', new_uuid)
@@ -317,71 +340,58 @@ def generatekey():
     set_queues(session['count'])
     return new_uuid
 
-def no_such_file(uuid, filename):
-    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ? AND coredump = ?', (uuid, filename))
-    coredumps = cur.fetchall()
-    cur.close()
-    if len(coredumps) != 0:
-        logger.info('uuid %s and filename %s exist', uuid, filename)
-        return False
-    logger.info('uuid %s and filename %s do not exist', uuid, filename)
-    return True
-
 @app.route('/testfilename', methods=['POST'])
-def testfilename():
-    logger.info('testing %s', request.form['filename'])
+def test_filename():
+    filename = request.form['filename']
+    logger.info('testing %s', filename)
     if not 'uuid' in session:
         return 'missing session'
-    if request.form['filename'][-3:] != '.gz':
-        logger.info('type')
-        return 'type'
-    if no_such_file(session['uuid'], secure_filename(request.form['filename'][:-3])):
-        logger.info('ok')
-        return 'ok'
-    logger.info('duplicate')
-    return 'duplicate'
+    return check_filename(filename)
 
 @app.route('/upload', methods=['POST'])
 def upload():
     logger.info('start')
+    if not 'uuid' in session:
+        return 'missing session'
     if 'file' not in request.files:
         logger.info('file not in request')
         return 'notrequested'
     file = request.files['file']
-    if file.filename == '':
-        logger.info('file name is empty')
+    if not file or file.filename == '':
+        logger.info('empty')
         return 'empty'
-    if file.filename[-3:] != '.gz':
-        logger.info('type')
-        return 'type'
-    if not file or not no_such_file(session['uuid'], secure_filename(file.filename[:-3])):
-        logger.info('duplicate')
-        return 'duplicate'
+    check_result = check_filename(file.filename)
+    if check_result != 'ok':
+        return check_result
     logger.info('file name allowed and is %s', file.filename)
     filename = secure_filename(file.filename)
     logger.info('secure file name is %s', filename)
-    directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
-    if not directory.exists():
-        logger.info('making directory %s', directory)
-        directory.mkdir(parents=True)
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
     filepath = directory / filename
     file.save(str(filepath))
     logger.info('saved file')
     file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
     logger.info('file type is %s', file_test.rstrip())
-    if not filename.endswith('.gz') or not file_test.startswith('gzip compressed data'):
-        logger.info('removing file')
-        if filepath.exists():
-            logger.info('filepath exists')
-            filepath.unlink()
-            logger.info('removed file')
-        else:
-            logger.info('error with filepath')
-        logger.info('not gzip')
-        return 'not gzip'
-    session['current'] = filename
-    logger.info('ok')
-    return 'ok'
+    if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+        session['current'] = filename
+        logger.info('gz ok')
+        return 'gz ok'
+    if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+        session['current'] = filename
+        logger.info('core ok')
+        return 'core ok'
+    logger.info('removing file')
+    if directory.exists():
+        remove_directory_and_parent(directory)
+    else:
+        logger.info('directory %s does not exist', str(directory))
+    logger.info('invalid')
+    return 'invalid'
 
 @app.route('/unzip', methods=['POST'])
 def unzip():
@@ -390,11 +400,16 @@ def unzip():
         return 'missing session'
     filename = session['current']
     filepath = UPLOAD_FOLDER / session['uuid'] / filename[:-3] / filename
+    if not filepath.exists():
+        logger.info('filepath %s does not exist', str(filepath))
+        session.pop('current', None)
+        return 'invalid filename'
     returncode = run(['gunzip', '-f', str(filepath)]).returncode
     if returncode != 0:
         logger.info('failed')
         session.pop('current', None)
         return 'unzip failed'
+    session['current'] = filename[:-3]
     logger.info('ok')
     return 'ok'
 
@@ -403,12 +418,13 @@ def build():
     logger.info('start')
     if not 'current' in session:
         return 'missing session'
-    filename = session['current'][:-3]
+    filename = session['current']
     directory = UPLOAD_FOLDER / session['uuid'] / filename
     filepath = directory / filename
     if not filepath.exists():
-        logger.info('bad filename')
-        return 'bad filename'
+        logger.info('filepath %s does not exist', str(filepath))
+        session.pop('current', None)
+        return 'invalid filename'
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     logger.info(report.splitlines()[0])
     report_file = open(str(directory / 'gen_core_report.txt'), 'w')
@@ -416,28 +432,26 @@ def build():
     report_file.close()
     filesize = filepath.stat().st_size
     timestamp = int(time() * 1000)
-    workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
-    gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
-    db = get_db()
-    db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location))
-    db.commit()
-    logger.info('inserted %s, %s, %d, %d, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location)
     session.pop('current', None)
+    try:
+        workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
+        gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
+        db = get_db()
+        db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location))
+        db.commit()
+        logger.info('inserted %s, %s, %d, %d, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location)
+    except:
+        logger.info('workspace failed')
+        remove_directory_and_parent(directory)
+        return jsonify(report=report)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
-def update_timestamp(uuid, coredump):
-    timestamp = int(time() * 1000)
-    db = get_db()
-    db.execute('UPDATE cores SET timestamp = ? WHERE uuid = ? AND coredump = ?', (timestamp, uuid, coredump))
-    db.commit()
-    return timestamp
-
 @app.route('/getreport', methods=['POST'])
-def getreport():
+def get_report():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
-    if no_such_file(session['uuid'], request.form['coredump']):
+    if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
@@ -450,7 +464,7 @@ def backtrace():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
-    if no_such_file(session['uuid'], request.form['coredump']):
+    if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
@@ -463,7 +477,7 @@ def siginfo():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
-    if no_such_file(session['uuid'], request.form['coredump']):
+    if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
@@ -483,7 +497,7 @@ def abort():
     return 'ok'
 
 @app.route('/commandinput', methods=['POST'])
-def commandinput():
+def command_input():
     logger.info('start')
     if not 'count' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
@@ -492,7 +506,7 @@ def commandinput():
     if not request.form['command'].split(' ')[0].lower() in COMMANDS:
         logger.info('%s: invalid command', request.form['command'])
         return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=int(time() * 1000))
-    if no_such_file(session['uuid'], request.form['coredump']):
+    if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])

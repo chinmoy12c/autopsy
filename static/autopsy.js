@@ -353,13 +353,19 @@ load_key.addEventListener("input", function() {
     }
 });
 
-function resetFileUpload() {
+function resetFileUpload(error, message) {
     browse.innerHTML = "Browse";
     browse.className = "browse-clickable";
     browse.style.cursor = "pointer";
     input.disabled = false;
     file_picker.style.cursor = "pointer";
-    upload_button.innerHTML = "Upload";
+    upload_button.innerHTML = message;
+    if (error) {
+        upload_button.className = "btn btn-danger";
+    }
+    else {
+        upload_button.className = "btn btn-primary";
+    }
     progress.style.transition = "opacity 1s, width 0.5s";
     progress.style.opacity = 0;
     downloaded.innerHTML = "";
@@ -373,10 +379,9 @@ function reset() {
     load_button.disabled = true;
     generate_button.disabled = false;
     output_text.innerHTML = "";
-    resetFileUpload();
+    resetFileUpload(false, "Upload");
     input.value = "";
     file_name.innerHTML = "Choose file…";
-    upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     checked_uuid = null;
     checked = null;
@@ -441,26 +446,19 @@ upload_button.addEventListener("click", function() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.responseText === "duplicate") {
-                browse.className = "browse-clickable";
-                browse.style.cursor = "pointer";
-                input.disabled = false;
-                file_picker.style.cursor = "pointer";
-                upload_button.className = "btn btn-danger";
-                upload_button.innerHTML = "Duplicate File";
-            }
-            else if (xhr.responseText === "type") {
-                browse.className = "browse-clickable";
-                browse.style.cursor = "pointer";
-                input.disabled = false;
-                file_picker.style.cursor = "pointer";
-                upload_button.className = "btn btn-danger";
-                upload_button.innerHTML = "Invalid File";
-            }
-            else {
-                browse.innerHTML = "Cancel";
-                progress.style.transition = "opacity 1s, width 0.5s";
-                upload();
+            switch (xhr.responseText) {
+                case "duplicate":
+                    resetFileUpload(true, "Duplicate File");
+                    upload_button.disabled = true;
+                    break;
+                case "invalid":
+                    resetFileUpload(true, "Invalid File");
+                    upload_button.disabled = true;
+                    break;
+                case "ok":
+                    browse.innerHTML = "Cancel";
+                    progress.style.transition = "opacity 1s, width 0.5s";
+                    upload();
             }
         }
     });
@@ -483,31 +481,24 @@ function upload() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             removeListeners();
-            //technically not needed
-            if (xhr.responseText === "duplicate") {
-                browse.innerHTML = "Browse";
-                input.disabled = false;
-                file_picker.style.cursor = "pointer";
-                upload_button.className = "btn btn-danger";
-                upload_button.innerHTML = "Duplicate File";
-                downloaded.innerHTML = "";
-                progress.style.opacity = 0;
-            }
-            else if (xhr.responseText === "not gzip") {
-                browse.innerHTML = "Browse";
-                input.disabled = false;
-                file_picker.style.cursor = "pointer";
-                upload_button.className = "btn btn-danger";
-                upload_button.innerHTML = "Invalid File";
-                downloaded.innerHTML = "";
-                progress.style.opacity = 0;
-            }
-            else {
-                browse.innerHTML = "Browse";
-                browse.className = "browse-unclickable";
-                browse.style.cursor = "not-allowed";
-                upload_button.innerHTML = "Unzipping…";
-                unzip();
+            switch (xhr.responseText) {
+                case "invalid":
+                    resetFileUpload(true, "Invalid File");
+                    upload_button.disabled = true;
+                    break;
+                case "gz ok":
+                    browse.innerHTML = "Browse";
+                    browse.className = "browse-unclickable";
+                    browse.style.cursor = "not-allowed";
+                    upload_button.innerHTML = "Unzipping…";
+                    unzip();
+                    break;
+                case "core ok":
+                    browse.innerHTML = "Browse";
+                    browse.className = "browse-unclickable";
+                    browse.style.cursor = "not-allowed";
+                    upload_button.innerHTML = "Building…";
+                    build();
             }
         }
     });
@@ -541,17 +532,14 @@ function unzip() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.responseText === "unzip failed") {
-                input.disabled = false;
-                file_picker.style.cursor = "pointer";
-                upload_button.className = "btn btn-danger";
-                upload_button.innerHTML = "Unzip Failed";
-                downloaded.innerHTML = "";
-                progress.style.opacity = 0;
-            }
-            else {
-                upload_button.innerHTML = "Building…";
-                build();
+            switch (xhr.responseText) {
+                case "unzip failed":
+                    resetFileUpload(true, "Unzip Failed");
+                    upload_button.disabled = true;
+                    break;
+                case "ok":
+                    upload_button.innerHTML = "Building…";
+                    build();
             }
         }
     });
@@ -564,27 +552,34 @@ function build() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            resetFileUpload();
-            input.value = "";
-            file_name.innerHTML = "Choose file…";
-            upload_button.disabled = true;
-            var new_filename = this.response.filename;
-            var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(this.response.filesize) + "</p><p class=\"coredate\">" + date(this.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
-            var corediv = document.createElement("div");
-            corediv.classList.add("coredump");
-            corediv.innerHTML = s;
-            cores.insertBefore(corediv, cores.firstChild);
-            var coredump_box = document.getElementById(new_filename);
-            var delete_icon = coredump_box.lastChild.firstChild;
-            delete_icon.addEventListener("click", function(evt) {
-                deleteCoredump(coredump_box.id);
-                evt.stopImmediatePropagation();
-            });
-            coredump_box.addEventListener("click", function() {
-                check(coredump_box.id);
-            });
-            coredump_list.unshift(new_filename);
-            updateLocalStorage(uuid_value, coredump_list);
+            if (this.response.hasOwnProperty("report")) {
+                resetFileUpload(true, "Build Failed");
+                upload_button.disabled = true;
+                output_text.innerHTML = this.response.report;
+            }
+            else {
+                resetFileUpload(false, "Upload");
+                input.value = "";
+                file_name.innerHTML = "Choose file…";
+                upload_button.disabled = true;
+                var new_filename = this.response.filename;
+                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(this.response.filesize) + "</p><p class=\"coredate\">" + date(this.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+                var corediv = document.createElement("div");
+                corediv.classList.add("coredump");
+                corediv.innerHTML = s;
+                cores.insertBefore(corediv, cores.firstChild);
+                var coredump_box = document.getElementById(new_filename);
+                var delete_icon = coredump_box.lastChild.firstChild;
+                delete_icon.addEventListener("click", function(evt) {
+                    deleteCoredump(coredump_box.id);
+                    evt.stopImmediatePropagation();
+                });
+                coredump_box.addEventListener("click", function() {
+                    check(coredump_box.id);
+                });
+                coredump_list.unshift(new_filename);
+                updateLocalStorage(uuid_value, coredump_list);
+            }
         }
     });
     xhr.send();
