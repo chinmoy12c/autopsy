@@ -47,7 +47,7 @@ Next, in the parent folder to `Autopsy`, run
 ```
 git clone http://gitlab.cisco.com/clientlessvpn/clientlessgdb.git
 ```
-to clone the clientlessGDB repository, which is necessary for analyzing core dumps. The files should be in a folder called `clientlessGDB`. The two folders `Autopsy` and `clientlessGDB` should be in the same directory.
+to clone the clientlessGDB repository, which is necessary for analyzing core dumps. The files should be in a folder called `clientlessGDB`. The two folders `Autopsy` and `clientlessGDB` should be in the same directory. In the `clientlessGDB` folder, create a file called `ticket.txt` and enter your Perforce ticket inside.
 
 ### Creating a virtual environment
 
