@@ -26,7 +26,11 @@
             <h2>Analyzing a core dump</h2>
             <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
             <ol>
-                <li>Click on the file uploader and select a core dump to analyze. The core dump can either be a <a href="https://en.wikipedia.org/wiki/Gzip" target="_blank">gzip</a> file (i.e. its filename ends in <code>.gz</code>) or an unzipped core dump. Then, click the blue "Upload" button.</li>
+                <li>You can choose to either upload a local file or submit a link to a core dump. The core dump can either be a <a href="https://en.wikipedia.org/wiki/Gzip" target="_blank">gzip</a> file (i.e. its filename ends in <code>.gz</code>) or an unzipped core dump.</li>
+                <ul>
+                    <li>To upload a file, click on the file uploader and select a core dump to analyze. Then, click the blue "Upload" button.</li>
+                    <li>To submit a link, click "submit link" near the bottom of the file uploader and enter the URL of the core dump, along with any necessary authentication. Click "Submit" to start the upload.</li>
+                </ul>
                 <li>Wait for the core dump to finish uploading and processing, which will take a couple of minutes. Once this procedure has finished, you should see the core dump at the top of the core dump list.</li>
                 <li>Click the core dump, which should enable the command interface. The core dump should be highlighted with a light blue background.</li>
                 <li>Type in a command in the command interface text box, which supports tab completion, and press <kbd>Enter</kbd> to submit the command. You should see the output in the output box below.</li>
@@ -56,7 +60,7 @@
             </div>
             <p>Selecting a core dump will enable the command interface for that core dump. Every time you analyze a core dump via the command interface, the last-accessed date for that core dump is updated. If a core dump has not been accessed within four days, it will be deleted automatically to conserve space.</p>
             <h3 class="h3-margin">File uploader</h3>
-            <p>The file uploader allows you to upload core dumps in gzip or unzipped formats; other file types are not accepted. You can upload a file by clicking on the upload bar. Core dumps that are uploaded must also not share a name with any existing core dumps associated with the current key; you will receive an error if this is the case. Once a file begins the upload process, upload progress indicators appear, as shown below:</p>
+            <p>The file uploader allows you to upload core dumps in gzip or unzipped formats; other file types are not accepted. You can upload a file by clicking on the upload bar or submit a link to a core dump by clicking "submit link". Core dumps that are uploaded must also not share a name with any existing core dumps associated with the current key; you will receive an error if this is the case. Once a file begins the upload process, upload progress indicators appear, as shown below:</p>
             <div class="figure-center">
                 <figure class="figure">
                     <div class="width-700">
@@ -80,7 +84,7 @@
                     <figcaption class="figure-caption text-xs-center">A sample file upload in progress.</figcaption>
                 </figure>
             </div>
-            <p>You can cancel a file upload by clicking the "Cancel" button, which takes the place of the "Browse" button during the upload process. Once the core dump has been uploaded, you will still need to wait for the core dump to be unzipped (if it was uploaded as a gzip file) and a workspace (an environment to analyze the core dump) to be built, as indicated by the labels on the "Upload" button. The file uploader resets to allow further core dumps to be uploaded after a core dump has completed this procedure.</p>
+            <p>You can cancel a local file upload by clicking the "Cancel" button, which takes the place of the "Browse" button during the upload process. (Canceling an upload when the core dump was submitted with a link is not supported.) Once the core dump has been uploaded, you will still need to wait for the core dump to be unzipped (if it was uploaded as a gzip file) and a workspace (an environment to analyze the core dump) to be built, as indicated by the labels on the "Upload" button. The file uploader resets to allow further core dumps to be uploaded after a core dump has completed this procedure.</p>
             <p class="p-second">Note that the file size of your upload will be different than the file size of the core dump shown in the core dump list if you uploaded a gzip file since the core dump list shows the file size of the unzipped core file.</p>
             <h3 class="h3-margin">Command interface</h3>
             <p>There are two main ways to analyze a core dump: using the buttons on the top row of the interface or the text box below. Each button performs a unique action and is described by its label.</p>

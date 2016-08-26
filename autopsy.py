@@ -357,13 +357,15 @@ def link_test():
     try:
         logger.info('url is ' + request.form['url'])
         logger.info('username is ' + request.form['username'])
-        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']))
+        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
     except:
         logger.info('invalid url')
         return jsonify(message='url')
+    logger.info('request get')
     if r.status_code == 401:
         logger.info('invalid credentials')
         return jsonify(message='credentials')
+    logger.info('status code is %d', r.status_code)
     try:
         filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
     except:
@@ -380,7 +382,7 @@ def link_upload():
     if not 'current' in session:
         return 'missing session'
     try:
-        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']))
+        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
     except:
         return 'url'
     if r.status_code == 401:

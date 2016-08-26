@@ -540,6 +540,10 @@ function linkUpload(url, username, password, filename) {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             switch (xhr.responseText) {
+                case "invalid":
+                    resetFileUpload(true, "Invalid File");
+                    upload_button.disabled = true;
+                    break;
                 case "gz ok":
                     upload_button.innerHTML = "Unzipping…";
                     unzip();
