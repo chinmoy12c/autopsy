@@ -37,7 +37,7 @@
                         <h4 class="modal-title" id="previous-modal-label">Load previous key</h4>
                     </div>
                     <div class="modal-body">
-                        Up to 15 of your most-recently used keys are shown below. Note that the core dumps listed with a key may have changed since you last accessed the key.
+                        <p>Up to 15 of your most-recently used keys are shown below. Note that the core dumps listed with a key may have changed since you last accessed the key.</p>
                     </div>
                     <div id="uuids">
                     </div>
@@ -90,6 +90,43 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="link-modal" tabindex="-1" role="dialog" aria-labelledby="link-modal-label" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="link-modal-label">Submit link</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>Enter the URL of the core dump to be submitted. You can also choose to supply a username and password (typically from your CEC account) if the URL requires authentication.</p>
+                        <div class="form-group row" id="url-group">
+                            <label for="link-url" class="col-xs-2 col-form-label">URL</label>
+                            <div class="col-xs-10">
+                                <input type="url" class="form-control" id="link-url">
+                            </div>
+                        </div>
+                        <div class="form-group row" id="username-group">
+                            <label for="link-username" class="col-xs-2 col-form-label">Username</label>
+                            <div class="col-xs-10">
+                                <input type="text" class="form-control" id="link-username">
+                            </div>
+                        </div>
+                        <div class="form-group row" id="password-group">
+                            <label for="link-password" class="col-xs-2 col-form-label">Password</label>
+                            <div class="col-xs-10">
+                                <input type="password" class="form-control" id="link-password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="link-button" disabled>Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="modal fade" id="expire-modal" tabindex="-1" role="dialog" aria-labelledby="expire-modal-label" aria-hidden="true" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -110,11 +147,8 @@
                         <label class="file">
                             <input type="file" id="file-input">
                             <span id="file-picker">
-                                <div id="downloaded">
-                                </div>
                                 <div id="file-container">
-                                    <div id="progress">
-                                    </div>
+                                    <div id="progress"></div>
                                     <div id="file-name">
                                         Choose file…
                                     </div>
@@ -124,7 +158,9 @@
                                 </div>
                             </span>
                         </label>
-                    </div><button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
+                    </div>
+                    <button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
+                    <div id="downloaded">…or <a href="" data-toggle="modal" data-target="#link-modal">submit link</a></div>
                 </div>
                 <div class="btn-toolbar" id="commands" role="toolbar" aria-label="commands">
                     <div class="btn-group" role="group" aria-label="report">

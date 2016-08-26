@@ -6,6 +6,13 @@ var key_group = document.getElementById("key-group");
 var load_key = document.getElementById("load-key");
 var load_button = document.getElementById("load-button");
 var generate_button = document.getElementById("generate-button");
+var url_group = document.getElementById("url-group");
+var link_url = document.getElementById("link-url");
+var username_group = document.getElementById("username-group");
+var link_username = document.getElementById("link-username");
+var password_group = document.getElementById("password-group");
+var link_password = document.getElementById("link-password");
+var link_button = document.getElementById("link-button");
 var browse = document.getElementById("browse");
 var input = document.getElementById("file-input");
 var file_picker = document.getElementById("file-picker");
@@ -25,6 +32,8 @@ var output_text = document.getElementById("output-text");
 
 var uuid_value = uuid.innerHTML;
 var checked_uuid = null;
+var bad_url = false;
+var bad_credentials = false;
 var filename;
 var coredump_list;
 var checked = null;
@@ -294,10 +303,10 @@ previous_button.addEventListener("click", function() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             $("#previous-modal").modal("hide");
-            uuid.innerHTML = this.response.uuid;
-            uuid_value = this.response.uuid;
+            uuid.innerHTML = xhr.response.uuid;
+            uuid_value = xhr.response.uuid;
             reset();
-            loadCoredumps(this.response.coredumps);
+            loadCoredumps(xhr.response.coredumps);
         }
     });
     xhr.send(fd);
@@ -313,6 +322,19 @@ $("#load-modal").on("hidden.bs.modal", function() {
 
 $("#generate-modal").on("hidden.bs.modal", function() {
     generate_button.innerHTML = "Generate";
+});
+
+$("#link-modal").on("shown.bs.modal", function() {
+    $("#link-url").focus();
+});
+
+$("#link-modal").on("hidden.bs.modal", function() {
+    if (link_button.classList.contains("btn-primary")) {
+        link_button.innerHTML = "Submit";
+        if (link_url.value !== "") {
+            link_button.disabled = false;
+        }
+    }
 });
 
 load_key.addEventListener("input", function() {
@@ -368,7 +390,7 @@ function resetFileUpload(error, message) {
     }
     progress.style.transition = "opacity 1s, width 0.5s";
     progress.style.opacity = 0;
-    downloaded.innerHTML = "";
+    downloaded.innerHTML = "…or <a href=\"\" data-toggle=\"modal\" data-target=\"#link-modal\">submit link</a>";
 }
 
 function reset() {
@@ -378,6 +400,20 @@ function reset() {
     load_key.className = "form-control";
     load_button.disabled = true;
     generate_button.disabled = false;
+    url_group.className = "form-group row";
+    link_url.value = "";
+    link_url.className = "form-control";
+    username_group.className = "form-group row";
+    link_username.value = "";
+    link_username.className = "form-control";
+    password_group.className = "form-group row";
+    link_password.value = "";
+    link_password.className = "form-control";
+    link_button.disabled = true;
+    link_button.className = "btn btn-primary";
+    link_button.innerHTML = "Submit";
+    bad_url = false;
+    bad_credentials = false;
     output_text.innerHTML = "";
     resetFileUpload(false, "Upload");
     input.value = "";
@@ -402,10 +438,10 @@ load_button.addEventListener("click", function() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             $("#load-modal").modal("hide");
-            uuid.innerHTML = this.response.uuid;
-            uuid_value = this.response.uuid;
+            uuid.innerHTML = xhr.response.uuid;
+            uuid_value = xhr.response.uuid;
             reset();
-            loadCoredumps(this.response.coredumps);
+            loadCoredumps(xhr.response.coredumps);
         }
     });
     xhr.send(fd);
@@ -428,6 +464,134 @@ generate_button.addEventListener("click", function() {
         }
     });
     xhr.send();
+});
+
+link_url.addEventListener("input", function() {
+    if (link_url.value === "") {
+        link_button.disabled = true;
+    }
+    else if (!bad_credentials) {
+        link_button.disabled = false;
+    }
+    if (bad_url) {
+        link_button.className = "btn btn-primary";
+        link_button.innerHTML = "Submit";
+        url_group.className = "form-group row";
+        link_url.className = "form-control";
+        bad_url = false;
+    }
+});
+
+link_username.addEventListener("input", function() {
+    if (bad_credentials) {
+        if (link_url.value === "") {
+            link_button.disabled = true;
+        }
+        else if (!bad_url) {
+            link_button.disabled = false;
+        }
+        link_button.className = "btn btn-primary";
+        link_button.innerHTML = "Submit";
+        username_group.className = "form-group row";
+        link_username.className = "form-control";
+        password_group.className = "form-group row";
+        link_password.className = "form-control";
+        bad_credentials = false;
+    }
+});
+
+link_password.addEventListener("input", function() {
+    if (bad_credentials) {
+        if (link_url.value === "") {
+            link_button.disabled = true;
+        }
+        else if (!bad_url) {
+            link_button.disabled = false;
+        }
+        link_button.className = "btn btn-primary";
+        link_button.innerHTML = "Submit";
+        username_group.className = "form-group row";
+        link_username.className = "form-control";
+        password_group.className = "form-group row";
+        link_password.className = "form-control";
+        bad_credentials = false;
+    }
+});
+
+function linkUpload(url, username, password, filename) {
+    file_name.innerHTML = filename;
+    file_picker.style.cursor = "not-allowed";
+    input.disabled = true;
+    browse.className = "browse-unclickable";
+    browse.style.cursor = "not-allowed";
+    upload_button.disabled = true;
+    downloaded.innerHTML = "";
+    upload_button.innerHTML = "Uploading…";
+    progress.style.transition = "opacity 0s, width 0s";
+    progress.style.width = "100%";
+    progress.style.opacity = 1;
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("url", url);
+    fd.append("username", username);
+    fd.append("password", password);
+    xhr.open("POST", "/linkupload", true);
+    xhr.responseType = "text";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            switch (xhr.responseText) {
+                case "gz ok":
+                    upload_button.innerHTML = "Unzipping…";
+                    unzip();
+                    break;
+                case "core ok":
+                    upload_button.innerHTML = "Building…";
+                    build();
+            }
+        }
+    });
+    xhr.send(fd);
+}
+
+link_button.addEventListener("click", function() {
+    link_button.disabled = true;
+    link_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Submitting…"
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var url = link_url.value;
+    var username = link_username.value;
+    var password = link_password.value;
+    fd.append("url", url);
+    fd.append("username", username);
+    fd.append("password", password);
+    xhr.open("POST", "/linktest", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            switch (xhr.response.message) {
+                case "url":
+                    link_button.className = "btn btn-danger";
+                    link_button.innerHTML = "Invalid URL";
+                    url_group.className = "form-group row has-danger";
+                    link_url.className = "form-control form-control-danger";
+                    bad_url = true;
+                    break;
+                case "credentials":
+                    link_button.className = "btn btn-danger";
+                    link_button.innerHTML = "Invalid Credentials";
+                    username_group.className = "form-group row has-danger";
+                    link_username.className = "form-control form-control-danger";
+                    password_group.className = "form-group row has-danger";
+                    link_password.className = "form-control form-control-danger";
+                    bad_credentials = true;
+                    break;
+                case "ok":
+                    $("#link-modal").modal("hide");
+                    linkUpload(url, username, password, xhr.response.filename);
+            }
+        }
+    });
+    xhr.send(fd);
 });
 
 upload_button.addEventListener("click", function() {
@@ -552,18 +716,18 @@ function build() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (this.response.hasOwnProperty("report")) {
+            if (xhr.response.hasOwnProperty("report")) {
                 resetFileUpload(true, "Build Failed");
                 upload_button.disabled = true;
-                output_text.innerHTML = this.response.report;
+                output_text.innerHTML = xhr.response.report;
             }
             else {
                 resetFileUpload(false, "Upload");
                 input.value = "";
                 file_name.innerHTML = "Choose file…";
                 upload_button.disabled = true;
-                var new_filename = this.response.filename;
-                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(this.response.filesize) + "</p><p class=\"coredate\">" + date(this.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+                var new_filename = xhr.response.filename;
+                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(xhr.response.filesize) + "</p><p class=\"coredate\">" + date(xhr.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
                 var corediv = document.createElement("div");
                 corediv.classList.add("coredump");
                 corediv.innerHTML = s;
@@ -610,7 +774,7 @@ gen_report.addEventListener("click", function() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            showOutput(this.response.output, coredump, this.response.timestamp);
+            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
         }
     });
     xhr.send(fd);
@@ -626,7 +790,7 @@ backtrace.addEventListener("click", function() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            showOutput(this.response.output, coredump, this.response.timestamp);
+            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
         }
     });
     xhr.send(fd);
@@ -642,7 +806,7 @@ siginfo.addEventListener("click", function() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            showOutput(this.response.output, coredump, this.response.timestamp);
+            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
         }
     });
     xhr.send(fd);
@@ -736,7 +900,7 @@ command_input.addEventListener("keydown", function(evt) {
                 xhr.responseType = "json";
                 xhr.addEventListener("readystatechange", function() {
                     if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                        showOutput(this.response.output, coredump, this.response.timestamp);
+                        showOutput(xhr.response.output, coredump, xhr.response.timestamp);
                         abort_gdb.disabled = true;
                     }
                 });
@@ -861,6 +1025,7 @@ window.addEventListener("focus", function() {
                 $("#previous-modal").modal("hide");
                 $("#load-modal").modal("hide");
                 $("#generate-modal").modal("hide");
+                $("#link-modal").modal("hide");
                 $("#expire-modal").modal("show");
             }
         }

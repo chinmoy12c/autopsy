@@ -3,6 +3,7 @@ from logging import DEBUG, Formatter, getLogger, StreamHandler
 from os import kill
 from pathlib import Path
 from queue import Queue, Empty
+from re import findall
 from sched import scheduler
 import signal
 from subprocess import PIPE, Popen, run, STDOUT
@@ -14,6 +15,8 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, g, render_template, request, Response, session
+from requests import get
+from requests_ntlm import HttpNtlmAuth
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -288,6 +291,8 @@ def delete():
 
 @app.route('/testkey', methods=['POST'])
 def testkey():
+    if not 'uuid' in session:
+        return 'missing session'
     testkey = request.form['testkey']
     logger.info('%s', testkey)
     cur = get_db().execute('SELECT uuid FROM cores WHERE uuid = ?', (testkey,))
@@ -301,6 +306,8 @@ def testkey():
 
 @app.route('/loadkey', methods=['POST'])
 def load_key():
+    if not 'uuid' in session:
+        return 'missing session'
     uuid = request.form['loadkey']
     logger.info('%s', uuid)
     cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
@@ -323,6 +330,8 @@ def load_key():
 
 @app.route('/generatekey', methods=['POST'])
 def generate_key():
+    if not 'uuid' in session:
+        return 'missing session'
     new_uuid = str(uuid4())
     session['uuid'] = new_uuid
     logger.info('%s', new_uuid)
@@ -340,12 +349,78 @@ def generate_key():
     set_queues(session['count'])
     return new_uuid
 
-@app.route('/testfilename', methods=['POST'])
-def test_filename():
-    filename = request.form['filename']
-    logger.info('testing %s', filename)
+@app.route('/linktest', methods=['POST'])
+def link_test():
+    logger.info('start')
     if not 'uuid' in session:
         return 'missing session'
+    try:
+        logger.info('url is ' + request.form['url'])
+        logger.info('username is ' + request.form['username'])
+        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']))
+    except:
+        logger.info('invalid url')
+        return jsonify(message='url')
+    if r.status_code == 401:
+        logger.info('invalid credentials')
+        return jsonify(message='credentials')
+    try:
+        filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
+    except:
+        filename = 'coredump-' + str(int(time() * 1000))
+        while not no_such_coredump(session['uuid'], filename):
+            filename = 'coredump-' + str(int(time() * 1000))
+    session['current'] = filename
+    logger.info('ok, filename is %s', filename)
+    return jsonify(message='ok', filename=filename)
+
+@app.route('/linkupload', methods=['POST'])
+def link_upload():
+    logger.info('start')
+    if not 'current' in session:
+        return 'missing session'
+    try:
+        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']))
+    except:
+        return 'url'
+    if r.status_code == 401:
+        return 'credentials'
+    filename = session['current']
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    filepath = directory / filename
+    with open(str(filepath), 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    logger.info('saved file')
+    file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+    logger.info('file type is %s', file_test.rstrip())
+    if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+        logger.info('gz ok')
+        return 'gz ok'
+    if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+        logger.info('core ok')
+        return 'core ok'
+    logger.info('removing file')
+    session.pop('current', None)
+    if directory.exists():
+        remove_directory_and_parent(directory)
+    else:
+        logger.info('directory %s does not exist', str(directory))
+    logger.info('invalid')
+    return 'invalid'
+
+@app.route('/testfilename', methods=['POST'])
+def test_filename():
+    if not 'uuid' in session:
+        return 'missing session'
+    filename = request.form['filename']
+    logger.info('testing %s', filename)
     return check_filename(filename)
 
 @app.route('/upload', methods=['POST'])

@@ -17,7 +17,7 @@ body {
 }
 
 button, div, h3, label, p {
-    font-family: "Avenir Next", sans-serif;
+    font-family: "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .container {
@@ -115,6 +115,18 @@ p {
 
 .delete-uuid {
     margin-right: 15px;
+}
+
+#link-password {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.modal-body .form-group:first-of-type {
+    margin-top: 0.5rem;
+}
+
+.modal-body .form-group:last-child {
+    margin-bottom: 0;
 }
 
 .main {
@@ -252,6 +264,7 @@ p {
 .upload {
     flex: none;
     display: flex;
+    position: relative;
 }
 
 .form {
@@ -274,7 +287,6 @@ input {
     line-height: 1.5;
     border: 1px solid #ccc;
     border-radius: 0.25rem;
-    position: relative;
     cursor: pointer;
 }
 
@@ -316,6 +328,7 @@ input {
     position: absolute;
     top: 3rem;
     left: 1rem;
+    margin-left: 1px;
     font-size: 10pt;
     color: #818a91;
 }
