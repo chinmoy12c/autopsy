@@ -387,7 +387,7 @@ input {
 
 #autocomplete {
     position: absolute;
-    top: 2.375rem;
+    top: 100%;
     width: 100%;
     max-height: 10rem;
     overflow: auto;
