@@ -518,12 +518,18 @@ link_password.addEventListener("input", function() {
     }
 });
 
-function linkUpload(url, username, password) {
-    file_name.innerHTML = url;
+function linkUpload(url, username, password, filename) {
+    if (filename === "") {
+        file_name.innerHTML = url;
+    }
+    else {
+        file_name.innerHTML = filename;
+    }
     file_picker.style.cursor = "not-allowed";
     input.disabled = true;
     browse.className = "browse-unclickable";
     browse.style.cursor = "not-allowed";
+    upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     downloaded.innerHTML = "";
     upload_button.innerHTML = "Uploading…";
@@ -569,13 +575,27 @@ link_button.addEventListener("click", function() {
     fd.append("username", username);
     fd.append("password", password);
     xhr.open("POST", "/linktest", true);
-    xhr.responseType = "text";
+    xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            switch (xhr.responseText) {
+            switch (xhr.response.message) {
                 case "url":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid URL";
+                    url_group.className = "form-group row has-danger";
+                    link_url.className = "form-control form-control-danger";
+                    bad_url = true;
+                    break;
+                case "duplicate":
+                    link_button.className = "btn btn-danger";
+                    link_button.innerHTML = "Duplicate File";
+                    url_group.className = "form-group row has-danger";
+                    link_url.className = "form-control form-control-danger";
+                    bad_url = true;
+                    break;
+                case "invalid":
+                    link_button.className = "btn btn-danger";
+                    link_button.innerHTML = "Invalid File";
                     url_group.className = "form-group row has-danger";
                     link_url.className = "form-control form-control-danger";
                     bad_url = true;
@@ -591,7 +611,7 @@ link_button.addEventListener("click", function() {
                     break;
                 case "ok":
                     $("#link-modal").modal("hide");
-                    linkUpload(url, username, password);
+                    linkUpload(url, username, password, xhr.response.filename);
             }
         }
     });

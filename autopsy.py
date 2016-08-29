@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
-ch = FileHandler(filename='log.txt')
+ch = FileHandler('log.txt', mode='w')
 ch.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 ch.setFormatter(formatter)
@@ -217,11 +217,11 @@ def no_such_coredump(uuid, coredump):
     logger.info('uuid %s and filename %s do not exist', uuid, coredump)
     return True
 
-def check_filename(filename):
+def check_filename(uuid, filename):
     if filename.endswith('.gz'):
         secure = secure_filename(filename[:-3])
         logger.info('secure filename is %s', secure)
-        if no_such_coredump(session['uuid'], secure):
+        if no_such_coredump(uuid, secure):
             if secure != '':
                 logger.info('gz ok')
                 return 'ok'
@@ -231,7 +231,7 @@ def check_filename(filename):
         return 'duplicate'
     secure = secure_filename(filename)
     logger.info('secure filename is %s', secure)
-    if no_such_coredump(session['uuid'], secure):
+    if no_such_coredump(uuid, secure):
         if secure != '':
             logger.info('other ok')
             return 'ok'
@@ -360,21 +360,28 @@ def link_test():
         r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
     except:
         logger.info('invalid url')
-        return 'url'
+        return jsonify(message='url')
     logger.info('request get')
     if r.status_code == 401:
         logger.info('invalid credentials')
-        return 'credentials'
+        return jsonify(message='credentials')
     logger.info('status code is %d', r.status_code)
+    missing_name = False
     try:
         filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
+        check_result = check_filename(session['uuid'], filename)
+        if check_result != 'ok':
+            return jsonify(message=check_result)
     except:
+        missing_name = True
         filename = 'coredump-' + str(int(time() * 1000))
         while not no_such_coredump(session['uuid'], filename):
             filename = 'coredump-' + str(int(time() * 1000))
     session['current'] = filename
     logger.info('ok, filename is %s', filename)
-    return 'ok'
+    if missing_name:
+        return jsonify(message='ok', filename='')
+    return jsonify(message='ok', filename=filename)
 
 @app.route('/linkupload', methods=['POST'])
 def link_upload():
@@ -423,7 +430,7 @@ def test_filename():
         return 'missing session'
     filename = request.form['filename']
     logger.info('testing %s', filename)
-    return check_filename(filename)
+    return check_filename(session['uuid'], filename)
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -437,7 +444,7 @@ def upload():
     if not file or file.filename == '':
         logger.info('empty')
         return 'empty'
-    check_result = check_filename(file.filename)
+    check_result = check_filename(session['uuid'], file.filename)
     if check_result != 'ok':
         return check_result
     logger.info('file name allowed and is %s', file.filename)
