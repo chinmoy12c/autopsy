@@ -518,8 +518,8 @@ link_password.addEventListener("input", function() {
     }
 });
 
-function linkUpload(url, username, password, filename) {
-    file_name.innerHTML = filename;
+function linkUpload(url, username, password) {
+    file_name.innerHTML = url;
     file_picker.style.cursor = "not-allowed";
     input.disabled = true;
     browse.className = "browse-unclickable";
@@ -569,10 +569,10 @@ link_button.addEventListener("click", function() {
     fd.append("username", username);
     fd.append("password", password);
     xhr.open("POST", "/linktest", true);
-    xhr.responseType = "json";
+    xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            switch (xhr.response.message) {
+            switch (xhr.responseText) {
                 case "url":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid URL";
@@ -591,7 +591,7 @@ link_button.addEventListener("click", function() {
                     break;
                 case "ok":
                     $("#link-modal").modal("hide");
-                    linkUpload(url, username, password, xhr.response.filename);
+                    linkUpload(url, username, password);
             }
         }
     });

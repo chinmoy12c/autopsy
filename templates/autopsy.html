@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="html-autopsy">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -10,7 +10,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
-    <body class="fixed">
+    <body id="fixed">
         <nav class="navbar navbar-full navbar-dark bg-inverse">
             <p class="navbar-brand">Autopsy</p>
             <div class="nav navbar-nav">
@@ -100,7 +100,7 @@
                         <h4 class="modal-title" id="link-modal-label">Submit link</h4>
                     </div>
                     <div class="modal-body">
-                        <p>Enter the URL of the core dump to be submitted. You can also choose to supply a username and password (typically from your CEC account) if the URL requires authentication.</p>
+                        <p>Enter the URL of the core dump to be submitted. You can also choose to supply your CEC username and password if the URL requires authentication.</p>
                         <div class="form-group row" id="url-group">
                             <label for="link-url" class="col-xs-2 col-form-label">URL</label>
                             <div class="col-xs-10">

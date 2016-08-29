@@ -1,5 +1,5 @@
 from cgi import escape
-from logging import DEBUG, Formatter, getLogger, StreamHandler
+from logging import DEBUG, Formatter, getLogger, FileHandler
 from os import kill
 from pathlib import Path
 from queue import Queue, Empty
@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
-ch = StreamHandler(stream=stdout)
+ch = FileHandler(filename='log.txt')
 ch.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 ch.setFormatter(formatter)
@@ -360,11 +360,11 @@ def link_test():
         r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
     except:
         logger.info('invalid url')
-        return jsonify(message='url')
+        return 'url'
     logger.info('request get')
     if r.status_code == 401:
         logger.info('invalid credentials')
-        return jsonify(message='credentials')
+        return 'credentials'
     logger.info('status code is %d', r.status_code)
     try:
         filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
@@ -374,7 +374,7 @@ def link_test():
             filename = 'coredump-' + str(int(time() * 1000))
     session['current'] = filename
     logger.info('ok, filename is %s', filename)
-    return jsonify(message='ok', filename=filename)
+    return 'ok'
 
 @app.route('/linkupload', methods=['POST'])
 def link_upload():
