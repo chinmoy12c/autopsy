@@ -15,6 +15,9 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Installing packages and setting up the database](#installing-packages-and-setting-up-the-database)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
  * [Launch process](#launch-process)
+* [Using the production server](#using-the-production-server)
+ * [Installing nginx](#installing-nginx)
+ * [Installing Gunicorn](#installing-gunicorn)
 
 ## What's included
 
@@ -64,7 +67,7 @@ to clone the clientlessGDB repository, which is necessary for analyzing core dum
 
 The next step is to create the virtual environment. Autopsy works with Python 3.5.2; it is not compatible with older versions. If your version of Python is older, you will need to download and build Python 3.5.2 first.
 
-If you don't have the current version of Python, you need download and build the corresponding packages (perhaps in `/home` so as not to interfere with your default Python installation). To do this, get the  Python file [here](https://www.python.org/downloads/release/python-352/)  with `wget` and uncompress it with `tar`. Then, follow the instructions in the `README` file to build Python; when you run `./configure`, be sure to use the `--prefix` flag to install Python in the  directory. Once you have done so, you can find the location of the Python executable at `bin/python3.5` in the directory where you installed Python.
+If you don't have the current version of Python, you need download and build the corresponding packages (perhaps in `/home` so as not to interfere with your default Python installation). To do this, get the Python file [here](https://www.python.org/downloads/release/python-352/)  with `wget` and uncompress it with `tar`. Then, follow the instructions in the `README` file included with the download to build Python; when you run `./configure`, be sure to use the `--prefix` flag to install Python in the  directory. Once you have done so, you can find the location of the Python executable at `bin/python3.5` in the directory where you installed Python.
 
 Finally, run
 ```
@@ -146,3 +149,75 @@ and
 fl
 ```
 to launch Autopsy.
+
+## Using the production server
+
+### Installing nginx
+
+Autopsy works with nginx 1.11.3; you can get the latest version of nginx [here](http://nginx.org/en/download.html) (the mainline version is recommended). Uncompress the file and run
+```
+./configure
+make
+make install
+```
+to install nginx at `/usr/local`. Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` to contain the following:
+```
+worker_processes    1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include             mime.types;
+    default_type        application/octet-stream;
+    
+    access_log          /var/log/nginx/access.log;
+    error_log           /var/log/nginx/error.log;
+    
+    sendfile            on;
+    keepalive_timeout   999;
+    
+    upstream app_servers {
+        server  127.0.0.1:5000;
+    }
+    
+    server {
+        listen  80;
+        return  301 https://$host$request_uri;
+    }
+    
+    server {
+        listen                  443 ssl;
+        client_max_body_size    0;
+        
+        location / {
+            proxy_pass          http://app_servers;
+            proxy_redirect      off;
+            proxy_set_header    Host $host;
+            proxy_set_header    X-Real-IP $remote_addr;
+            proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto $scheme;
+        }
+        
+        ssl                 on;
+        ssl_certificate     /etc/nginx/ssl/server.crt;
+        ssl_certificate_key /etc/nginx/ssl/server.key;
+    }
+}
+```
+You can change the location where nginx logs are stored by editing the `access_log` and `error_log` lines.
+
+Autopsy allows users to input their CEC credentials to access core dumps online, so HTTPS should be enabled. To create your SSL certificate, follow [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-create-a-ssl-certificate-on-nginx-for-ubuntu-12-04) for a self-signed certificate or obtain a certificate signed by a third-party by other means. If your certificate is self-signed, your browser will show a warning when you try to visit the site; this is unavoidable unless your certificate is signed properly. Change the `ssl_certificate` and `ssl_certificate_key` lines to match the location where your certificate is stored.
+
+### Installing Gunicorn
+
+In the virtual environment, run
+```
+pip install gunicorn
+```
+to install Gunicorn.
+
+### Running Autopsy
+
+As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn with `gu`. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
