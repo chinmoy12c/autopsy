@@ -2,19 +2,21 @@
 
 Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs on [Flask](http://flask.pocoo.org/docs/0.11/), a Python web framework.
 
-## Table of Contents
+## Table of contents
 
-* [What's Included](#whats-included)
-* [What's Not Included](#whats-not-included)
-* [Getting Started](#getting-started)
+* [What's included](#whats-included)
+* [What's not included](#whats-not-included)
+* [Requirements](#requirements)
+* [Development vs. production server](#development-vs-production-server)
+* [Getting started with the development server](#getting-started-with-the-development-server)
  * [Cloning repositories](#cloning-repositories)
  * [Creating a virtual environment](#creating-a-virtual-environment)
  * [Using `launch.sh`](#using-launchsh)
- * [Installing Flask and setting up the database](#installing-flask-and-setting-up-the-database)
+ * [Installing packages and setting up the database](#installing-packages-and-setting-up-the-database)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
  * [Launch process](#launch-process)
 
-## What's Included
+## What's included
 
 * `static` contains four files for the web application:
  * `autopsy.css` is the CSS file.
@@ -28,12 +30,21 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 * `launch.sh` contains several commands to be executed before starting the application.
 * `schema.sql` defines the structure of the database used to store core dumps.
 
-## What's Not Included
+## What's not included
 
 * `database` and `uploads` folders will be created when running `launch.sh`.
 * A `venv` folder will be generated after using `virtualenv` to create an isolated Python environment.
+* A `flask-log.txt` file will be generated once the server starts to log interactions with the application.
 
-## Getting Started
+## Requirements
+
+Autopsy only works on Cisco machines with Perforce access and appropriate versions of GDB.
+
+## Development vs. production server
+
+There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/0.11/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/0.11/deploying/). This guide will provide steps on using the development server as well as setting up nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/0.11/deploying/wsgi-standalone/).
+
+## Getting started with the development server
 
 ### Cloning repositories
 
@@ -51,7 +62,11 @@ to clone the clientlessGDB repository, which is necessary for analyzing core dum
 
 ### Creating a virtual environment
 
-The next step is to create the virtual environment. Autopsy works with Python 3.5.2; it is not compatible with older versions. If your version of Python is older, you will need to download and build Python 3.5.2 first. Once you have done so, you can find the location of the Python executable at `bin/python3.5` in the directory where you installed Python. Finally, run
+The next step is to create the virtual environment. Autopsy works with Python 3.5.2; it is not compatible with older versions. If your version of Python is older, you will need to download and build Python 3.5.2 first.
+
+If you don't have the current version of Python, you need download and build the corresponding packages (perhaps in `/home` so as not to interfere with your default Python installation). To do this, get the  Python file [here](https://www.python.org/downloads/release/python-352/)  with `wget` and uncompress it with `tar`. Then, follow the instructions in the `README` file to build Python; when you run `./configure`, be sure to use the `--prefix` flag to install Python in the  directory. Once you have done so, you can find the location of the Python executable at `bin/python3.5` in the directory where you installed Python.
+
+Finally, run
 ```
 virtualenv -p <path to Python executable> venv
 ```
@@ -60,11 +75,17 @@ inside the main `Autopsy` folder. A `venv` folder should be created. If the `vir
 ### Using `launch.sh`
 
 `launch.sh` does several things:
-* Creates the `database` and `uploads` folders
-* Sets up two useful aliases (`fk`, short for "flask kill", to completely kill the application and `fr`, short for "flask run", to launch the application)
+* Creates the `database` and `uploads` folders if they don't exist
+* Sets up several useful aliases
+ * `fk`, short for "flask kill", to completely kill the application
+ * `fl`, short for "flask", to launch the application
+ * `gk` to kill the Gunicorn server
+ * `gu` to start the Gunicorn server
+ * `nk` to kill the nginx server
+ * `ng` to start nginx server
 * Launches the virtual environment
 * Exports a Flask variable pointing to `autopsy.py`
-* Sets up debug mode for Flask
+* Configures debug mode for Flask (off by default; set `FLASK_DEBUG` to 1 instead of 0 to enable debug mode)
 
 Run
 ```
@@ -76,7 +97,7 @@ deactivate
 ```
 You can continue to use `launch.sh` whenever you wish to enter the virtual environment.
 
-### Installing Flask and setting up the database
+### Installing packages and setting up the database
 
 While you are in the virtual environment, run
 ```
@@ -86,19 +107,33 @@ to install Flask. Autopsy works with Flask version 0.11.1; ensure that the corre
 ```
 flask initdb
 ```
-to create a file called `cores.db` inside the `database` folder.
+to create a file called `cores.db` inside the `database` folder. Ensure that `cores.db` is writable by a non-root user; if it is not, run
+```
+chmod 777 database/cores.db
+```
+from root to make it writable.
+
+Next, run
+```
+pip install requests
+```
+and
+```
+pip install requests-ntlm
+```
+to install other packages used by Autopsy. 
 
 ### Launching and quitting Autopsy
 
-To launch Autopsy on the Flask development server, run
+It is suggested to use Autopsy as a non-root user to avoid issues with GDB auto-loading. To launch Autopsy on the Flask development server, run
 ```
-fr
+fl
 ```
-to access the application at `127.0.0.1:5000`. You can quit the application with <kbd>Ctrl-C</kbd>, but sometimes a few threads linger, so use
+to access the application at the machine's IP address. You can quit the application with <kbd>Ctrl-C</kbd>, but sometimes a few threads linger, so use
 ```
 fk
 ```
-after to completely kill the application. Note that running `fr` will automatically run `fk` before launching the application, so you can just use <kbd>Ctrl-C</kbd> and `fr` to restart the application.
+after to completely kill the application. Note that running `fl` will automatically run `fk` before launching the application, so you can just use <kbd>Ctrl-C</kbd> and `fl` to restart the application.
 
 ### Launch process
 
@@ -108,6 +143,6 @@ After completing the steps above, only two steps are needed — running
 ```
 and
 ```
-fr
+fl
 ```
 to launch Autopsy.
