@@ -209,7 +209,7 @@ http {
 ```
 You can change the location where nginx logs are stored by editing the `access_log` and `error_log` lines.
 
-Autopsy allows users to input their CEC credentials to access core dumps online, so HTTPS should be enabled. To create your SSL certificate, follow [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-create-a-ssl-certificate-on-nginx-for-ubuntu-12-04) for a self-signed certificate or obtain a certificate signed by a third-party by other means. If your certificate is self-signed, your browser will show a warning when you try to visit the site; this is unavoidable unless your certificate is signed properly. Change the `ssl_certificate` and `ssl_certificate_key` lines to match the location where your certificate is stored.
+Autopsy allows users to input their CEC credentials to access core dumps online, so HTTPS should be enabled. To create your SSL certificate, follow [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-create-a-ssl-certificate-on-nginx-for-ubuntu-12-04) up to step 4 for a self-signed certificate or obtain a certificate signed by a third-party by other means. If your certificate is self-signed, your browser will show a warning when you try to visit the site; this is unavoidable unless your certificate is signed properly. Change the `ssl_certificate` and `ssl_certificate_key` lines to match the location where your certificate is stored.
 
 ### Installing Gunicorn
 
