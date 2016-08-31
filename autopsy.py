@@ -5,7 +5,7 @@ from pathlib import Path
 from queue import Queue, Empty
 from re import findall
 from sched import scheduler
-import signal
+from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
 from sqlite3 import connect
@@ -141,7 +141,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                     except Empty:
                         try:
                             abort = abort_queues[count].get_nowait()
-                            kill(gdb.pid, signal.SIGINT)
+                            kill(gdb.pid, SIGINT)
                         except Empty:
                             pass
                     else:
