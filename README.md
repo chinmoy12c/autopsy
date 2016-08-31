@@ -163,7 +163,7 @@ make
 make install
 ```
 to install nginx at `/usr/local`. Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` to contain the following:
-```
+```conf
 worker_processes    1;
 
 events {
