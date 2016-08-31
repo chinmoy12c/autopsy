@@ -294,7 +294,7 @@ $("#previous-modal").on("hidden.bs.modal", function() {
 
 previous_button.addEventListener("click", function() {
     previous_button.disabled = true;
-    previous_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Loading…";
+    previous_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("loadkey", checked_uuid);
@@ -429,7 +429,7 @@ function reset() {
 
 load_button.addEventListener("click", function() {
     load_button.disabled = true;
-    load_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Loading…";
+    load_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("loadkey", load_key.value.toLowerCase());
@@ -449,7 +449,7 @@ load_button.addEventListener("click", function() {
 
 generate_button.addEventListener("click", function() {
     generate_button.disabled = true;
-    generate_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Generating…";
+    generate_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Generating…";
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/generatekey", true);
     xhr.responseType = "text";
@@ -565,7 +565,7 @@ function linkUpload(url, username, password, filename) {
 
 link_button.addEventListener("click", function() {
     link_button.disabled = true;
-    link_button.innerHTML = "<i class='fa fa-circle-o-notch fa-spin'></i> Submitting…"
+    link_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…"
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     var url = link_url.value;
