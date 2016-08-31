@@ -12,6 +12,15 @@ Finally, when a user uploads a core dump, the name of the core dump is stored in
 
 ## Database
 
-Autopsy stores information about core dumps that are uploaded inside the `cores.db` database.
+Autopsy stores information about uploaded core dumps inside the `cores.db` database. This database has six columns:
+
+* **uuid**: the UUID of the user who uploaded the core dump.
+* **coredump**: the name of the core dump.
+* **filesize**: the file size of the core dump.
+* **timestamp**: the last-accessed date of the core dump.
+* **workspace**: the name of the workspace folder for the core dump.
+* **gdb**: the path to the version of GDB to use for the core dump.
+
+The uuid, coredump, filesize, and timestamp fields are obtained when the user uploads the core dump. The workspace and gdb fields are extracted from the output of `gen_core_report.sh`. The timestamp field is updated whenever the core dump is accessed by a user.
 
 ## Adding additional commands
