@@ -12,7 +12,7 @@ Finally, when a user uploads a core dump, the name of the core dump is stored in
 
 ## Database
 
-Autopsy stores information about uploaded core dumps inside the `cores.db` database. This database has six columns:
+Autopsy stores information about uploaded core dumps inside the `cores.db` database. This database has six columns, as can be seen in `schema.sql`:
 
 * **uuid**: the UUID of the user who uploaded the core dump.
 * **coredump**: the name of the core dump.
@@ -22,5 +22,17 @@ Autopsy stores information about uploaded core dumps inside the `cores.db` datab
 * **gdb**: the path to the version of GDB to use for the core dump.
 
 The uuid, coredump, filesize, and timestamp fields are obtained when the user uploads the core dump. The workspace and gdb fields are extracted from the output of `gen_core_report.sh`. The timestamp field is updated whenever the core dump is accessed by a user.
+
+## Uploading process
+
+A user has two ways to upload files: uploading a local file and submitting a link to a core dump.
+
+### Uploading a local file
+
+When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips (if it is a gzip file) and builds the core dump.
+
+### Submitting a link
+
+If a user submits a link, the server first checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload.
 
 ## Adding additional commands
