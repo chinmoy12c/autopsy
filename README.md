@@ -29,6 +29,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * `scalpel.svg` is an SVG version of `scalpel.png` and is displayed on the top-left corner of the application.
 * `templates` contains `autopsy.html`, which is the HTML for the main application, and `help.html`, which is the HTML for the help page.
 * `.gitignore` lists files that are ignored when committing. Some of these files will have to be created first before running the application.
+* `DOCUMENTATION.md` is the documentation for Autopsy.
 * `README.md` is this file.
 * `autopsy.py` is the core application.
 * `launch.sh` contains several commands to be executed before starting the application.
