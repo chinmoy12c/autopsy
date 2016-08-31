@@ -29,10 +29,18 @@ A user has two ways to upload files: uploading a local file and submitting a lin
 
 ### Uploading a local file
 
-When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips (if it is a gzip file) and builds the core dump.
+When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips (if it is a gzip file) and builds the core dump. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
 
 ### Submitting a link
 
 If a user submits a link, the server first checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload.
+
+### Core dump storage
+
+All uploaded core dumps are stored in the `uploads` folder. Each UUID has its own folder in `uploads`, and each core dump has its own folder in each UUID folder. The unzipped core dump and its associated `gen_core_report.txt`, backtrace file, siginfo file, workspace folder, and any other files from the build process are located inside the core dump folder.
+
+## Running GDB
+
+When a user analyzes a core dump with a command, GDB starts up in a background thread.
 
 ## Adding additional commands
