@@ -1,5 +1,5 @@
 *.pyc
-flask-log.txt
+flask.log
 __pycache__/
 database/
 uploads/

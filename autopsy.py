@@ -23,7 +23,7 @@ app = Flask(__name__)
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
-ch = FileHandler('flask-log.txt', mode='w')
+ch = FileHandler('flask.log', mode='w')
 ch.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 ch.setFormatter(formatter)

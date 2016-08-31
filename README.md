@@ -38,7 +38,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 
 * `database` and `uploads` folders will be created when running `launch.sh`.
 * A `venv` folder will be generated after using `virtualenv` to create an isolated Python environment.
-* A `flask-log.txt` file will be generated once the server starts to log interactions with the application.
+* A `flask.log` file will be generated once the server starts to log interactions with the application.
 
 ## Requirements
 
