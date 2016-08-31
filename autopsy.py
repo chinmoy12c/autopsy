@@ -23,11 +23,11 @@ app = Flask(__name__)
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
-ch = FileHandler('flask.log', mode='w')
-ch.setLevel(DEBUG)
+fh = FileHandler('flask.log', mode='w')
+fh.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-ch.setFormatter(formatter)
-logger.addHandler(ch)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
 DATABASE = Path(app.root_path) / 'database' / 'cores.db'
