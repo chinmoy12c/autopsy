@@ -14,7 +14,7 @@ from threading import Lock, Thread
 from time import time
 from uuid import uuid4
 
-from flask import Flask, jsonify, g, render_template, request, Response, session
+from flask import Flask, jsonify, g, render_template, request, session
 from requests import get
 from requests_ntlm import HttpNtlmAuth
 from werkzeug.utils import secure_filename
