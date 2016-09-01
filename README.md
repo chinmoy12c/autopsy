@@ -227,4 +227,4 @@ As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn 
 
 ## Documentation
 
-See [`DOCUMENTATION.md`](documentation.md) for documentation on Autopsy.
+See [`DOCUMENTATION.md`](DOCUMENTATION.md) for documentation on Autopsy.
