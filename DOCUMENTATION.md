@@ -60,6 +60,6 @@ If a GDB thread is left running without any commands being submitted, the thread
 
 ## Clean-up script
 
-Every hour, Autopsy runs a clean-up script that detects whether a core dump has a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
+Every hour, Autopsy runs a clean-up script that deletes any core dumps with a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
 
 ## Adding additional commands
