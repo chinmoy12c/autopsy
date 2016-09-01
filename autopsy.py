@@ -635,7 +635,7 @@ def quit():
     return 'ok'
 
 @app.route('/checksession', methods=['POST'])
-def checksession():
+def check_session():
     logger.info('start')
     logger.info('%s and %s', request.form['uuid'], session['uuid'])
     if request.form['uuid'] != session['uuid']:
