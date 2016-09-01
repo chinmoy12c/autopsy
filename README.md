@@ -156,7 +156,7 @@ to launch Autopsy.
 
 ### Logging
 
-By default, Autopsy logs output from `autopsy.py` to both the console and to `flask.log`. To turn off console logging, comment out the 4 lines at the top of `autopsy.py` that involve the `ch` variable.
+By default, Autopsy logs output from `autopsy.py` to both the console and `flask.log`. To turn off console logging, comment out the 4 lines at the top of `autopsy.py` that involve the `ch` variable.
 
 ## Using the production server
 
