@@ -29,11 +29,11 @@ A user has two ways to upload files: uploading a local file and submitting a lin
 
 ### Uploading a local file
 
-When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips (if it is a gzip file) and builds the core dump. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
+When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
 
 ### Submitting a link
 
-If a user submits a link, the server first checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload.
+If a user submits a link, the server first checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload case.
 
 ### Core dump storage
 
@@ -43,9 +43,9 @@ All uploaded core dumps are stored in the `uploads` folder. Each UUID has its ow
 
 When a user analyzes a core dump with a command, GDB starts up in a background thread. The count (from the cookie), along with other information, is passed to the thread. Autopsy relies on dictionaries of queues to communicate with the GDB thread: the count is the key, and the queue is the value. There are 4 such dictionaries:
 
-* **coredump_queues**: Stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
-* **command_queues**: Stores the command to be entered into GDB.
-* **abort_queues**: If something is entered into the queue, GDB will abort running the current command.
-* **output_queues**: Stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
+* `coredump_queues`: Stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
+* `command_queues`: Stores the command to be entered into GDB.
+* `abort_queues`: If something is entered into the queue, GDB will abort running the current command.
+* `output_queues`: Stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
 
 ## Adding additional commands
