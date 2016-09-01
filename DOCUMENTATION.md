@@ -81,7 +81,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `test_key`: tests whether a UUID has core dumps in the database. Called when validating a key.
 * `load_key`: returns the core dump data for a particular UUID.
 * `generate_key`: generates a new key for the user.
-* `link_test`: tests whether the URL that a user provides for submitting a core dump is valid, as well as the credentials supplied. Also extracts the core dump name from the response headers.
+* `link_test`: tests whether the URL that a user provides for submitting a core dump is valid, as well as the credentials supplied. Also extracts the core dump name from the URL response headers.
 * `link_upload`: downloads the core dump from a URL. (This function is called `link_upload` because from a user's perspective, a core dump is being uploaded from a link.)
 * `test_filename`: uses `check_filename` to test a file name.
 * `upload`: saves the file that a user uploads, checks whether it is valid, and deletes it if it is not.
