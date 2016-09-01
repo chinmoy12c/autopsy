@@ -39,9 +39,13 @@ If a user submits a link, the server first checks if the link is valid and if th
 
 All uploaded core dumps are stored in the `uploads` folder. Each UUID has its own folder in `uploads`, and each core dump has its own folder in each UUID folder. The unzipped core dump and its associated `gen_core_report.txt`, backtrace file, siginfo file, workspace folder, and any other files from the build process are located inside the core dump folder.
 
+## File output
+
+If a user clicks one of the three buttons to analyze a core dump, Autopsy will output the contents of the corresponding file (`gen_core_report.txt`, the backtrace file, or the siginfo file) to the user.
+
 ## Running GDB
 
-When a user analyzes a core dump with a command, GDB starts up in a background thread. The count (from the cookie), along with other information, is passed to the thread. Autopsy relies on dictionaries of queues to communicate with the GDB thread: the count is the key, and the queue is the value. There are 4 such dictionaries:
+When a user analyzes a core dump with a command, GDB starts up in a background thread. The count (from the cookie), along with other information, is passed to the thread. GDB needs to start up for the first command, but subsequent commands used to analyze the core dump will use the same thread. Autopsy relies on dictionaries of queues to communicate with the GDB thread: the count is the key, and the queue is the value. There are 4 such dictionaries:
 
 * `coredump_queues`: Stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
 * `command_queues`: Stores the command to be entered into GDB.
