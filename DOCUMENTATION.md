@@ -52,6 +52,12 @@ When a user analyzes a core dump with a command, GDB starts up in a background t
 * `abort_queues`: If something is entered into the queue, GDB will abort running the current command.
 * `output_queues`: Stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
 
+When a command is sent to a GDB thread, both `coredump_queues` and `command_queues` are updated.
+
+### GDB timeout
+
+If the GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread.
+
 ## Clean-up script
 
 Every hour, Autopsy runs a clean-up script that detects whether a core dump has a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
