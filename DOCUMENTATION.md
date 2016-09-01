@@ -41,7 +41,7 @@ All uploaded core dumps are stored in the `uploads` folder. Each UUID has its ow
 
 ## File output
 
-If a user clicks one of the three buttons to analyze a core dump, Autopsy will output the contents of the corresponding file (`gen_core_report.txt`, the backtrace file, or the siginfo file) to the user.
+If a user clicks one of the three buttons to analyze a core dump, Autopsy will return the contents of the corresponding file (`gen_core_report.txt`, the backtrace file, or the siginfo file) to the user.
 
 ## Running GDB
 
@@ -56,7 +56,7 @@ When a command is sent to a GDB thread, both `coredump_queues` and `command_queu
 
 ### GDB timeout
 
-If the GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread.
+If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes (implemented with a queue timeout). It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread.
 
 ## Clean-up script
 
