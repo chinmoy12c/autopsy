@@ -290,7 +290,7 @@ def delete():
     return 'ok'
 
 @app.route('/testkey', methods=['POST'])
-def testkey():
+def test_key():
     if not 'uuid' in session:
         return 'missing session'
     testkey = request.form['testkey']
