@@ -19,6 +19,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Installing nginx](#installing-nginx)
  * [Installing Gunicorn](#installing-gunicorn)
  * [Running Autopsy](#running-autopsy)
+* [Documentation](#documentation)
 
 ## What's included
 
@@ -223,3 +224,7 @@ to install Gunicorn.
 ### Running Autopsy
 
 As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn with `gu`. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
+
+## Documentation
+
+See [`DOCUMENTATION.md`](documentation.md) for documentation on Autopsy.
