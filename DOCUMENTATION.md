@@ -94,4 +94,16 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `check_session`: checks whether the session UUID matches the UUID shown on the page. Used to check whether the cookie has changed.
 * `start`: called when the server starts. Launches the clean-up script.
 
+## JavaScript
+
+Much of the JavaScript used on the web page is used for updating the user interface, as Autopsy is designed to be a [single-page application](https://en.wikipedia.org/wiki/Single-page_application). Autopsy uses XMLHttpRequest to send POST requests to the server when the user interacts with the application.
+
+### Storage
+
+Aside from the session cookie, Autopsy stores a dictionary and a list on the user's computer using local storage to save previously used UUIDs and their core dumps. The dictionary's keys are UUIDs, and its values are the list of core dumps associated with that UUID. The list determines the order of the UUIDs, starting with the most-recently used UUID.
+
+## CSS
+
+Autopsy uses [Bootstrap 4](http://getbootstrap.com/) as a CSS framework and uses flexbox for a responsive layout. However, the Autopsy window has a minimum width and height, and there is no mobile version of the site.
+
 ## Adding additional commands
