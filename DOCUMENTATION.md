@@ -107,3 +107,5 @@ Aside from the session cookie, Autopsy stores a dictionary and a list on the use
 Autopsy uses [Bootstrap 4](http://getbootstrap.com/) as a CSS framework and flexbox for a responsive layout. However, the Autopsy window has a minimum width and height, and there is no mobile version of the site.
 
 ## Adding additional commands
+
+If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `COMMANDS` in `autopsy.py`, and then add it to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order). If the command has options, add it to `options` as well, with special characters escaped.
