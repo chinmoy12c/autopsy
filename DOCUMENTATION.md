@@ -41,6 +41,11 @@ All uploaded core dumps are stored in the `uploads` folder. Each UUID has its ow
 
 ## Running GDB
 
-When a user analyzes a core dump with a command, GDB starts up in a background thread.
+When a user analyzes a core dump with a command, GDB starts up in a background thread. The count (from the cookie), along with other information, is passed to the thread. Autopsy relies on dictionaries of queues to communicate with the GDB thread: the count is the key, and the queue is the value. There are 4 such dictionaries:
+
+* **coredump_queues**: Stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
+* **command_queues**: Stores the command to be entered into GDB.
+* **abort_queues**: If something is entered into the queue, GDB will abort running the current command.
+* **output_queues**: Stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
 
 ## Adding additional commands
