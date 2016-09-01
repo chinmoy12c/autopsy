@@ -2,6 +2,15 @@
 
 This file serves as documentation for Autopsy. It assumes that you have read [`README.md`](README.md) and have a basic understanding of Flask. (Reading through the [official quickstart documentation for Flask](http://flask.pocoo.org/docs/0.11/quickstart/) is suggested.)
 
+## Table of contents
+
+* [Session cookie](#session-cookie)
+* [Database](#database)
+* [Uploading process](#uploading-process)
+ * [Uploading a local file](#uploading-a-local-file)
+ * [Submitting a link](#submitting-a-link)
+ * [Core dump storage](#core-dump-storage)
+
 ## Session cookie
 
 Autopsy stores information about a user in a signed cookie, implemented with sessions in Flask. The cookie is base-64 encoded, so it is possible to see the contents of the cookie by decoding it; however, modifying the cookie manually would cause it to be rejected by the server due to the invalid signature. (The data and signature parts of the cookie are separated by a period.)
