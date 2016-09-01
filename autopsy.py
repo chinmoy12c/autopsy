@@ -1,5 +1,5 @@
 from cgi import escape
-from logging import DEBUG, Formatter, getLogger, FileHandler
+from logging import DEBUG, Formatter, getLogger, FileHandler, StreamHandler
 from os import kill
 from pathlib import Path
 from queue import Queue, Empty
@@ -23,10 +23,14 @@ app = Flask(__name__)
 
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
+ch = StreamHandler(stream=stdout)
 fh = FileHandler('flask.log', mode='w')
+ch.setLevel(DEBUG)
 fh.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+ch.setFormatter(formatter)
 fh.setFormatter(formatter)
+logger.addHandler(ch)
 logger.addHandler(fh)
 
 UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
