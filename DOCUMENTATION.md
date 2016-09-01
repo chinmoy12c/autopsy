@@ -74,7 +74,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `clean_uploads`: runs every hour to remove old core dumps.
 * `no_such_coredump`: tests whether a UUID and a core dump with a particular name already exists.
 * `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
-* `update_timestmp`: updates the timestamp field in the database. Called when a core dump is analyzed.
+* `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
 * `delete`: uses `delete_coredump` to delete a core dump. Called when the × next to a core dump is clicked.
