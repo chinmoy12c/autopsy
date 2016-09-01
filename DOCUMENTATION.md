@@ -10,6 +10,15 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
  * [Uploading a local file](#uploading-a-local-file)
  * [Submitting a link](#submitting-a-link)
  * [Core dump storage](#core-dump-storage)
+* [File output](#file-output)
+* [Running GDB](#running-gdb)
+ * [GDB timeout](#gdb-timeout)
+* [Clean-up script](#clean-up-script)
+* [Functions in `autopsy.py`](#functions-in-autopsypy)
+* [JavaScript](#javascript)
+ * [Storage](#storage)
+* [CSS](#css)
+* [Adding additional commands](#adding-additional-commands)
 
 ## Session cookie
 
