@@ -104,6 +104,6 @@ Aside from the session cookie, Autopsy stores a dictionary and a list on the use
 
 ## CSS
 
-Autopsy uses [Bootstrap 4](http://getbootstrap.com/) as a CSS framework and uses flexbox for a responsive layout. However, the Autopsy window has a minimum width and height, and there is no mobile version of the site.
+Autopsy uses [Bootstrap 4](http://getbootstrap.com/) as a CSS framework and flexbox for a responsive layout. However, the Autopsy window has a minimum width and height, and there is no mobile version of the site.
 
 ## Adding additional commands
