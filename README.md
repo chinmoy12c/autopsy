@@ -15,6 +15,7 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Installing packages and setting up the database](#installing-packages-and-setting-up-the-database)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
  * [Launch process](#launch-process)
+ * [Logging](#logging)
 * [Using the production server](#using-the-production-server)
  * [Installing nginx](#installing-nginx)
  * [Installing Gunicorn](#installing-gunicorn)
@@ -152,6 +153,10 @@ and
 fl
 ```
 to launch Autopsy.
+
+### Logging
+
+By default, Autopsy logs output from `autopsy.py` to both the console and to `flask.log`. To turn off console logging, comment out the 4 lines at the top of `autopsy.py` that involve the `ch` variable.
 
 ## Using the production server
 
