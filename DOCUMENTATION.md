@@ -47,19 +47,51 @@ If a user clicks one of the three buttons to analyze a core dump, Autopsy will r
 
 When a user analyzes a core dump with a command, GDB starts up in a background thread. The count (from the cookie), along with other information, is passed to the thread. GDB needs to start up for the first command, but subsequent commands used to analyze the core dump will use the same thread. Autopsy relies on dictionaries of queues to communicate with the GDB thread: the count is the key, and the queue is the value. There are 4 such dictionaries:
 
-* `coredump_queues`: Stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
-* `command_queues`: Stores the command to be entered into GDB.
-* `abort_queues`: If something is entered into the abort queue, GDB will abort running the current command.
-* `output_queues`: Stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
+* `coredump_queues`: stores the core dump to be analyzed. If a core dump different to the initial core dump entered is stored, the GDB thread will quit and a different GDB thread will be launched (since a GDB thread can only analyze a single core dump). If an empty string is entered, the GDB thread will simply quit.
+* `command_queues`: stores the command to be entered into GDB.
+* `abort_queues`: if something is entered into the abort queue, GDB will abort running the current command.
+* `output_queues`: stores output from the GDB thread. If the output is `restart` (from detecting a different core dump in the core dump queue), Autopsy will launch another GDB thread.
 
 When a command is sent to a GDB thread, both `coredump_queues` and `command_queues` are updated.
 
 ### GDB timeout
 
-If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread.
+If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
 
 ## Clean-up script
 
 Every hour, Autopsy runs a clean-up script that deletes any core dump with a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
+
+## Functions in `autopsy.py`
+
+* `get_db`, `close_connection`, and `init_db`: sets up the SQLite database. See the [Flask SQLite documentation](http://flask.pocoo.org/docs/0.11/patterns/sqlite3/) for more details.
+* `initdb_command`: registers `initdb` as a Flask command. See [this](http://flask.pocoo.org/docs/0.11/tutorial/dbinit/) for more.
+* `set_queues`: creates queues with a particular count as the key.
+* `delete_queues`: deletes the queues associated with a particular count.
+* `run_gdb`: runs GDB. This is called as a separate thread.
+* `remove_parent_and_directory`: used to delete the core dump directory and UUID directory if it is empty afterwards.
+* `delete_coredump`: deletes a core dump and removes it from the database.
+* `clean_uploads`: runs every hour to remove old core dumps.
+* `no_such_coredump`: tests whether a UUID and a core dump with a particular name already exists.
+* `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
+* `update_timestmp`: updates the timestamp field in the database. Called when a core dump is analyzed.
+* `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
+* `help`: returns the help page HTML.
+* `delete`: uses `delete_coredump` to delete a core dump. Called when the × next to a core dump is clicked.
+* `test_key`: tests whether a UUID has core dumps in the database. Called when validating a key.
+* `load_key`: returns the core dump data for a particular UUID.
+* `generate_key`: generates a new key for the user.
+* `link_test`: tests whether the URL that a user provides for submitting a core dump is valid, as well as the credentials supplied. Also extracts the core dump name from the response headers.
+* `link_upload`: downloads the core dump from a URL. (This function is called `link_upload` because from a user's perspective, a core dump is being uploaded from a link.)
+* `test_filename`: uses `check_filename` to test a file name.
+* `upload`: saves the file that a user uploads, checks whether it is valid, and deletes it if it is not.
+* `unzip`: unzips the uploaded file.
+* `build`: builds the workspace for the uploaded file using `gen_core_report.sh` and extracts information from its output.
+* `get_report`, `backtrace`, and `siginfo`: returns the contents of the relevant files for a core dump.
+* `abort`: aborts the current command.
+* `command_input`: manages launching the GDB thread and communicates with the thread using the appropriate queues.
+* `quit`: quits a GDB thread. Called when the user closes the Autopsy window.
+* `check_session`: checks whether the session UUID matches the UUID shown on the page. Used to check whether the cookie has changed.
+* `start`: called when the server starts. Launches the clean-up script.
 
 ## Adding additional commands
