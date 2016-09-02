@@ -640,12 +640,9 @@ def quit():
 
 @app.route('/checksession', methods=['POST'])
 def check_session():
-    logger.info('start')
-    logger.info('%s and %s', request.form['uuid'], session['uuid'])
     if request.form['uuid'] != session['uuid']:
-        logger.info('bad')
+        logger.info('%s and %s', request.form['uuid'], session['uuid'])
         return 'bad'
-    logger.info('ok')
     return 'ok'
 
 @app.before_first_request
