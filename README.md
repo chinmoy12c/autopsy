@@ -77,7 +77,7 @@ Finally, run
 ```
 virtualenv -p <path to Python executable> venv
 ```
-inside the main `Autopsy` folder. A `venv` folder should be created. If the `virtualenv` command is not defined, you will need to download `virtualenv` using your package manager.
+inside the main `Autopsy` folder. A `venv` folder should be created. If the `virtualenv` command is not defined, you will need to download `virtualenv` by using your package manager or by getting the latest version [here](https://github.com/pypa/virtualenv/releases).
 
 ### Using `launch.sh`
 
@@ -110,7 +110,15 @@ While you are in the virtual environment, run
 ```
 pip install Flask
 ```
-to install Flask. Autopsy works with Flask version 0.11.1; ensure that the correct version is installed. You should now be able to run
+to install Flask. Autopsy works with Flask version 0.11.1; ensure that the correct version is installed. Next, run
+```
+pip install requests
+```
+and
+```
+pip install requests-ntlm
+```
+to install other packages used by Autopsy. You should now be able to run
 ```
 flask initdb
 ```
@@ -119,16 +127,6 @@ to create a file called `cores.db` inside the `database` folder. Ensure that `co
 chmod 777 database/cores.db
 ```
 from root to make it writable.
-
-Next, run
-```
-pip install requests
-```
-and
-```
-pip install requests-ntlm
-```
-to install other packages used by Autopsy. 
 
 ### Launching and quitting Autopsy
 
