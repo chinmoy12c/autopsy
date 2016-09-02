@@ -166,11 +166,11 @@ at the top of `autopsy.py`.
 
 Autopsy works with nginx 1.11.3; you can get the latest version of nginx [here](http://nginx.org/en/download.html) (the mainline version is recommended). Uncompress the file and run
 ```
-./configure
+./configure --with-http_ssl_module
 make
 make install
 ```
-to install nginx at `/usr/local`. Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` to contain the following:
+to install nginx at `/usr/local`. (If you want to install nginx at a different location, use the `--prefix` flag.) Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` to contain the following:
 ```conf
 worker_processes    1;
 
