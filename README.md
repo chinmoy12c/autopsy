@@ -77,7 +77,7 @@ Finally, run
 ```
 virtualenv -p <path to Python executable> venv
 ```
-inside the main `Autopsy` folder. A `venv` folder should be created. If the `virtualenv` command is not defined, you will need to download `virtualenv` by using your package manager or by getting the latest version [here](https://github.com/pypa/virtualenv/releases).
+inside the main `Autopsy` folder. A `venv` folder should be created. If the `virtualenv` command is not defined, you will need to download `virtualenv` by using your package manager (or by getting the latest version [here](https://github.com/pypa/virtualenv/releases); if you use this method, you need to use `python virtualenv.py` inside the downloaded folder instead of `virtualenv`).
 
 ### Using `launch.sh`
 
