@@ -505,14 +505,14 @@ def unzip():
 def build():
     logger.info('start')
     if not 'current' in session:
-        return 'missing session'
+        return jsonify(output='missing session')
     filename = session['current']
     directory = UPLOAD_FOLDER / session['uuid'] / filename
     filepath = directory / filename
     if not filepath.exists():
         logger.info('filepath %s does not exist', str(filepath))
         session.pop('current', None)
-        return 'invalid filename'
+        return jsonify(output='invalid filename')
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     logger.info(report.splitlines()[0])
     report_file = directory / 'gen_core_report.txt'
