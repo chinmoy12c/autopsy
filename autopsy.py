@@ -96,14 +96,20 @@ def run_gdb(count, uuid, workspace, gdb_location):
     global coredump_queues, command_queues, abort_queues, output_queues
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
-    smp_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
+    img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
+    if not img_path.exists():
+        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
     logger.info(gdb_location)
-    logger.info(str(smp_path))
-    lina_path = smp_path / 'asa' / 'bin' / 'lina'
+    logger.info(str(img_path))
+    lina_path = img_path / 'asa' / 'bin' / 'lina'
     if not lina_path.exists():
-        lina_path = smp_path / 'smp'
+        lina_path = img_path / 'smp'
     logger.info(str(lina_path))
-    gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(smp_path), universal_newlines=True)
+    try:
+        gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
+    except:
+        logger.info('Error running[%s]', str(lina_path))
+        return
     read_queue = Queue()
     def enqueue_output(out, queue):
         for line in iter(out.readline, ''):
