@@ -17,6 +17,7 @@ from uuid import uuid4
 from flask import Flask, jsonify, g, render_template, request, session
 from requests import get
 from requests_ntlm import HttpNtlmAuth
+from requests.auth import HTTPBasicAuth
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -50,6 +51,27 @@ running_counts = set()
 count = 0
 count_lock = Lock()
 
+def make_request (request):
+    '''
+    Try to make a request.  Currently only supports:
+      - no authentication
+      - Basic Auth
+      - NTLM
+    '''
+    logger.info('url is ' + request.form['url'])
+    logger.info('username is ' + request.form['username'])
+
+    r = get(request.form['url'], stream=True)
+    if r.status_code == 401:
+        auth_hdr = r.headers['WWW-Authenticate'].split()
+        if auth_hdr[0] == 'Basic':
+            logger.info('Trying Basic Auth')
+            r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True)
+        elif auth_hdr[1] == 'NTLM':
+            logger.info('Trying NTLM')
+            r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
+    return r
+    
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -359,9 +381,7 @@ def link_test():
     if not 'uuid' in session:
         return 'missing session'
     try:
-        logger.info('url is ' + request.form['url'])
-        logger.info('username is ' + request.form['username'])
-        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
+        r = make_request(request)
     except:
         logger.info('invalid url')
         return jsonify(message='url')
@@ -393,7 +413,7 @@ def link_upload():
     if not 'current' in session:
         return 'missing session'
     try:
-        r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
+        r = make_request(request)
     except:
         return 'url'
     if r.status_code == 401:
