@@ -1,6 +1,6 @@
 # Autopsy
 
-Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs on [Flask](http://flask.pocoo.org/docs/0.11/), a Python web framework.
+Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs on [Flask](http://flask.pocoo.org/docs/0.12/), a Python web framework.
 
 ## Table of contents
 
@@ -49,7 +49,7 @@ Autopsy only works on Cisco machines with Perforce access and appropriate versio
 
 ## Development vs. production server
 
-There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/0.11/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/0.11/deploying/). This guide will provide steps on using the development server as well as setting up nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/0.11/deploying/wsgi-standalone/).
+There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/0.12/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/0.12/deploying/). This guide will provide steps on using the development server as well as setting up nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/0.12/deploying/wsgi-standalone/).
 
 ## Getting started with the development server
 
@@ -69,9 +69,9 @@ to clone the clientlessGDB repository, which is necessary for analyzing core dum
 
 ### Creating a virtual environment
 
-The next step is to create the virtual environment. Autopsy works with Python 3.5.2; it is not compatible with older versions. If your version of Python is older, you will need to download and build Python 3.5.2 first.
+The next step is to create the virtual environment. Autopsy works with Python 3.6.1; it may not be compatible with older versions. If your version of Python is older, you are encouraged to download and build Python 3.6.1 first.
 
-If you don't have the current version of Python, you need download and build the corresponding packages (perhaps in `/home` so as not to interfere with your default Python installation). To do this, get the Python file [here](https://www.python.org/downloads/release/python-352/)  with `wget` and uncompress it with `tar`. Then, follow the instructions in the `README` file included with the download to build Python; when you run `./configure`, be sure to use the `--prefix` flag to install Python in the  directory. Once you have done so, you can find the location of the Python executable at `bin/python3.5` in the directory where you installed Python.
+If you don't have the current version of Python, you need download and build the corresponding packages (perhaps in `/home` so as not to interfere with your default Python installation). To do this, get the Python file [here](https://www.python.org/downloads/release/python-361/)  with `wget` and uncompress it with `tar`. Then, follow the instructions in the `README` file included with the download to build Python; when you run `./configure`, be sure to use the `--prefix` flag to install Python in the right directory. Once you have done so, you can find the location of the Python executable at `bin/python3.6` in the directory where you installed Python.
 
 Finally, run
 ```
@@ -110,7 +110,7 @@ While you are in the virtual environment, run
 ```
 pip install Flask
 ```
-to install Flask. Autopsy works with Flask version 0.11.1; ensure that the correct version is installed. Next, run
+to install Flask. Autopsy works with Flask version 0.12.2; ensure that an updated version is installed. Next, run
 ```
 pip install requests
 ```
@@ -164,7 +164,7 @@ at the top of `autopsy.py`.
 
 ### Installing nginx
 
-Autopsy works with nginx 1.11.3; you can get the latest version of nginx [here](http://nginx.org/en/download.html) (the mainline version is recommended). Uncompress the file and run
+Autopsy works with nginx 1.13.1; you can get the latest version of nginx [here](http://nginx.org/en/download.html) (the mainline version is recommended). Uncompress the file and run
 ```
 ./configure --with-http_ssl_module
 make
@@ -231,7 +231,7 @@ to install Gunicorn.
 
 ### Running Autopsy
 
-As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn with `gu`. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
+As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
 
 ## Documentation
 
