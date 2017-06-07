@@ -170,7 +170,7 @@ Autopsy works with nginx 1.13.1; you can get the latest version of nginx [here](
 make
 make install
 ```
-to install nginx at `/usr/local`. (If you want to install nginx at a different location, use the `--prefix` flag and modify the `ng` alias appropriately in `launch.sh`.) Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` (or the equivalent path if nginx was installed in a different location) to contain the following:
+to install nginx at `/usr/local/nginx`. (If you want to install nginx at a different location, use the `--prefix` flag and modify the `ng` alias appropriately in `launch.sh`.) Edit the nginx configuration file at `/usr/local/nginx/conf/nginx.conf` (or the equivalent path if nginx was installed in a different location) to contain the following:
 ```conf
 worker_processes    1;
 
