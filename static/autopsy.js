@@ -215,7 +215,7 @@ function deleteUUID(id) {
         checked_uuid = null;
         previous_button.disabled = true;
     }
-   $("[data-toggle='popover']").popover();
+    $("[data-toggle='popover']").popover();
     var core_history = JSON.parse(localStorage.getItem("history"));
     var core_order = JSON.parse(localStorage.getItem("order"));
     delete core_history[id];
@@ -284,11 +284,8 @@ $("#previous-modal").on("shown.bs.modal", function() {
     $("[data-toggle='popover']").popover();
 });
 
-$("#previous-modal").on("hide.bs.modal", function() {
-    $("[data-toggle='popover']").popover("dispose");
-});
-
 $("#previous-modal").on("hidden.bs.modal", function() {
+    $("[data-toggle='popover']").popover("dispose");
     previous_button.innerHTML = "Load";
 });
 
