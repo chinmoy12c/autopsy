@@ -209,7 +209,7 @@ def clean_uploads():
             for coredump in uuid.iterdir():
                 if no_such_coredump(uuid.name, coredump.name):
                     logger.info('removing directory %s', str(coredump))
-                    rmtree(str(coredump))
+                    remove_directory_and_parent(coredump)
         logger.info('clean finished')
 
 def no_such_coredump(uuid, coredump):
