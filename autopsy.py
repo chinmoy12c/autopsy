@@ -413,7 +413,6 @@ def link_upload():
             if r.headers['WWW-Authenticate'].split()[0] == 'Basic':
                 r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True)
             else:
-                logger.info('trying ntlm auth')
                 r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
         except:
             return 'url'
