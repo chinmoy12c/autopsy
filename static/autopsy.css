@@ -200,6 +200,7 @@ p {
 .coredump-inner {
     flex-grow: 1;
     font-size: 0;
+    overflow: hidden;
 }
 
 .corename {
