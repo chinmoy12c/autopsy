@@ -1,6 +1,6 @@
 # Documentation
 
-This file serves as documentation for Autopsy. It assumes that you have read [`README.md`](README.md) and have a basic understanding of Flask. (Reading through the [official quickstart documentation for Flask](http://flask.pocoo.org/docs/0.11/quickstart/) is suggested.)
+This file serves as documentation for Autopsy. It assumes that you have read [`README.md`](README.md) and have a basic understanding of Flask. (Reading through the [official quickstart documentation for Flask](http://flask.pocoo.org/docs/0.12/quickstart/) is suggested.)
 
 ## Table of contents
 
@@ -82,8 +82,8 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 
 ## Functions in `autopsy.py`
 
-* `get_db`, `close_connection`, and `init_db`: sets up the SQLite database. See the [Flask SQLite documentation](http://flask.pocoo.org/docs/0.11/patterns/sqlite3/) for more details.
-* `initdb_command`: registers `initdb` as a Flask command. See [this](http://flask.pocoo.org/docs/0.11/tutorial/dbinit/) for more.
+* `get_db`, `close_connection`, and `init_db`: sets up the SQLite database. See the [Flask SQLite documentation](http://flask.pocoo.org/docs/0.12/patterns/sqlite3/) for more details.
+* `initdb_command`: registers `initdb` as a Flask command. See [this](http://flask.pocoo.org/docs/0.12/tutorial/dbinit/) for more.
 * `set_queues`: creates queues with a particular count as the key.
 * `delete_queues`: deletes the queues associated with a particular count.
 * `run_gdb`: runs GDB. This is called as a separate thread.
