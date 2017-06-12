@@ -1,6 +1,7 @@
 from cgi import escape
 from logging import DEBUG, Formatter, getLogger, FileHandler, StreamHandler
 from os import kill
+from os.path import basename
 from pathlib import Path
 from queue import Queue, Empty
 from re import findall
@@ -15,6 +16,7 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, g, render_template, request, session
+from pexpect import EOF, spawn
 from requests import get
 from requests.auth import HTTPBasicAuth
 from requests_ntlm import HttpNtlmAuth
@@ -110,9 +112,17 @@ def run_gdb(count, uuid, workspace, gdb_location):
         for line in iter(out.readline, ''):
             queue.put(line)
         out.close()
+    def enqueue_output2(out, queue):
+        for line in iter(out.readline, ''):
+            queue.put(line)
+            logger.info('err line is ' + line)
+        out.close()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
     t.daemon = True
     t.start()
+    #t2 = Thread(target=enqueue_output2, args=(gdb.stderr, read_queue))
+    #t2.daemon = True
+    #t2.start()
     entered_commands = []
     def enter_command(command):
         nonlocal entered_commands
@@ -175,8 +185,11 @@ def run_gdb(count, uuid, workspace, gdb_location):
     logger.info('count %d - exit', count)
 
 def remove_directory_and_parent(directory):
-    rmtree(str(directory))
-    logger.info('directory %s deleted', str(directory))
+    if directory.exists():
+        rmtree(str(directory))
+        logger.info('directory %s deleted', str(directory))
+    else:
+        logger.info('directory %s does not exist', str(directory))
     try:
         directory.parent.rmdir()
         logger.info('removed empty folder %s', str(directory.parent))
@@ -190,10 +203,7 @@ def delete_coredump(uuid, coredump):
     db.commit()
     logger.info('removed from database')
     directory = UPLOAD_FOLDER / uuid / coredump
-    if directory.exists():
-        remove_directory_and_parent(directory)
-    else:
-        logger.info('directory %s does not exist', str(directory))
+    remove_directory_and_parent(directory)
 
 def clean_uploads():
     with app.app_context():
@@ -312,7 +322,7 @@ def test_key():
 @app.route('/loadkey', methods=['POST'])
 def load_key():
     if not 'uuid' in session:
-        return 'missing session'
+        return jsonify(message='missing session')
     uuid = request.form['loadkey']
     logger.info('%s', uuid)
     cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
@@ -358,10 +368,10 @@ def generate_key():
 def link_test():
     logger.info('start')
     if not 'uuid' in session:
-        return 'missing session'
+        return jsonify(message='missing session')
+    logger.info('url is ' + request.form['url'])
+    logger.info('username is ' + request.form['username'])
     try:
-        logger.info('url is ' + request.form['url'])
-        logger.info('username is ' + request.form['username'])
         r = get(request.form['url'], stream=True)
     except:
         logger.info('invalid url')
@@ -382,21 +392,17 @@ def link_test():
             logger.info('invalid credentials')
             return jsonify(message='credentials')
     logger.info('status code is %d', r.status_code)
-    missing_name = False
     try:
         filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
         check_result = check_filename(session['uuid'], filename)
         if check_result != 'ok':
             return jsonify(message=check_result)
     except:
-        missing_name = True
         filename = 'coredump-' + str(int(time() * 1000))
         while not no_such_coredump(session['uuid'], filename):
             filename = 'coredump-' + str(int(time() * 1000))
     session['current'] = filename
     logger.info('ok, filename is %s', filename)
-    if missing_name:
-        return jsonify(message='ok', filename='')
     return jsonify(message='ok', filename=filename)
 
 @app.route('/linkupload', methods=['POST'])
@@ -441,12 +447,138 @@ def link_upload():
         return 'core ok'
     logger.info('removing file')
     session.pop('current', None)
-    if directory.exists():
-        remove_directory_and_parent(directory)
-    else:
-        logger.info('directory %s does not exist', str(directory))
+    remove_directory_and_parent(directory)
     logger.info('invalid')
     return 'invalid'
+
+@app.route('/filetest', methods=['POST'])
+def file_test():
+    logger.info('start')
+    if not 'uuid' in session:
+        return jsonify(message='missing session')
+    logger.info('server is ' + request.form['server'])
+    logger.info('path is ' + request.form['path'])
+    logger.info('username is ' + request.form['username'])
+    basepath = basename(request.form['path'])
+    filename = secure_filename(basepath)
+    if basepath != filename or filename == '':
+        logger.info('bad basepath')
+        return jsonify(message='invalid')
+    check_result = check_filename(session['uuid'], filename)
+    if check_result != 'ok':
+        return jsonify(message=check_result)
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    #try:
+    scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
+    scp.logfile = stdout.buffer
+    i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+    logger.info('expect i is %d', i)
+    if i == 0:
+        logger.info('bad server')
+        remove_directory_and_parent(directory)
+        return jsonify(message='server')
+    else:
+        if i == 1:
+            logger.info('requires rsa')
+            scp.sendline('yes')
+            scp.expect('assword:', timeout=5)
+        scp.sendline(request.form['password'])
+        j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+        logger.info('expect j is %d', j)
+        if j == 0:
+            logger.info('wrong credentials')
+            remove_directory_and_parent(directory)
+            return jsonify(message='credentials')
+        elif j == 1:
+            logger.info('syntax error')
+            remove_directory_and_parent(directory)
+            return jsonify(message='invalid')
+        elif j == 2:
+            logger.info('regular file')
+            remove_directory_and_parent(directory)
+            return jsonify(message='invalid')
+        elif j == 3:
+            logger.info('file or directory')
+            remove_directory_and_parent(directory)
+            return jsonify(message='invalid')
+        else:
+            scp.sendintr()
+            logger.info('valid')
+            session['current'] = filename
+            logger.info('ok, filename is %s', filename)
+            return jsonify(message='ok', filename=filename)
+    #except:
+    #    logger.info('timeout')
+    #    remove_directory_and_parent(directory)
+    #    return jsonify(message='server')
+
+@app.route('/fileupload', methods=['POST'])
+def file_upload():
+    logger.info('start')
+    if not 'current' in session:
+        return 'missing session'
+    filename = session['current']
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    #try:
+    scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
+    scp.logfile = stdout.buffer
+    i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+    logger.info('expect i is %d', i)
+    if i == 0:
+        remove_directory_and_parent(directory)
+        return 'server'
+    else:
+        if i == 1:
+            logger.info('requires rsa')
+            scp.sendline('yes')
+            scp.expect('assword:', timeout=5)
+        scp.sendline(request.form['password'])
+        j = 4
+        while j == 4:
+            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+        logger.info('expect j is %d', j)
+        if j == 0:
+            remove_directory_and_parent(directory)
+            return 'credentials'
+        elif j == 1:
+            remove_directory_and_parent(directory)
+            return 'invalid'
+        elif j == 2:
+            remove_directory_and_parent(directory)
+            return 'invalid'
+        elif j == 3:
+            remove_directory_and_parent(directory)
+            return 'invalid'
+        else:
+            logger.info('copied file')
+            filepath = directory / filename
+            file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+            logger.info('file type is %s', file_test.rstrip())
+            if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+                logger.info('gz ok')
+                return 'gz ok'
+            if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+                logger.info('core ok')
+                return 'core ok'
+            logger.info('removing file')
+            session.pop('current', None)
+            remove_directory_and_parent(directory)
+            logger.info('invalid')
+            return 'invalid'
+    #except:
+    #    logger.info('timeout')
+    #    remove_directory_and_parent(directory)
+    #    return 'server'
 
 @app.route('/testfilename', methods=['POST'])
 def test_filename():
@@ -494,10 +626,7 @@ def upload():
         logger.info('core ok')
         return 'core ok'
     logger.info('removing file')
-    if directory.exists():
-        remove_directory_and_parent(directory)
-    else:
-        logger.info('directory %s does not exist', str(directory))
+    remove_directory_and_parent(directory)
     logger.info('invalid')
     return 'invalid'
 
