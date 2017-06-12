@@ -112,17 +112,9 @@ def run_gdb(count, uuid, workspace, gdb_location):
         for line in iter(out.readline, ''):
             queue.put(line)
         out.close()
-    def enqueue_output2(out, queue):
-        for line in iter(out.readline, ''):
-            queue.put(line)
-            logger.info('err line is ' + line)
-        out.close()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
     t.daemon = True
     t.start()
-    #t2 = Thread(target=enqueue_output2, args=(gdb.stderr, read_queue))
-    #t2.daemon = True
-    #t2.start()
     entered_commands = []
     def enter_command(command):
         nonlocal entered_commands
@@ -473,49 +465,49 @@ def file_test():
         directory = UPLOAD_FOLDER / session['uuid'] / filename
     logger.info('making directory %s', str(directory))
     directory.mkdir(parents=True, exist_ok=True)
-    #try:
-    scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
-    scp.logfile = stdout.buffer
-    i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
-    logger.info('expect i is %d', i)
-    if i == 0:
-        logger.info('bad server')
+    try:
+        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
+        scp.logfile = stdout.buffer
+        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+        logger.info('expect i is %d', i)
+        if i == 0:
+            logger.info('bad server')
+            remove_directory_and_parent(directory)
+            return jsonify(message='server')
+        else:
+            if i == 1:
+                logger.info('requires rsa')
+                scp.sendline('yes')
+                scp.expect('assword:', timeout=5)
+            scp.sendline(request.form['password'])
+            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+            logger.info('expect j is %d', j)
+            if j == 0:
+                logger.info('wrong credentials')
+                remove_directory_and_parent(directory)
+                return jsonify(message='credentials')
+            elif j == 1:
+                logger.info('syntax error')
+                remove_directory_and_parent(directory)
+                return jsonify(message='invalid')
+            elif j == 2:
+                logger.info('regular file')
+                remove_directory_and_parent(directory)
+                return jsonify(message='invalid')
+            elif j == 3:
+                logger.info('file or directory')
+                remove_directory_and_parent(directory)
+                return jsonify(message='invalid')
+            else:
+                scp.sendintr()
+                logger.info('valid')
+                session['current'] = filename
+                logger.info('ok, filename is %s', filename)
+                return jsonify(message='ok', filename=filename)
+    except:
+        logger.info('timeout')
         remove_directory_and_parent(directory)
         return jsonify(message='server')
-    else:
-        if i == 1:
-            logger.info('requires rsa')
-            scp.sendline('yes')
-            scp.expect('assword:', timeout=5)
-        scp.sendline(request.form['password'])
-        j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
-        logger.info('expect j is %d', j)
-        if j == 0:
-            logger.info('wrong credentials')
-            remove_directory_and_parent(directory)
-            return jsonify(message='credentials')
-        elif j == 1:
-            logger.info('syntax error')
-            remove_directory_and_parent(directory)
-            return jsonify(message='invalid')
-        elif j == 2:
-            logger.info('regular file')
-            remove_directory_and_parent(directory)
-            return jsonify(message='invalid')
-        elif j == 3:
-            logger.info('file or directory')
-            remove_directory_and_parent(directory)
-            return jsonify(message='invalid')
-        else:
-            scp.sendintr()
-            logger.info('valid')
-            session['current'] = filename
-            logger.info('ok, filename is %s', filename)
-            return jsonify(message='ok', filename=filename)
-    #except:
-    #    logger.info('timeout')
-    #    remove_directory_and_parent(directory)
-    #    return jsonify(message='server')
 
 @app.route('/fileupload', methods=['POST'])
 def file_upload():
@@ -529,56 +521,56 @@ def file_upload():
         directory = UPLOAD_FOLDER / session['uuid'] / filename
     logger.info('making directory %s', str(directory))
     directory.mkdir(parents=True, exist_ok=True)
-    #try:
-    scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
-    scp.logfile = stdout.buffer
-    i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
-    logger.info('expect i is %d', i)
-    if i == 0:
+    try:
+        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
+        scp.logfile = stdout.buffer
+        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+        logger.info('expect i is %d', i)
+        if i == 0:
+            remove_directory_and_parent(directory)
+            return 'server'
+        else:
+            if i == 1:
+                logger.info('requires rsa')
+                scp.sendline('yes')
+                scp.expect('assword:', timeout=5)
+            scp.sendline(request.form['password'])
+            j = 4
+            while j == 4:
+                j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+            logger.info('expect j is %d', j)
+            if j == 0:
+                remove_directory_and_parent(directory)
+                return 'credentials'
+            elif j == 1:
+                remove_directory_and_parent(directory)
+                return 'invalid'
+            elif j == 2:
+                remove_directory_and_parent(directory)
+                return 'invalid'
+            elif j == 3:
+                remove_directory_and_parent(directory)
+                return 'invalid'
+            else:
+                logger.info('copied file')
+                filepath = directory / filename
+                file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+                logger.info('file type is %s', file_test.rstrip())
+                if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+                    logger.info('gz ok')
+                    return 'gz ok'
+                if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+                    logger.info('core ok')
+                    return 'core ok'
+                logger.info('removing file')
+                session.pop('current', None)
+                remove_directory_and_parent(directory)
+                logger.info('invalid')
+                return 'invalid'
+    except:
+        logger.info('timeout')
         remove_directory_and_parent(directory)
         return 'server'
-    else:
-        if i == 1:
-            logger.info('requires rsa')
-            scp.sendline('yes')
-            scp.expect('assword:', timeout=5)
-        scp.sendline(request.form['password'])
-        j = 4
-        while j == 4:
-            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
-        logger.info('expect j is %d', j)
-        if j == 0:
-            remove_directory_and_parent(directory)
-            return 'credentials'
-        elif j == 1:
-            remove_directory_and_parent(directory)
-            return 'invalid'
-        elif j == 2:
-            remove_directory_and_parent(directory)
-            return 'invalid'
-        elif j == 3:
-            remove_directory_and_parent(directory)
-            return 'invalid'
-        else:
-            logger.info('copied file')
-            filepath = directory / filename
-            file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
-            logger.info('file type is %s', file_test.rstrip())
-            if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
-                logger.info('gz ok')
-                return 'gz ok'
-            if file_test.startswith('ELF 64-bit LSB core file x86-64'):
-                logger.info('core ok')
-                return 'core ok'
-            logger.info('removing file')
-            session.pop('current', None)
-            remove_directory_and_parent(directory)
-            logger.info('invalid')
-            return 'invalid'
-    #except:
-    #    logger.info('timeout')
-    #    remove_directory_and_parent(directory)
-    #    return 'server'
 
 @app.route('/testfilename', methods=['POST'])
 def test_filename():
