@@ -18,7 +18,6 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Logging](#logging)
 * [Using the production server](#using-the-production-server)
  * [Installing nginx](#installing-nginx)
- * [Installing Gunicorn](#installing-gunicorn)
  * [Running Autopsy](#running-autopsy)
 * [Documentation](#documentation)
 
@@ -108,17 +107,9 @@ You can continue to use `launch.sh` whenever you wish to enter the virtual envir
 
 While you are in the virtual environment, run
 ```
-pip install Flask
+pip install Flask requests requests-ntlm pexpect gunicorn
 ```
-to install Flask. Autopsy works with Flask version 0.12.2; ensure that an updated version is installed. Next, run
-```
-pip install requests
-```
-and
-```
-pip install requests-ntlm
-```
-to install other packages used by Autopsy. You should now be able to run
+to install the packages used by Autopsy. You should now be able to run
 ```
 flask initdb
 ```
@@ -220,14 +211,6 @@ http {
 You can change the location where nginx logs are stored by editing the `access_log` and `error_log` lines.
 
 Autopsy allows users to input their CEC credentials to access core dumps online, so HTTPS should be enabled. To create your SSL certificate, follow [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-create-a-ssl-certificate-on-nginx-for-ubuntu-12-04) up to step 4 for a self-signed certificate or obtain a certificate signed by a third-party by other means. If your certificate is self-signed, your browser will show a warning when you try to visit the site; this is unavoidable unless your certificate is signed properly. Change the `ssl_certificate` and `ssl_certificate_key` lines to match the location where your certificate is stored.
-
-### Installing Gunicorn
-
-In the virtual environment, run
-```
-pip install gunicorn
-```
-to install Gunicorn.
 
 ### Running Autopsy
 
