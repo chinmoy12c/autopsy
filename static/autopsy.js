@@ -1258,6 +1258,7 @@ window.addEventListener("focus", function() {
                 $("#load-modal").modal("hide");
                 $("#generate-modal").modal("hide");
                 $("#link-modal").modal("hide");
+                $("#file-modal").modal("hide");
                 $("#expire-modal").modal("show");
             }
         }
