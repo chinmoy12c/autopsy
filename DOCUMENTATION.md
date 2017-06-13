@@ -87,7 +87,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 
 ## Functions in `autopsy.py`
 
-* `_write` and `_flush`: used to configure the logger to record `pexpect` output.
+* `_write` and `_flush`: configures the logger to record `pexpect` output.
 * `get_db`, `close_connection`, and `init_db`: sets up the SQLite database. See the [Flask SQLite documentation](http://flask.pocoo.org/docs/0.12/patterns/sqlite3/) for more details.
 * `initdb_command`: registers `initdb` as a Flask command. See [this](http://flask.pocoo.org/docs/0.12/tutorial/dbinit/) for more.
 * `set_queues`: creates queues with a particular count as the key.
