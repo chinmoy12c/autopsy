@@ -43,15 +43,19 @@ The uuid, coredump, filesize, and timestamp fields are obtained when the user up
 
 ## Uploading process
 
-A user has two ways to upload files: uploading a local file and submitting a link to a core dump.
+A user has three ways to upload files: uploading a local file, submitting a link to a core dump, and using SCP to retrieve a file from a remote server.
 
 ### Uploading a local file
 
-When a local file is uploaded, the client first tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
+When a local file is uploaded, the client tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
 
 ### Submitting a link
 
-If a user submits a link, the server first checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload case.
+If a user submits a link, the server checks if the link is valid and if the username and password (if supplied) are correct. If so, the server downloads the file from the link and proceeds with unzipping and building as in the local file upload case.
+
+### Using SCP to retrieve a file
+
+If a user chooses to SCP a file, the server checks if the server and path are valid using the supplied username and password. If the information provided is correct, the server copies the file and proceeds with unzipping and building as above.
 
 ### Core dump storage
 
