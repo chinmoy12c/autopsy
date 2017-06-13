@@ -38,6 +38,7 @@ cd nginx-1.13.1
 ./configure --with-http_ssl_module --prefix=${nginx_dir}
 make
 make install
+cd ..
 cat << 'EOF' > conf/nginx.conf
 worker_processes    1;
 
@@ -84,4 +85,4 @@ http {
     }
 }
 EOF
-cd ../..
+cd ../Autopsy
