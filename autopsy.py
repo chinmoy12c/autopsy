@@ -4,7 +4,7 @@ from os import kill
 from os.path import basename
 from pathlib import Path
 from queue import Queue, Empty
-from re import findall
+from re import findall, sub
 from sched import scheduler
 from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
@@ -16,7 +16,7 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, g, render_template, request, session
-from pexpect import EOF, spawn
+from pexpect import EOF, spawn, TIMEOUT
 from requests import get
 from requests.auth import HTTPBasicAuth
 from requests_ntlm import HttpNtlmAuth
@@ -52,6 +52,20 @@ queues_lock = Lock()
 running_counts = set()
 count = 0
 count_lock = Lock()
+
+def _write(*args, **kwargs):
+    content = args[0]
+    if content in [' ', '', '\n', '\r', '\r\n']:
+        return
+    for eol in ['\r\n', '\r', '\n']:
+        content = sub('\%s$' % eol, '', content)
+    return logger.info(content)
+
+def _flush():
+    pass
+
+logger.write = _write
+logger.flush = _flush
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -466,8 +480,8 @@ def file_test():
     logger.info('making directory %s', str(directory))
     directory.mkdir(parents=True, exist_ok=True)
     try:
-        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
-        scp.logfile = stdout.buffer
+        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
+        scp.logfile_read = logger
         i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
         logger.info('expect i is %d', i)
         if i == 0:
@@ -504,7 +518,7 @@ def file_test():
                 session['current'] = filename
                 logger.info('ok, filename is %s', filename)
                 return jsonify(message='ok', filename=filename)
-    except:
+    except TIMEOUT:
         logger.info('timeout')
         remove_directory_and_parent(directory)
         return jsonify(message='server')
@@ -522,8 +536,8 @@ def file_upload():
     logger.info('making directory %s', str(directory))
     directory.mkdir(parents=True, exist_ok=True)
     try:
-        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)])
-        scp.logfile = stdout.buffer
+        scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
+        scp.logfile_read = logger
         i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
         logger.info('expect i is %d', i)
         if i == 0:
@@ -567,7 +581,7 @@ def file_upload():
                 remove_directory_and_parent(directory)
                 logger.info('invalid')
                 return 'invalid'
-    except:
+    except TIMEOUT:
         logger.info('timeout')
         remove_directory_and_parent(directory)
         return 'server'
