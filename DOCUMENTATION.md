@@ -9,6 +9,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [Uploading process](#uploading-process)
  * [Uploading a local file](#uploading-a-local-file)
  * [Submitting a link](#submitting-a-link)
+ * [Using SCP to retrieve a file](#using-scp-to-retrieve-a-file)
  * [Core dump storage](#core-dump-storage)
 * [File output](#file-output)
 * [Running GDB](#running-gdb)
