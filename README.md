@@ -56,13 +56,13 @@ There are two ways to launch Autopsy: with the [Flask development server](http:/
 
 Run
 ```
-git clone http://gitlab.cisco.com/clientlessvpn/Autopsy.git
+git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/Autopsy.git
 ```
 to clone the Autopsy repository. The files should be in a folder called `Autopsy`.
 
 Next, in the parent folder to `Autopsy`, run
 ```
-git clone http://gitlab.cisco.com/clientlessvpn/clientlessgdb.git
+git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
 ```
 to clone the clientlessGDB repository, which is necessary for analyzing core dumps. The files should be in a folder called `clientlessGDB`. The two folders `Autopsy` and `clientlessGDB` should be in the same directory. In the `clientlessGDB` folder, create a file called `ticket.txt` and enter your Perforce ticket inside.
 
