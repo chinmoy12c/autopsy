@@ -378,7 +378,7 @@ def link_test():
     logger.info('url is ' + request.form['url'])
     logger.info('username is ' + request.form['username'])
     try:
-        r = get(request.form['url'], stream=True)
+        r = get(request.form['url'], stream=True, timeout=30)
     except:
         logger.info('invalid url')
         return jsonify(message='url')
@@ -387,10 +387,10 @@ def link_test():
         try:
             if r.headers['WWW-Authenticate'].split()[0] == 'Basic':
                 logger.info('trying basic auth')
-                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True)
+                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
             else:
                 logger.info('trying ntlm auth')
-                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
+                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
         except:
             logger.info('invalid url')
             return jsonify(message='url')
@@ -417,15 +417,15 @@ def link_upload():
     if not 'current' in session:
         return 'missing session'
     try:
-        r = get(request.form['url'], stream=True)
+        r = get(request.form['url'], stream=True, timeout=30)
     except:
         return 'url'
     if r.status_code == 401:
         try:
             if r.headers['WWW-Authenticate'].split()[0] == 'Basic':
-                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True)
+                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
             else:
-                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True)
+                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
         except:
             return 'url'
         if r.status_code == 401:
