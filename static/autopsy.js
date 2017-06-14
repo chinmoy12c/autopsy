@@ -752,6 +752,10 @@ function fileUpload(server, path, username, password, filename) {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             switch (xhr.responseText) {
+                case "timeout":
+                    resetFileUpload(true, "Server Timeout");
+                    upload_button.disabled = true;
+                    break;
                 case "invalid":
                     resetFileUpload(true, "Invalid File");
                     upload_button.disabled = true;
@@ -790,6 +794,13 @@ file_button.addEventListener("click", function() {
                 case "server":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Invalid Server";
+                    file_server_group.className = "form-group row has-danger";
+                    file_server.className = "form-control form-control-danger";
+                    file_bad_server = true;
+                    break;
+                case "timeout":
+                    file_button.className = "btn btn-danger";
+                    file_button.innerHTML = "Server Timeout";
                     file_server_group.className = "form-group row has-danger";
                     file_server.className = "form-control form-control-danger";
                     file_bad_server = true;

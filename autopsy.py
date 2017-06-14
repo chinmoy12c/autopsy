@@ -494,7 +494,7 @@ def file_test():
                 scp.sendline('yes')
                 scp.expect('assword:', timeout=5)
             scp.sendline(request.form['password'])
-            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=30)
             logger.info('expect j is %d', j)
             if j == 0:
                 logger.info('wrong credentials')
@@ -521,7 +521,7 @@ def file_test():
     except TIMEOUT:
         logger.info('timeout')
         remove_directory_and_parent(directory)
-        return jsonify(message='server')
+        return jsonify(message='timeout')
 
 @app.route('/fileupload', methods=['POST'])
 def file_upload():
@@ -551,7 +551,7 @@ def file_upload():
             scp.sendline(request.form['password'])
             j = 4
             while j == 4:
-                j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=5)
+                j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=30)
             logger.info('expect j is %d', j)
             if j == 0:
                 remove_directory_and_parent(directory)
@@ -584,7 +584,7 @@ def file_upload():
     except TIMEOUT:
         logger.info('timeout')
         remove_directory_and_parent(directory)
-        return 'server'
+        return 'timeout'
 
 @app.route('/testfilename', methods=['POST'])
 def test_filename():
