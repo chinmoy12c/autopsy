@@ -2,7 +2,7 @@
 
 cd ..
 git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
-echo "Enter your Perforce ticket: "
+echo "Enter your Perforce ticket:"
 read ticket
 echo ${ticket} > clientlessGDB/ticket.txt
 mkdir -p python
