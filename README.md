@@ -46,9 +46,10 @@ Autopsy only works on Cisco machines with Perforce access and appropriate versio
 
 ## Installation
 
-To install Autopsy, run the following commands in the directory where you would like Autopsy to be installed:
+Run the following commands to install Autopsy in a directory named `Autopsy`:
 ```
 mkdir Autopsy
+cd Autopsy
 git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/Autopsy.git
 cd Autopsy
 . install.sh
