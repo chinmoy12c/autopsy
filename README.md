@@ -62,7 +62,7 @@ The installation should set up five folders in the main `Autopsy` directory:
 * `python` contains an installation of Python 3.6.1
 * `virtualenv-15.1.0` contains an installation of virtualenv, used to create a virtual Python environment
 
-It is recommended to keep the installations of nginx, Python, and virtualenv up-to-date (possibly by periodically updating `install.sh`).
+It is recommended to keep the installations of nginx, Python, and virtualenv up to date (possibly by periodically updating `install.sh`).
 
 ## Development vs. production server
 
@@ -133,7 +133,7 @@ Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log
 
 ### Running Autopsy
 
-As a root user, start nginx with `ng`. Then, as a non-root user, start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
+Start nginx with `ng` and then start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
 
 ## Documentation
 
