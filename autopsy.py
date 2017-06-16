@@ -727,15 +727,15 @@ def command_input():
     logger.info('start')
     if not 'count' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
-    global count, running_counts, coredump_queues, command_queues, output_queues
-    logger.info('%s', request.form['command'])
-    if not request.form['command'].split(' ')[0].lower() in COMMANDS:
-        logger.info('%s: invalid command', request.form['command'])
-        return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=int(time() * 1000))
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
+    global count, running_counts, coredump_queues, command_queues, output_queues
+    logger.info('%s', request.form['command'])
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    if not request.form['command'].split(' ')[0].lower() in COMMANDS:
+        logger.info('%s: invalid command', request.form['command'])
+        return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=timestamp)
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
     def startup():
