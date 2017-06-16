@@ -378,25 +378,18 @@ def link_test():
     logger.info('url is ' + request.form['url'])
     logger.info('username is ' + request.form['username'])
     try:
-        r = get(request.form['url'], stream=True, timeout=30)
+        logger.info('trying basic auth')
+        r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
+        if r.status_code == 401:
+            logger.info('trying ntlm auth')
+            r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
+            if r.status_code == 401:
+                logger.info('invalid credentials')
+                return jsonify(message='credentials')
+        logger.info('request get')
     except:
         logger.info('invalid url')
         return jsonify(message='url')
-    logger.info('request get')
-    if r.status_code == 401:
-        try:
-            if r.headers['WWW-Authenticate'].split()[0] == 'Basic':
-                logger.info('trying basic auth')
-                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
-            else:
-                logger.info('trying ntlm auth')
-                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
-        except:
-            logger.info('invalid url')
-            return jsonify(message='url')
-        if r.status_code == 401:
-            logger.info('invalid credentials')
-            return jsonify(message='credentials')
     logger.info('status code is %d', r.status_code)
     try:
         filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
@@ -417,19 +410,13 @@ def link_upload():
     if not 'current' in session:
         return 'missing session'
     try:
-        r = get(request.form['url'], stream=True, timeout=30)
+        r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
+        if r.status_code == 401:
+            r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
+            if r.status_code == 401:
+                return 'credentials'
     except:
         return 'url'
-    if r.status_code == 401:
-        try:
-            if r.headers['WWW-Authenticate'].split()[0] == 'Basic':
-                r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
-            else:
-                r = get(request.form['url'], auth=HttpNtlmAuth('CISCO\\' + request.form['username'], request.form['password']), stream=True, timeout=30)
-        except:
-            return 'url'
-        if r.status_code == 401:
-            return 'credentials'
     filename = session['current']
     if filename.endswith('.gz'):
         directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
