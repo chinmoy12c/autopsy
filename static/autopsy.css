@@ -65,10 +65,10 @@ p {
 
 .navbar-brand::before {
     background-image: url("scalpel.svg");
-    background-size: 1.75rem 1.75rem;
+    background-size: 2rem 2rem;
     display: inline-block;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2rem;
+    height: 2rem;
     content: "";
     vertical-align: middle;
     margin-right: 1rem;
