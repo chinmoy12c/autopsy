@@ -469,7 +469,7 @@ def file_test():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=10)
         logger.info('expect i is %d', i)
         if i == 0:
             logger.info('bad server')
@@ -479,7 +479,7 @@ def file_test():
             if i == 1:
                 logger.info('requires rsa')
                 scp.sendline('yes')
-                scp.expect('assword:', timeout=5)
+                scp.expect('assword:', timeout=10)
             scp.sendline(request.form['password'])
             j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=30)
             logger.info('expect j is %d', j)
@@ -525,7 +525,7 @@ def file_upload():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=5)
+        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=10)
         logger.info('expect i is %d', i)
         if i == 0:
             remove_directory_and_parent(directory)
@@ -534,7 +534,7 @@ def file_upload():
             if i == 1:
                 logger.info('requires rsa')
                 scp.sendline('yes')
-                scp.expect('assword:', timeout=5)
+                scp.expect('assword:', timeout=10)
             scp.sendline(request.form['password'])
             j = 4
             while j == 4:
