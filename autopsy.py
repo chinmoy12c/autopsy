@@ -11,7 +11,7 @@ from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
 from sqlite3 import connect
 from sys import stdout, version
-from threading import Lock, Thread
+from threading import Lock, Thread, enumerate
 from time import time
 from uuid import uuid4
 
@@ -125,9 +125,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
     def enqueue_output(out, queue):
         for line in iter(out.readline, ''):
             queue.put(line)
-        out.close()
     t = Thread(target=enqueue_output, args=(gdb.stdout, read_queue))
-    t.daemon = True
+    t.name = 'enqueue-thread-' + str(count)
     t.start()
     entered_commands = []
     def enter_command(command):
@@ -169,7 +168,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                         undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
                             line = line[:undefined_index]
-                            logger.info('run_gdb: count %d - reached end', count)
+                            logger.info('count %d - reached end', count)
                             end = True
                         command_index = line.find('(gdb) ')
                         while entered_commands and command_index >= 0:
@@ -180,6 +179,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                 entered_commands = []
                 abort_queues[count] = Queue()
         except Empty:
+            logger.info('coredump timeout')
             running = False
     running_counts.remove(count)
     if restart:
@@ -188,6 +188,11 @@ def run_gdb(count, uuid, workspace, gdb_location):
     else:
         delete_queues(count)
         logger.info('count %d - no restart', count)
+    logger.info('closing...')
+    gdb.kill()
+    gdb.wait()
+    logger.info('closed')
+    t.join()
     logger.info('count %d - exit', count)
 
 def remove_directory_and_parent(directory):
@@ -747,6 +752,7 @@ def command_input():
         workspace, gdb_location = cur.fetchall()[0]
         cur.close()
         worker = Thread(target=run_gdb, args=(session['count'], session['uuid'], workspace, gdb_location))
+        worker.name = 'worker-thread-' + str(session['count'])
         worker.start()
         logger.info('running_counts is %s', str(running_counts))
     def queue_add():
@@ -790,13 +796,24 @@ def check_session():
 @app.before_first_request
 def start():
     logger.info(version)
-    s = scheduler()
+    s1 = scheduler()
     def sched_clean():
         clean_uploads()
-        s.enter(3600, 1, sched_clean)
+        s1.enter(3600, 1, sched_clean)
     sched_clean()
-    t = Thread(target=s.run)
-    t.daemon = True
-    t.start()
+    t1 = Thread(target=s1.run)
+    t1.name = 'clean-thread'
+    t1.start()
+    s2 = scheduler()
+    def enum_threads():
+        s2.enter(30, 1, enum_threads)
+        enum_output = enumerate()
+        named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
+        logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
+        logger.info(named_threads)
+    enum_threads()
+    t2 = Thread(target=s2.run)
+    t2.name = 'enum-thread'
+    t2.start()
 
 app.secret_key = 'supersecrettemporarykey'
