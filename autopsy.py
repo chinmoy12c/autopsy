@@ -4,14 +4,14 @@ from os import kill
 from os.path import basename
 from pathlib import Path
 from queue import Queue, Empty
-from re import findall, sub
+from re import findall, match, sub
 from sched import scheduler
 from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
 from sqlite3 import connect
 from sys import stdout, version
-from threading import Lock, Thread, enumerate
+from threading import Lock, Thread, enumerate as thread_enum
 from time import time
 from uuid import uuid4
 
@@ -140,7 +140,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
     while running:
         try:
             logger.info('count %d - waiting', count)
-            coredump = coredump_queues[count].get(timeout=600)
+            coredump = coredump_queues[count].get(timeout=60)
             if coredump == '':
                 running = False
                 logger.info('count %d - quit', count)
@@ -179,7 +179,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                 entered_commands = []
                 abort_queues[count] = Queue()
         except Empty:
-            logger.info('coredump timeout')
+            logger.info('count %d - coredump timeout', count)
             running = False
     running_counts.remove(count)
     if restart:
@@ -188,12 +188,32 @@ def run_gdb(count, uuid, workspace, gdb_location):
     else:
         delete_queues(count)
         logger.info('count %d - no restart', count)
-    logger.info('closing...')
+    logger.info('count %d - closing...', count)
     gdb.kill()
     gdb.wait()
-    logger.info('closed')
+    logger.info('count %d - closed', count)
     t.join()
     logger.info('count %d - exit', count)
+
+def startup(count, uuid, coredump):
+    global running_counts, coredump_queues
+    logger.info('start')
+    set_queues(count)
+    running_counts.add(count)
+    coredump_queues[count].put(coredump)
+    cur = get_db().execute('SELECT workspace, gdb FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
+    workspace, gdb_location = cur.fetchall()[0]
+    cur.close()
+    worker = Thread(target=run_gdb, args=(count, uuid, workspace, gdb_location))
+    worker.name = 'worker-thread-' + str(count)
+    worker.start()
+    logger.info('running_counts is %s', str(running_counts))
+
+def queue_add(count, coredump, command):
+    global coredump_queues, command_queues
+    with queues_lock:
+        coredump_queues[count].put(coredump)
+        command_queues[count].put(command)
 
 def remove_directory_and_parent(directory):
     if directory.exists():
@@ -265,6 +285,22 @@ def check_filename(uuid, filename):
         return 'invalid'
     logger.info('other duplicate')
     return 'duplicate'
+
+def compile_decoder_text(directory, coredump, thread, registers, aslr_start, aslr_end):
+    gen_core_report_file = directory / 'gen_core_report.txt'
+    gen_core_report = gen_core_report_file.read_text()
+    backtrace_file = directory / (coredump + '.backtrace.txt')
+    backtraces = backtrace_file.read_text().split('\n\n')
+    version = ([line.split()[-1] for line in gen_core_report.splitlines() if line.startswith('Version:')][0]).split('.')
+    version_paren = version[0] + '.' + version[1] + '(' + version[2] + ')'
+    if len(version) > 3:
+        version_paren += version[3]
+    hardware = [line.split()[-1] for line in gen_core_report.splitlines() if line.startswith('Platform:')][0]
+    aslr = ((aslr_start.split()[-1][2:] + '-') if match('0x[0-9a-f]+', aslr_start.split()[-1]) else '') + (aslr_end.split()[-1][2:] if match('0x[0-9a-f]+', aslr_end.split()[-1]) else '')
+    if aslr != '':
+        aslr = 'ASLR enabled, text region ' + aslr + '\n'
+    traceback = '\n'.join([str(i - 1) + ': ' + line.split()[1] for i, line in enumerate(backtraces[len(backtraces) - thread - 1].splitlines()) if match('0x[0-9a-f]+', line.split()[1])])
+    return 'Thread Name:\n' + '\n'.join(registers.split('\n')[1:]) + 'Cisco Adaptive Security Appliance Software Version ' + version_paren + '\nCompiled on  by builders\nHardware: ' + hardware + '\n' + aslr + 'Traceback:\n' + traceback
 
 def update_timestamp(uuid, coredump):
     timestamp = int(time() * 1000)
@@ -678,6 +714,32 @@ def build():
         logger.info('workspace failed')
         remove_directory_and_parent(directory)
         return jsonify(report=report)
+    global running_counts, output_queues
+    if not session['count'] in running_counts:
+        logger.info('starting')
+        startup(session['count'], session['uuid'], filename)
+    queue_add(session['count'], filename, '1')
+    startup_result = output_queues[session['count']].get()
+    if startup_result == 'restart':
+        logger.info('restart')
+        delete_queues(session['count'])
+        startup(session['count'], session['uuid'], filename)
+        queue_add(session['count'], filename, '1')
+        output_queues[session['count']].get()
+    siginfo_file = directory / (filename + '.siginfo.txt')
+    siginfo = siginfo_file.read_text()
+    thread = int((siginfo.splitlines()[0]).split()[-1])
+    queue_add(session['count'], filename, 'thread ' + str(thread))
+    output_queues[session['count']].get()
+    queue_add(session['count'], filename, 'info registers')
+    registers = output_queues[session['count']].get()
+    queue_add(session['count'], filename, 'p _lina_text_start')
+    aslr_start = output_queues[session['count']].get()
+    queue_add(session['count'], filename, 'p _lina_text_end')
+    aslr_end = output_queues[session['count']].get()
+    decoder_text = compile_decoder_text(directory, filename, thread, registers, aslr_start, aslr_end)
+    decoder_file = directory / 'decoder.txt'
+    decoder_file.write_text(decoder_text)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
@@ -716,6 +778,18 @@ def siginfo():
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
 
+@app.route('/decode', methods=['POST'])
+def decode():
+    logger.info('start')
+    if not 'uuid' in session:
+        return jsonify(output='missing session', timestamp=int(time() * 1000))
+    if no_such_coredump(session['uuid'], request.form['coredump']):
+        logger.info('no such coredump')
+        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
+    return jsonify(output=escape(decoder_file.read_text()), timestamp=timestamp)
+
 @app.route('/abort', methods=['POST'])
 def abort():
     logger.info('start')
@@ -735,7 +809,7 @@ def command_input():
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
-    global count, running_counts, coredump_queues, command_queues, output_queues
+    global running_counts, output_queues
     logger.info('%s', request.form['command'])
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     if not request.form['command'].split(' ')[0].lower() in COMMANDS:
@@ -743,32 +817,16 @@ def command_input():
         return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=timestamp)
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
-    def startup():
-        logger.info('start')
-        set_queues(session['count'])
-        running_counts.add(session['count'])
-        coredump_queues[session['count']].put(request.form['coredump'])
-        cur = get_db().execute('SELECT workspace, gdb FROM cores WHERE uuid = ? AND coredump = ?', (session['uuid'], request.form['coredump']))
-        workspace, gdb_location = cur.fetchall()[0]
-        cur.close()
-        worker = Thread(target=run_gdb, args=(session['count'], session['uuid'], workspace, gdb_location))
-        worker.name = 'worker-thread-' + str(session['count'])
-        worker.start()
-        logger.info('running_counts is %s', str(running_counts))
-    def queue_add():
-        with queues_lock:
-            coredump_queues[session['count']].put(request.form['coredump'])
-            command_queues[session['count']].put(request.form['command'])
     if not session['count'] in running_counts:
         logger.info('starting')
-        startup()
-    queue_add()
+        startup(session['count'], session['uuid'], request.form['coredump'])
+    queue_add(session['count'], request.form['coredump'], request.form['command'])
     result = output_queues[session['count']].get()
     if result == 'restart':
         logger.info('restart')
         delete_queues(session['count'])
-        startup()
-        queue_add()
+        startup(session['count'], session['uuid'], request.form['coredump'])
+        queue_add(session['count'], request.form['coredump'], request.form['command'])
         return jsonify(output=escape(output_queues[session['count']].get()), timestamp=timestamp)
     return jsonify(output=escape(result), timestamp=timestamp)
 
@@ -807,7 +865,7 @@ def start():
     s2 = scheduler()
     def enum_threads():
         s2.enter(30, 1, enum_threads)
-        enum_output = enumerate()
+        enum_output = thread_enum()
         named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
         logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
         logger.info(named_threads)

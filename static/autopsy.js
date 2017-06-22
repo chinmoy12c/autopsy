@@ -33,6 +33,7 @@ var cores = document.getElementById("cores");
 var gen_report = document.getElementById("gen-report");
 var backtrace = document.getElementById("backtrace");
 var siginfo = document.getElementById("siginfo");
+var decode = document.getElementById("decode");
 var clear_output = document.getElementById("clear-output");
 var abort_gdb = document.getElementById("abort-gdb");
 var command_input = document.getElementById("command-input");
@@ -158,6 +159,7 @@ function disableCommandButtons(setting) {
     gen_report.disabled = setting;
     backtrace.disabled = setting;
     siginfo.disabled = setting;
+    decode.disabled = setting;
     command_input.disabled = setting;
 }
 
@@ -1046,6 +1048,22 @@ siginfo.addEventListener("click", function() {
     var coredump = checked;
     fd.append("coredump", checked);
     xhr.open("POST", "/siginfo", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
+        }
+    });
+    xhr.send(fd);
+});
+
+decode.addEventListener("click", function() {
+    showLoading();
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var coredump = checked;
+    fd.append("coredump", checked);
+    xhr.open("POST", "/decode", true);
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
