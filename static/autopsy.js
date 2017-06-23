@@ -995,6 +995,9 @@ function build() {
 }
 
 function showLoading() {
+    output_text.parentElement.style.overflow = "auto";
+    output_text.classList.remove("html-text");
+    output_text.classList.add("mono-text");
     output_text.innerHTML = "Loading.<span id=\"dots\"><span>.</span><span>.</span></span>";
     loading = true;
 }
@@ -1067,7 +1070,21 @@ decode.addEventListener("click", function() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
+            var coredump_box = document.getElementById(coredump);
+            if (coredump_box !== null) {
+                var coredate = coredump_box.firstChild.lastChild;
+                coredate.innerHTML = date(xhr.response.timestamp);
+            }
+            var iframe = document.createElement("iframe");
+            output_text.parentElement.style.overflow = "visible";
+            output_text.classList.remove("mono-text");
+            output_text.classList.add("html-text");
+            output_text.innerHTML = "";
+            output_text.appendChild(iframe);
+            iframe.width = "100%";
+            iframe.height = "100%";
+            iframe.contentDocument.write(xhr.response.output);
+            loading = false;
         }
     });
     xhr.send(fd);

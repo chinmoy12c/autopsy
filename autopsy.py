@@ -17,7 +17,7 @@ from uuid import uuid4
 
 from flask import Flask, jsonify, g, render_template, request, session
 from pexpect import EOF, spawn, TIMEOUT
-from requests import get
+from requests import get, post
 from requests.auth import HTTPBasicAuth
 from requests_ntlm import HttpNtlmAuth
 from werkzeug.utils import secure_filename
@@ -140,7 +140,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
     while running:
         try:
             logger.info('count %d - waiting', count)
-            coredump = coredump_queues[count].get(timeout=60)
+            coredump = coredump_queues[count].get(timeout=600)
             if coredump == '':
                 running = False
                 logger.info('count %d - quit', count)
@@ -788,7 +788,10 @@ def decode():
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
-    return jsonify(output=escape(decoder_file.read_text()), timestamp=timestamp)
+    payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
+    r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
+    logger.info(r.text);
+    return jsonify(output=r.text, timestamp=timestamp)
 
 @app.route('/abort', methods=['POST'])
 def abort():
@@ -864,7 +867,7 @@ def start():
     t1.start()
     s2 = scheduler()
     def enum_threads():
-        s2.enter(30, 1, enum_threads)
+        s2.enter(900, 1, enum_threads)
         enum_output = thread_enum()
         named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
         logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))

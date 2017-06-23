@@ -444,9 +444,8 @@ input {
     border-radius: 0.25rem;
     flex-grow: 1;
     width: 100%;
+    height: 100%;
     margin-top: 1rem;
-    overflow-x: auto;
-    overflow-y: auto;
 }
 
 @keyframes dots-1 {
@@ -475,7 +474,7 @@ input {
     animation-name: dots-2;
 }
 
-#output-text {
+.mono-text {
     font-family: "Menlo Regular", monospace;
     font-size: 10pt;
     white-space: pre;
@@ -483,8 +482,17 @@ input {
     display: inline-block;
 }
 
+.html-text {
+    width: 100%;
+    height: 100%;
+}
+
 .p-second {
     margin-top: 1rem;
+}
+
+iframe {
+    border: none;
 }
 
 .figure-center {
