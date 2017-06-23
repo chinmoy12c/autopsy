@@ -438,6 +438,7 @@ def link_test():
         if check_result != 'ok':
             return jsonify(message=check_result)
     except:
+        logger.info('filename not found')
         filename = 'coredump-' + str(int(time() * 1000))
         while not no_such_coredump(session['uuid'], filename):
             filename = 'coredump-' + str(int(time() * 1000))
@@ -726,20 +727,24 @@ def build():
         startup(session['count'], session['uuid'], filename)
         queue_add(session['count'], filename, '1')
         output_queues[session['count']].get()
-    siginfo_file = directory / (filename + '.siginfo.txt')
-    siginfo = siginfo_file.read_text()
-    thread = int((siginfo.splitlines()[0]).split()[-1])
-    queue_add(session['count'], filename, 'thread ' + str(thread))
-    output_queues[session['count']].get()
-    queue_add(session['count'], filename, 'info registers')
-    registers = output_queues[session['count']].get()
-    queue_add(session['count'], filename, 'p _lina_text_start')
-    aslr_start = output_queues[session['count']].get()
-    queue_add(session['count'], filename, 'p _lina_text_end')
-    aslr_end = output_queues[session['count']].get()
-    decoder_text = compile_decoder_text(directory, filename, thread, registers, aslr_start, aslr_end)
     decoder_file = directory / 'decoder.txt'
-    decoder_file.write_text(decoder_text)
+    try:
+        siginfo_file = directory / (filename + '.siginfo.txt')
+        siginfo = siginfo_file.read_text()
+        thread = int((siginfo.splitlines()[0]).split()[-1])
+        queue_add(session['count'], filename, 'thread ' + str(thread))
+        output_queues[session['count']].get()
+        queue_add(session['count'], filename, 'info registers')
+        registers = output_queues[session['count']].get()
+        queue_add(session['count'], filename, 'p _lina_text_start')
+        aslr_start = output_queues[session['count']].get()
+        queue_add(session['count'], filename, 'p _lina_text_end')
+        aslr_end = output_queues[session['count']].get()
+        decoder_text = compile_decoder_text(directory, filename, thread, registers, aslr_start, aslr_end)
+        decoder_file.write_text(decoder_text)
+    except:
+        logger.info('decoder text failed')
+        decoder_file.write_text('decoder text failed')
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
@@ -789,9 +794,15 @@ def decode():
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
     payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
-    r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
-    logger.info(r.text);
-    return jsonify(output=r.text, timestamp=timestamp)
+    try:
+        r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
+        base_text = r.text.splitlines()
+        base_text = base_text[0] + '\n<base href="http://asa-decoder/">\n' + '\n'.join(base_text[1:])
+        logger.info(base_text.splitlines()[0]);
+    except:
+        logger.info('base text failed')
+        base_text = 'failed'
+    return jsonify(output=base_text, timestamp=timestamp)
 
 @app.route('/abort', methods=['POST'])
 def abort():
