@@ -797,7 +797,7 @@ def decode():
     try:
         r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
         base_text = r.text.splitlines()
-        base_text = base_text[0] + '\n<base href="http://asa-decoder/">\n' + '\n'.join(base_text[1:])
+        base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
         logger.info(base_text.splitlines()[0]);
     except:
         logger.info('base text failed')
