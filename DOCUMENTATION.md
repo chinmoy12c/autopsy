@@ -16,6 +16,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [Running GDB](#running-gdb)
  * [GDB timeout](#gdb-timeout)
 * [Clean-up script](#clean-up-script)
+* [Thread-monitoring script](#thread-monitoring-script)
 * [Functions in `autopsy.py`](#functions-in-autopsypy)
 * [JavaScript](#javascript)
  * [Storage](#storage)
@@ -26,9 +27,9 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 
 Autopsy stores information about a user in a signed cookie, implemented with sessions in Flask. The cookie is base-64 encoded, so it is possible to see the contents of the cookie by decoding it; however, modifying the cookie manually would cause it to be rejected by the server due to the invalid signature. (The data and signature parts of the cookie are separated by a period.)
 
-If a user visits Autopsy without a cookie (e.g. for the first time), Autopsy generates a version 4 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) and a number that uniquely identifies the user (called "count" in the code). The count is generated from a monotonically increasing counter to ensure that it is unique. The UUID corresponds to the core dumps that the user uploads, and the count identifies the user's GDB session.
+If a user visits Autopsy without a cookie (e.g. for the first time), Autopsy generates a version 4 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) and a number that uniquely identifies the user (called `count` in the code). `count` is generated from a monotonically increasing counter to ensure that it is unique. The UUID corresponds to the core dumps that the user uploads, and the count identifies the user's GDB session.
 
-Finally, when a user uploads a core dump, the name of the core dump is stored in the cookie (called "current" in the code). The name keeps track of the core dump that the user is uploading.
+Finally, when a user uploads a core dump, the name of the core dump is stored in the cookie (called `current` in the code). The name keeps track of the core dump that the user is uploading.
 
 ## Database
 
@@ -90,6 +91,10 @@ If a GDB thread is left running without any commands being submitted, the thread
 
 Every hour, Autopsy runs a clean-up script that deletes any core dump with a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
 
+## Thread-monitoring script
+
+Every fifteen minutes, Autopsy prints the number of threads that are currently running to monitor a potential source of memory leaks. These threads can be split into two types: Autopsy threads (launched from `autopsy.py`) and Gunicorn threads. The upper limit on the number of Gunicorn threads is specified by the argument to the `--threads` flag for `gu` and can be found in `launch.sh`. All Autopsy threads should be named, and three threads should be running at all times: `MainThread`, `clean-thread`, and `enum-thread`. Threads named `enqueue-thread-#` and `worker-thread-#` (where `#` is the user's `count`) will appear when a user has a GDB session running; they should disappear after 10 minutes of inactivity.
+
 ## Functions in `autopsy.py`
 
 * `_write` and `_flush`: configures the logger to record `pexpect` output.
@@ -99,7 +104,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `delete_queues`: deletes the queues associated with a particular count.
 * `run_gdb`: runs GDB. This is called as a separate thread.
 * `startup`: launches GDB by calling `run_gdb`.
-* `queue_add`: adds a command for GDB to the appropriate queues.
+* `queue_add`: adds a command for GDB using the appropriate queues.
 * `remove_parent_and_directory`: used to delete the core dump directory and UUID directory if it is empty afterwards.
 * `delete_coredump`: deletes a core dump and removes it from the database.
 * `clean_uploads`: runs every hour to remove old core dumps.
