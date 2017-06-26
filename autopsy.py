@@ -792,6 +792,10 @@ def decode():
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=int(time() * 1000))
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    decoder_output = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder_output.html'
+    if decoder_output.exists():
+        logger.info('already generated')
+        return jsonify(output=decoder_output.read_text(), timestamp=timestamp)
     decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
     payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
     try:
@@ -802,6 +806,8 @@ def decode():
     except:
         logger.info('base text failed')
         base_text = 'failed'
+    decoder_output.write_text(base_text)
+    logger.info('saved base text')
     return jsonify(output=base_text, timestamp=timestamp)
 
 @app.route('/abort', methods=['POST'])
