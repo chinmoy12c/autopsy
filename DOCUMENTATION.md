@@ -93,7 +93,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 
 ## Thread-monitoring script
 
-Every 15 minutes, Autopsy prints the number of threads that are currently running to monitor a potential source of memory leaks. These threads can be split into two types: Autopsy threads (launched from `autopsy.py`) and Gunicorn threads. The upper limit on the number of Gunicorn threads is specified by the argument to the `--threads` flag for `gu` and can be found in `launch.sh`. All Autopsy threads should be named, and three threads should be running at all times: `MainThread`, `clean-thread`, and `enum-thread`. Threads named `enqueue-thread-#` and `worker-thread-#` (where `#` is the user's `count`) will appear when a user has a GDB session running; they should disappear after 10 minutes of inactivity.
+Every 15 minutes, Autopsy prints the number and names of threads that are currently running to monitor a potential source of memory leaks. These threads can be split into two types: Autopsy threads (launched from `autopsy.py`) and Gunicorn threads. The upper limit on the number of Gunicorn threads is specified by the argument to the `--threads` flag for `gu` and can be found in `launch.sh`. All Autopsy threads should be named, and three threads should be running at all times: `MainThread`, `clean-thread`, and `enum-thread`. Threads named `enqueue-thread-#` and `worker-thread-#` (where `#` is the user's `count`) will appear when a user has a GDB session running; they should disappear after 10 minutes of inactivity.
 
 ## Functions in `autopsy.py`
 
