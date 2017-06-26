@@ -12,6 +12,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
  * [Using SCP to retrieve a file](#using-scp-to-retrieve-a-file)
  * [Core dump storage](#core-dump-storage)
 * [File output](#file-output)
+* [ASA decoder](#asa-decoder)
 * [Running GDB](#running-gdb)
  * [GDB timeout](#gdb-timeout)
 * [Clean-up script](#clean-up-script)
@@ -48,7 +49,7 @@ A user has three ways to upload files: uploading a local file, submitting a link
 
 ### Uploading a local file
 
-When a local file is uploaded, the client tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
+When a local file is uploaded, the client tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`. After running `gen_core_report.sh`, GDB is launched in order to extract register values from the crashed thread. These are used to compile `decoder.txt`, which can be inputted into the [ASA traceback decoder](asa-decoder/asadecoder.php) to list possible bugs that caused the crash.
 
 ### Submitting a link
 
@@ -65,6 +66,10 @@ All uploaded core dumps are stored in the `uploads` folder. Each UUID has its ow
 ## File output
 
 If a user clicks one of the three buttons to analyze a core dump, Autopsy will return the contents of the corresponding file (`gen_core_report.txt`, the backtrace file, or the siginfo file) to the user.
+
+## ASA decoder
+
+By clicking the `decode` button for a core dump for the first time, Autopsy will submit the contents of `decoder.txt` to the ASA traceback decoder and display the output. Autopsy saves the output in `decoder_output.html` and reads from this file instead during subsequent runs.
 
 ## Running GDB
 
@@ -93,11 +98,14 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `set_queues`: creates queues with a particular count as the key.
 * `delete_queues`: deletes the queues associated with a particular count.
 * `run_gdb`: runs GDB. This is called as a separate thread.
+* `startup`: launches GDB by calling `run_gdb`.
+* `queue_add`: adds a command for GDB to the appropriate queue.
 * `remove_parent_and_directory`: used to delete the core dump directory and UUID directory if it is empty afterwards.
 * `delete_coredump`: deletes a core dump and removes it from the database.
 * `clean_uploads`: runs every hour to remove old core dumps.
 * `no_such_coredump`: tests whether a UUID and a core dump with a particular name already exists.
 * `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
+* `compile_decoder_text`: extracts information from the core dump and associated files, which is compiled into a format suitable for the ASA traceback decoder.
 * `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
@@ -112,8 +120,9 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `test_filename`: uses `check_filename` to test a file name.
 * `upload`: saves the file that a user uploads, checks whether it is valid, and deletes it if it is not.
 * `unzip`: unzips the uploaded file.
-* `build`: builds the workspace for the uploaded file using `gen_core_report.sh` and extracts information from its output.
+* `build`: builds the workspace for the uploaded file using `gen_core_report.sh` and extracts information from its output. Also launches GDB to extract registers.
 * `get_report`, `backtrace`, and `siginfo`: returns the contents of the relevant files for a core dump.
+* `decode`: submits `decoder.txt` to the ASA traceback decoder and returns the output, or returns the contents of `decoder_output.html` if it already exists.
 * `abort`: aborts the current command.
 * `command_input`: manages launching the GDB thread and communicates with the thread using the appropriate queues.
 * `quit`: quits a GDB thread. Called when the user closes the Autopsy window.
