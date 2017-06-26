@@ -99,7 +99,7 @@ Every hour, Autopsy runs a clean-up script that deletes any core dump with a las
 * `delete_queues`: deletes the queues associated with a particular count.
 * `run_gdb`: runs GDB. This is called as a separate thread.
 * `startup`: launches GDB by calling `run_gdb`.
-* `queue_add`: adds a command for GDB to the appropriate queue.
+* `queue_add`: adds a command for GDB to the appropriate queues.
 * `remove_parent_and_directory`: used to delete the core dump directory and UUID directory if it is empty afterwards.
 * `delete_coredump`: deletes a core dump and removes it from the database.
 * `clean_uploads`: runs every hour to remove old core dumps.
