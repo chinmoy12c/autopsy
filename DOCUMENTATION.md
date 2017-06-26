@@ -70,7 +70,7 @@ If a user clicks one of the three buttons to analyze a core dump, Autopsy will r
 
 ## ASA decoder
 
-By clicking the `decode` button for a core dump for the first time, Autopsy will submit the contents of `decoder.txt` to the ASA traceback decoder and display the output. Autopsy saves the output in `decoder_output.html` and reads from this file instead during subsequent runs.
+If the `decode` button for a core dump is clicked for the first time, Autopsy will submit the contents of `decoder.txt` to the ASA traceback decoder and display the output. Autopsy saves the output in `decoder_output.html` and reads from this file instead during subsequent runs.
 
 ## Running GDB
 
