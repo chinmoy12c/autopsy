@@ -2,7 +2,7 @@
 
 if [ ! -f autopsy.py ]; then
     echo "Error: running install script in wrong directory"
-    exit 1
+    return
 fi
 cd ..
 base_dir=$(pwd)
