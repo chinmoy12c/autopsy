@@ -73,7 +73,7 @@ There are two ways to launch Autopsy: with the [Flask development server](http:/
 ### Using `launch.sh`
 
 `launch.sh` does several things:
-* Creates the `database` and `uploads` folders if they don't exist
+* Creates the `database`, `flasklogs`, and `uploads` folders if they don't exist
 * Sets up several useful aliases
  * `fk`, short for "flask kill", to completely kill the application
  * `fl`, short for "flask", to launch the application
