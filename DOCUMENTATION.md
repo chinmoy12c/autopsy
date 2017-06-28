@@ -21,6 +21,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [JavaScript](#javascript)
  * [Storage](#storage)
 * [CSS](#css)
+* [Logging](#logging)
 * [Adding additional commands](#adding-additional-commands)
 
 ## Session cookie
@@ -145,6 +146,10 @@ Aside from the session cookie, Autopsy stores a dictionary and a list on the use
 ## CSS
 
 Autopsy uses [Bootstrap 4](https://v4-alpha.getbootstrap.com) as a CSS framework and flexbox for a responsive layout. However, the Autopsy window has a minimum width and height, and there is no mobile version of the site.
+
+## Logging
+
+Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/logs` folder. The `flasklogs` folder contains the logs generated from the output of `autopsy.py`, and these logs are rotated with `autopsy.py` to ensure that they do not take up too much space. The nginx logs store logs from nginx itself (e.g. requests to the Autopsy website), and these are managed with `logrotate`.
 
 ## Adding additional commands
 
