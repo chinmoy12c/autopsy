@@ -149,7 +149,7 @@ Autopsy uses [Bootstrap 4](https://v4-alpha.getbootstrap.com) as a CSS framework
 
 ## Logging
 
-Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/logs` folder. The `flasklogs` folder contains the logs generated from the output of `autopsy.py`, and these logs are rotated with `autopsy.py` to ensure that they do not take up too much space. The nginx logs store logs from nginx itself (e.g. requests to the Autopsy website), and these are managed with `logrotate`.
+Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/logs` folder. The `flasklogs` folder contains the logs generated from `autopsy.py`, and these logs are rotated with `autopsy.py` to ensure that they do not take up too much space. The nginx logs store logs from nginx itself (e.g. requests to the Autopsy website), and these are managed with `logrotate`.
 
 ## Adding additional commands
 
