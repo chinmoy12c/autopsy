@@ -941,6 +941,7 @@ function unzip() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            removeListeners();
             switch (xhr.responseText) {
                 case "unzip failed":
                     resetFileUpload(true, "Unzip Failed");
@@ -952,6 +953,18 @@ function unzip() {
             }
         }
     });
+    function abort() {
+        removeListeners();
+        xhr.abort();
+    }
+    function removeListeners() {
+        previous_button.removeEventListener("click", abort);
+        load_button.removeEventListener("click", abort);
+        generate_button.removeEventListener("click", abort);
+    }
+    previous_button.addEventListener("click", abort);
+    load_button.addEventListener("click", abort);
+    generate_button.addEventListener("click", abort);
     xhr.send();
 }
 
@@ -961,6 +974,7 @@ function build() {
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            removeListeners();
             if (xhr.response.hasOwnProperty("report")) {
                 resetFileUpload(true, "Build Failed");
                 upload_button.disabled = true;
@@ -991,6 +1005,18 @@ function build() {
             }
         }
     });
+    function abort() {
+        removeListeners();
+        xhr.abort();
+    }
+    function removeListeners() {
+        previous_button.removeEventListener("click", abort);
+        load_button.removeEventListener("click", abort);
+        generate_button.removeEventListener("click", abort);
+    }
+    previous_button.addEventListener("click", abort);
+    load_button.addEventListener("click", abort);
+    generate_button.addEventListener("click", abort);
     xhr.send();
 }
 
