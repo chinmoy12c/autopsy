@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ ! -f autopsy.py ]; then
+    echo "Error: running install script in wrong directory"
+    exit 1
+fi
 cd ..
 base_dir=$(pwd)
 git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
