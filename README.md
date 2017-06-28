@@ -13,9 +13,9 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
  * [Using `launch.sh`](#using-launchsh)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
  * [Launch process](#launch-process)
- * [Logging](#logging)
 * [Using the production server](#using-the-production-server)
- * [Running Autopsy](#running-autopsy)
+* [Running Autopsy](#running-autopsy)
+* [Logging](#logging)
 * [Documentation](#documentation)
 
 ## What's included
@@ -36,9 +36,8 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 
 ## What's not included
 
-* `database` and `uploads` folders will be created when running `launch.sh`.
+* `database`, `flasklogs`, and `uploads` folders will be created when running `launch.sh`.
 * A `venv` folder will be generated after using `virtualenv` to create an isolated Python environment.
-* A `flask.log` file will be generated once the server starts to log interactions with the application.
 
 ## Requirements
 
@@ -120,21 +119,23 @@ fl
 ```
 to launch Autopsy.
 
-### Logging
+## Using the production server
 
-By default, Autopsy logs output from `autopsy.py` to both the console and `flask.log`. To turn off console logging, comment out (i.e. put a `#` in front of)
+The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application, the location of the nginx logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used.
+
+## Running Autopsy
+
+Start nginx with `ng` and then start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
+
+## Logging
+
+By default, Autopsy logs output from `autopsy.py` to both the console and `flask.log`, which is located in the `flasklogs` folder. To turn off console logging, comment out (i.e. put a `#` in front of)
 ```
 logger.addHandler(ch)
 ```
 at the top of `autopsy.py`.
 
-## Using the production server
-
-Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log`. The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application, the location of the logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used.
-
-### Running Autopsy
-
-Start nginx with `ng` and then start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
+Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log`.
 
 ## Documentation
 
