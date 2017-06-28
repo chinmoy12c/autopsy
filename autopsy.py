@@ -512,7 +512,7 @@ def file_test():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=10)
+        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=10)
         logger.info('expect i is %d', i)
         if i == 0:
             logger.info('bad server')
@@ -568,7 +568,7 @@ def file_upload():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect(['not known', '\(yes/no\)\?', 'assword:'], timeout=10)
+        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=10)
         logger.info('expect i is %d', i)
         if i == 0:
             remove_directory_and_parent(directory)
