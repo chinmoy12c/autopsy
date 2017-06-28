@@ -1,6 +1,7 @@
 #!/bin/bash
 
 mkdir -p database
+mkdir -p flasklogs
 mkdir -p uploads
 alias fk="pkill -9 python ; pkill -9 flask"
 alias fl="pkill -9 python ; pkill -9 flask ; flask run --host=0.0.0.0 --no-reload --with-threads"

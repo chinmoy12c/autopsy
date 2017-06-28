@@ -1,5 +1,6 @@
 from cgi import escape
-from logging import DEBUG, Formatter, getLogger, FileHandler, StreamHandler
+from logging import DEBUG, Formatter, getLogger, StreamHandler
+from logging.handlers import RotatingFileHandler
 from os import kill
 from os.path import basename
 from pathlib import Path
@@ -27,7 +28,7 @@ app = Flask(__name__)
 logger = getLogger(__name__)
 logger.setLevel(DEBUG)
 ch = StreamHandler(stream=stdout)
-fh = FileHandler('flask.log', mode='w')
+fh = RotatingFileHandler(Path(app.root_path) / 'flasklogs' / 'flask.log', maxBytes=2000000, backupCount=20)
 ch.setLevel(DEBUG)
 fh.setLevel(DEBUG)
 formatter = Formatter('[%(asctime)s] %(levelname)s [%(funcName)s:%(lineno)d] %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')

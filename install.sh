@@ -1,6 +1,7 @@
 #!/bin/bash
 
 cd ..
+base_dir=$(pwd)
 git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
 echo "Enter your Perforce ticket:"
 read ticket
@@ -85,4 +86,22 @@ http {
     }
 }
 EOF
+cd ..
+mkdir -p logrotate
+cd logrotate
+cat << EOF > logrotate.conf
+${base_dir}/nginx/logs/*.log {
+    weekly
+    dateext
+    missingok
+    rotate 7305
+    postrotate
+        if [ -f ${base_dir}/nginx/logs/nginx.pid ]; then
+            kill -USR1 \`cat ${base_dir}/nginx/logs/nginx.pid\`
+        fi
+    endscript
+}
+EOF
+cat "0 0 * * 0 logrotate -s ${base_dir}/logrotate/status ${base_dir}/logrotate/logrotate.conf > /dev/null 2>&1" > cronjob
+crontab cronjob
 cd ../Autopsy
