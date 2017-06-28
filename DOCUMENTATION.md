@@ -150,7 +150,7 @@ Autopsy uses [Bootstrap 4](https://v4-alpha.getbootstrap.com) as a CSS framework
 ## Logging
 
 Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/logs` folder. The `flasklogs` folder contains the logs generated from `autopsy.py`, and these logs are rotated with `autopsy.py` to ensure that they do not take up too much space. The nginx logs store logs from nginx itself (e.g. requests to the Autopsy website), and they are managed with `logrotate` and `crontab`.
-
+ (see `install.sh`).
 ## Adding additional commands
 
 If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `COMMANDS` in `autopsy.py`, and then add it to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order). If the command has options, add it to `options` as well, with special characters escaped.
