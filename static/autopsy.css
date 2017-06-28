@@ -137,7 +137,7 @@ p {
     margin-right: 15px;
 }
 
-#link-password {
+#link-password, #file-password {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
