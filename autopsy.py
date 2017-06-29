@@ -25,7 +25,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-logger = getLogger(__name__)
+logger = app.logger
 logger.setLevel(DEBUG)
 ch = StreamHandler(stream=stdout)
 fh = RotatingFileHandler(Path(app.root_path) / 'flasklogs' / 'flask.log', maxBytes=2000000, backupCount=20)
