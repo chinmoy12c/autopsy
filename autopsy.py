@@ -7,6 +7,7 @@ from pathlib import Path
 from queue import Queue, Empty
 from re import findall, match, sub
 from sched import scheduler
+from secrets import token_bytes
 from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
@@ -867,6 +868,8 @@ def quit():
 
 @app.route('/checksession', methods=['POST'])
 def check_session():
+    if not 'uuid' in session:
+        return 'missing session'
     if request.form['uuid'] != session['uuid']:
         logger.info('%s and %s', request.form['uuid'], session['uuid'])
         return 'bad'
@@ -895,4 +898,4 @@ def start():
     t2.name = 'enum-thread'
     t2.start()
 
-app.secret_key = 'supersecrettemporarykey'
+app.secret_key = token_bytes()
