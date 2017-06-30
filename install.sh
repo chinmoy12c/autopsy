@@ -85,8 +85,8 @@ http {
         }
 
         ssl                 on;
-        ssl_certificate     /local/Autopsy/certs/autopsyStackedPEMCerts.pem;
-        ssl_certificate_key /local/Autopsy/certs/autopsy.key;
+        ssl_certificate     /local/certs/autopsyStackedPEMCerts.pem;
+        ssl_certificate_key /local/certs/autopsy.key;
     }
 }
 EOF
