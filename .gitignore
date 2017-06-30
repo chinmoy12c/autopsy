@@ -1,5 +1,6 @@
 *.pyc
 flask.log
+gunicorn.pid
 __pycache__/
 database/
 uploads/
