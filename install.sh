@@ -36,10 +36,10 @@ cd ..
 mkdir -p nginx
 cd nginx
 nginx_dir=$(pwd)
-wget http://nginx.org/download/nginx-1.13.1.tar.gz
-tar -xf nginx-1.13.1.tar.gz
-rm nginx-1.13.1.tar.gz
-cd nginx-1.13.1
+wget http://nginx.org/download/nginx-1.13.2.tar.gz
+tar -xf nginx-1.13.2.tar.gz
+rm nginx-1.13.2.tar.gz
+cd nginx-1.13.2
 ./configure --with-http_ssl_module --prefix=${nginx_dir}
 make
 make install

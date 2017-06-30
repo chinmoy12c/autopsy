@@ -59,7 +59,7 @@ The installation should set up six folders in the main `Autopsy` directory:
 * `Autopsy` contains the contents of this repository.
 * `clientlessGDB` contains the contents of the clientlessGDB respository.
 * `logrotate` contains files used for managing nginx log files.
-* `nginx` contains an installation of nginx 1.13.1.
+* `nginx` contains an installation of nginx 1.13.2.
 * `python` contains an installation of Python 3.6.1.
 * `virtualenv-15.1.0` contains an installation of virtualenv, which creates a virtual Python environment.
 
