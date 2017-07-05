@@ -799,8 +799,8 @@ def decode():
         logger.info('already generated')
         return jsonify(output=decoder_output.read_text(), timestamp=timestamp)
     decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
-    payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
     try:
+        payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
         r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
         base_text = r.text.splitlines()
         base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
