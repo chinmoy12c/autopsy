@@ -1323,7 +1323,7 @@ window.addEventListener("focus", function() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.responseText === "bad") {
+            if (xhr.responseText === "bad" || xhr.responseText === "missing session") {
                 var expire_text = document.getElementById("expire-text");
                 expire_text.innerHTML = "Your key, " + uuid_value + ", has expired. Please refresh the page. To recover this session, load this key after refreshing.";
                 $("#previous-modal").modal("hide");

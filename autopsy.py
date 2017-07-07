@@ -2,7 +2,7 @@ from cgi import escape
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
 from os import kill
-from os.path import basename
+from os.path import basename, getmtime
 from pathlib import Path
 from queue import Queue, Empty
 from re import findall, match, sub
@@ -252,7 +252,7 @@ def clean_uploads():
         for uuid in UPLOAD_FOLDER.iterdir():
             logger.info('testing uuid folder %s', uuid.name)
             for coredump in uuid.iterdir():
-                if no_such_coredump(uuid.name, coredump.name):
+                if no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 60 * 60:
                     logger.info('removing directory %s', str(coredump))
                     remove_directory_and_parent(coredump)
         logger.info('clean finished')
@@ -336,7 +336,7 @@ def index():
         uuid = str(uuid4())
         session['uuid'] = uuid
         logger.info('uuid NOT in session, value is %s', uuid)
-        coredumps = ''
+        coredumps = []
     global count
     with count_lock:
         session['count'] = count
