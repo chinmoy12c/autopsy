@@ -1315,7 +1315,7 @@ function addAutocompleteListeners() {
     }
 }
 
-window.addEventListener("focus", function() {
+function checkSession() {
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("uuid", uuid_value);
@@ -1332,11 +1332,14 @@ window.addEventListener("focus", function() {
                 $("#link-modal").modal("hide");
                 $("#file-modal").modal("hide");
                 $("#expire-modal").modal("show");
+                window.removeEventListener("focus", checkSession);
             }
         }
     });
     xhr.send(fd);
-});
+}
+
+window.addEventListener("focus", checkSession);
 
 window.addEventListener("beforeunload", function() {
     var xhr = new XMLHttpRequest();
