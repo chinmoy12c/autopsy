@@ -113,6 +113,7 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
 * `compile_decoder_text`: extracts information from the core dump and associated files, which is compiled into a format suitable for the ASA traceback decoder.
 * `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
+* `enum_threads`: prints the runing threads. Called every time the page is loaded.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
 * `delete`: uses `delete_coredump` to delete a core dump. Called when the × next to a core dump is clicked.
