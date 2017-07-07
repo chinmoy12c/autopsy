@@ -252,7 +252,7 @@ def clean_uploads():
         for uuid in UPLOAD_FOLDER.iterdir():
             logger.info('testing uuid folder %s', uuid.name)
             for coredump in uuid.iterdir():
-                if no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 60 * 60:
+                if no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 24 * 60 * 60:
                     logger.info('removing directory %s', str(coredump))
                     remove_directory_and_parent(coredump)
         logger.info('clean finished')
@@ -348,6 +348,7 @@ def index():
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
+    logger.info('coredump_queues is %s', str(coredump_queues))
     logger.info('running_counts is %s', str(running_counts))
     enum_threads()
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
@@ -895,6 +896,5 @@ def start():
     t = Thread(target=s.run)
     t.name = 'clean-thread'
     t.start()
-    s = scheduler()
 
 app.secret_key = token_bytes()
