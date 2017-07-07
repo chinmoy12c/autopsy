@@ -316,6 +316,12 @@ def update_timestamp(uuid, coredump):
     db.commit()
     return timestamp
 
+def enum_threads():
+    enum_output = thread_enum()
+    named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
+    logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
+    logger.info(named_threads)
+
 @app.route('/', methods=['GET'])
 def index():
     if 'uuid' in session:
@@ -343,7 +349,7 @@ def index():
         count += 1
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
-    set_queues(session['count'])
+    enum_threads()
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
 @app.route('/help', methods=['GET'])
@@ -393,8 +399,6 @@ def load_key():
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
-    logger.info('running_counts is %s', str(running_counts))
-    set_queues(session['count'])
     return jsonify(uuid=uuid, coredumps=coredumps)
 
 @app.route('/generatekey', methods=['POST'])
@@ -414,8 +418,6 @@ def generate_key():
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
-    logger.info('running_counts is %s', str(running_counts))
-    set_queues(session['count'])
     return new_uuid
 
 @app.route('/linktest', methods=['POST'])
@@ -885,24 +887,14 @@ def check_session():
 @app.before_first_request
 def start():
     logger.info(version)
-    s1 = scheduler()
+    s = scheduler()
     def sched_clean():
         clean_uploads()
-        s1.enter(3600, 1, sched_clean)
+        s.enter(3600, 1, sched_clean)
     sched_clean()
-    t1 = Thread(target=s1.run)
-    t1.name = 'clean-thread'
-    t1.start()
-    s2 = scheduler()
-    def enum_threads():
-        s2.enter(900, 1, enum_threads)
-        enum_output = thread_enum()
-        named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
-        logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
-        logger.info(named_threads)
-    enum_threads()
-    t2 = Thread(target=s2.run)
-    t2.name = 'enum-thread'
-    t2.start()
+    t = Thread(target=s.run)
+    t.name = 'clean-thread'
+    t.start()
+    s = scheduler()
 
 app.secret_key = token_bytes()
