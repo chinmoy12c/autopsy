@@ -16,7 +16,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [Running GDB](#running-gdb)
  * [GDB timeout](#gdb-timeout)
 * [Clean-up script](#clean-up-script)
-* [Thread-monitoring script](#thread-monitoring-script)
+* [Thread monitoring](#thread-monitoring)
 * [Functions in `autopsy.py`](#functions-in-autopsypy)
 * [JavaScript](#javascript)
  * [Storage](#storage)
@@ -92,9 +92,9 @@ If a GDB thread is left running without any commands being submitted, the thread
 
 Every hour, Autopsy runs a clean-up script that deletes any core dump with a last-accessed date older than 4 days. This expiration limit can be adjusted by modifying the `DELETE_MIN` variable.
 
-## Thread-monitoring script
+## Thread monitoring
 
-Every 15 minutes, Autopsy prints the number and names of threads that are currently running to monitor a potential source of memory leaks. These threads can be split into two types: Autopsy threads (launched from `autopsy.py`) and Gunicorn threads. The upper limit on the number of Gunicorn threads is specified by the argument to the `--threads` flag for `gu` and can be found in `launch.sh`. All Autopsy threads should be named, and three threads should be running at all times: `MainThread`, `clean-thread`, and `enum-thread`. Threads named `enqueue-thread-#` and `worker-thread-#` (where `#` is the user's `count`) will appear when a user has a GDB session running; they should disappear after 10 minutes of inactivity.
+Autopsy prints the number and names of threads that are currently running to monitor a potential source of memory leaks. These threads can be split into two types: Autopsy threads (launched from `autopsy.py`) and Gunicorn threads. The upper limit on the number of Gunicorn threads is specified by the argument to the `--threads` flag for `gu` and can be found in `launch.sh`. All Autopsy threads should be named, and two threads should be running at all times: `MainThread` and `clean-thread`. Threads named `enqueue-thread-#` and `worker-thread-#` (where `#` is the user's `count`) will appear when a user has a GDB session running; they should disappear after 10 minutes of inactivity.
 
 ## Functions in `autopsy.py`
 
