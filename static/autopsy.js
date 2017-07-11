@@ -1021,6 +1021,7 @@ function build() {
 }
 
 function showLoading() {
+    output_text.parentElement.style.display = "block";
     output_text.parentElement.style.overflow = "auto";
     output_text.classList.remove("html-text");
     output_text.classList.add("mono-text");
@@ -1102,6 +1103,7 @@ decode.addEventListener("click", function() {
                 coredate.innerHTML = date(xhr.response.timestamp);
             }
             var iframe = document.createElement("iframe");
+            output_text.parentElement.style.display = "flex";
             output_text.parentElement.style.overflow = "visible";
             output_text.classList.remove("mono-text");
             output_text.classList.add("html-text");

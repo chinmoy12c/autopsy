@@ -10,7 +10,7 @@
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
     <body id="fixed">
-        <nav class="navbar navbar-toggleable-md bg-inverse">
+        <nav class="navbar navbar-toggleable-sm bg-inverse">
             <p class="navbar-brand">Autopsy</p>
             <div class="navbar-nav mr-auto">
                 <a class="nav-item nav-link" href="help" target="_blank">Help</a>	
@@ -205,27 +205,41 @@
                     <button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
                     <div id="downloaded">…or <a href="" data-toggle="modal" data-target="#link-modal">submit link</a> or <a href="" data-toggle="modal" data-target="#file-modal">SCP file</a></div>
                 </div>
-                <div class="btn-toolbar" id="commands" role="toolbar" aria-label="commands">
-                    <div class="btn-group mr-2" role="group" aria-label="report">
-                        <button type="button" id="gen-report" class="btn btn-secondary btn-command" disabled>gen_core_report</button>
-                        <button type="button" id="backtrace" class="btn btn-secondary btn-command" disabled>backtrace</button>
-                        <button type="button" id="siginfo" class="btn btn-secondary btn-command" disabled>siginfo</button>
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#python" role="tab">Python</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="prompt" role="tab-panel">
+                        <div class="btn-toolbar" id="commands" role="toolbar" aria-label="commands">
+                            <div class="btn-group mr-2" role="group" aria-label="report">
+                                <button type="button" id="gen-report" class="btn btn-secondary btn-command" disabled>gen_core_report</button>
+                                <button type="button" id="backtrace" class="btn btn-secondary btn-command" disabled>backtrace</button>
+                                <button type="button" id="siginfo" class="btn btn-secondary btn-command" disabled>siginfo</button>
+                            </div>
+                            <div class="btn-group mr-2" role="group" aria-label="report">
+                                <button type="button" id="decode" class="btn btn-secondary btn-command" disabled>decode</button>
+                            </div>
+                            <div class="btn-group" role="group" aria-label="clear">
+                                <button type="button" id="clear-output" class="btn btn-secondary btn-command">clear</button>
+                                <button type="button" id="abort-gdb" class="btn btn-secondary btn-command" disabled>abort</button>
+                            </div>
+                        </div>
+                        <div id="command-form">
+                            <input type="text" class="form-control" id="command-input" placeholder="Enter command…" spellcheck="false" disabled>
+                            <div id="autocomplete">
+                            </div>
+                        </div>
+                        <div class="output">
+                            <p class="mono-text" id="output-text"></p>
+                        </div>
                     </div>
-                    <div class="btn-group mr-2" role="group" aria-label="report">
-                        <button type="button" id="decode" class="btn btn-secondary btn-command" disabled>decode</button>
+                    <div class="tab-pane" id="python" role="tab-panel">
                     </div>
-                    <div class="btn-group" role="group" aria-label="clear">
-                        <button type="button" id="clear-output" class="btn btn-secondary btn-command">clear</button>
-                        <button type="button" id="abort-gdb" class="btn btn-secondary btn-command" disabled>abort</button>
-                    </div>
-                </div>
-                <div id="command-form">
-                    <input type="text" class="form-control" id="command-input" placeholder="Enter command…" spellcheck="false" disabled>
-                    <div id="autocomplete">
-                    </div>
-                </div>
-                <div class="output">
-                    <p class="mono-text" id="output-text"></p>
                 </div>
             </div>
         </div>

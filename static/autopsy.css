@@ -76,8 +76,6 @@ p {
 }
 
 .nav-item {
-    padding-top: 0.425rem;
-    padding-bottom: 0.425rem;
     color: rgba(255, 255, 255, 0.75);
     cursor: pointer;
 }
@@ -384,9 +382,29 @@ input {
     margin-left: 1rem;
 }
 
+.nav-tabs {
+    flex: none;
+    margin-top: 2rem;
+}
+
+.tab-content {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    margin-top: 1rem;
+}
+
+.tab-content > .active {
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-pane {
+    flex-grow: 1;
+}
+
 #commands {
     flex: none;
-    margin-top: 3rem;
 }
 
 .btn-command {
@@ -443,8 +461,6 @@ input {
     border: 1px solid #ccc;
     border-radius: 0.25rem;
     flex-grow: 1;
-    width: 100%;
-    height: 100%;
     margin-top: 1rem;
 }
 
@@ -484,7 +500,7 @@ input {
 
 .html-text {
     width: 100%;
-    height: 100%;
+    flex-grow: 1;
 }
 
 .p-second {
