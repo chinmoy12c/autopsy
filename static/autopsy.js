@@ -39,6 +39,9 @@ var abort_gdb = document.getElementById("abort-gdb");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
+var python_reset = document.getElementById("python-reset");
+var command_list = document.getElementById("command-list");
+var python_program = document.getElementById("python-program");
 
 var uuid_value = uuid.innerHTML;
 var checked_uuid = null;
@@ -50,6 +53,8 @@ var file_bad_credentials = false;
 var filename;
 var coredump_list;
 var checked = null;
+var selected_command = null;
+var send_update = false;
 var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispblockinfo", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstacksbybp", "dispfiberstats", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findmallocleak", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showblocks", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "walkblockchain", "webvpn_print_block_failures"];
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
 var loading = false;
@@ -58,6 +63,10 @@ var enter_just_pressed = false;
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
+
+var code_flask = new CodeFlask;
+code_flask.run("#python-program", {language: "python"});
+python_program.firstChild.disabled = true;
 
 function updateLocalStorage(uuid, coredumps) {
     var core_history_string = localStorage.getItem("history");
@@ -318,6 +327,7 @@ previous_button.addEventListener("click", function() {
             uuid_value = xhr.response.uuid;
             reset();
             loadCoredumps(xhr.response.coredumps);
+            loadPython(xhr.response.modified);
         }
     });
     xhr.send(fd);
@@ -464,6 +474,12 @@ function reset() {
     loading = false;
     disableCommandButtons(true);
     abort_gdb.disabled = true;
+    command_list.innerHTML = "";
+    selected_command = null;
+    send_update = false;
+    python_reset.disabled = true;
+    code_flask.update("");
+    python_program.firstChild.disabled = true;
 }
 
 load_button.addEventListener("click", function() {
@@ -481,6 +497,7 @@ load_button.addEventListener("click", function() {
             uuid_value = xhr.response.uuid;
             reset();
             loadCoredumps(xhr.response.coredumps);
+            loadPython(xhr.response.modified);
         }
     });
     xhr.send(fd);
@@ -500,6 +517,7 @@ generate_button.addEventListener("click", function() {
             reset();
             coredump_list = [];
             updateLocalStorage(uuid_value, coredump_list);
+            loadPython(xhr.response.modified);
         }
     });
     xhr.send();
@@ -978,7 +996,9 @@ function build() {
             if (xhr.response.hasOwnProperty("report")) {
                 resetFileUpload(true, "Build Failed");
                 upload_button.disabled = true;
-                output_text.innerHTML = xhr.response.report;
+                if (xhr.response.report !== "build failed") {
+                    output_text.innerHTML = xhr.response.report;
+                }
             }
             else {
                 resetFileUpload(false, "Upload");
@@ -1176,9 +1196,6 @@ function commonPrefix(array) {
 }
 
 command_input.addEventListener("keydown", function(evt) {
-    if (evt.defaultPrevented) {
-        return;
-    }
     var selected_index;
     switch (evt.keyCode) {
         case 9://"Tab":
@@ -1317,6 +1334,129 @@ function addAutocompleteListeners() {
     }
 }
 
+function loadPython(modified) {
+    for (var i = 0; i < commands.length; i++) {
+        var python_command = document.createElement("div");
+        python_command.classList.add("python-command");
+        python_command.classList.add("not-clicked");
+        if (modified.indexOf(commands[i]) >= 0) {
+            python_command.classList.add("edited");
+        }
+        python_command.innerHTML = commands[i];
+        command_list.insertBefore(python_command, null);
+    }
+    addCommandListeners();
+}
+
+function addCommandListeners() {
+    for (var i = 0; i < command_list.childElementCount; i++) {
+        (function() {
+            var python_command = command_list.children[i];
+            python_command.addEventListener("click", function() {
+                selectCommand(python_command);
+            });
+        })();
+    }
+}
+
+function selectCommand(python_command) {
+    if (selected_command !== null) {
+        updateSource();
+        if (selected_command.innerHTML !== python_command.innerHTML) {
+            python_command.classList.remove("not-clicked");
+            python_command.classList.add("clicked");
+            selected_command.classList.remove("clicked");
+            selected_command.classList.add("not-clicked");
+            selected_command = python_command;
+            getSource(python_command.innerHTML);
+        }
+        else {
+            python_command.classList.remove("clicked");
+            python_command.classList.add("not-clicked");
+            selected_command = null;
+            python_reset.disabled = true;
+            code_flask.update("");
+            python_program.firstChild.disabled = true;
+        }
+    }
+    else {
+        python_command.classList.remove("not-clicked");
+        python_command.classList.add("clicked");
+        selected_command = python_command;
+        python_reset.disabled = false;
+        getSource(python_command.innerHTML);
+        python_program.firstChild.disabled = false;
+    }
+}
+
+function getSource(command) {
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("command", command);
+    xhr.open("POST", "/getsource", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            if (xhr.response.hasOwnProperty("error")) {
+                send_update = false;
+                code_flask.update(xhr.response.error);
+            }
+            else {
+                send_update = true;
+                code_flask.update(xhr.response.output);
+            }
+        }
+    });
+    xhr.send(fd);
+}
+
+$("#prompt-tab").on("shown.bs.tab", function() {
+    if (selected_command !== null) {
+        updateSource();
+    }
+});
+
+function updateSource() {
+    if (send_update) {
+        var check_command = selected_command;
+        var xhr = new XMLHttpRequest();
+        var fd = new FormData();
+        fd.append("command", check_command.innerHTML);
+        fd.append("source", code_flask.textarea.value);
+        xhr.open("POST", "/updatesource", true);
+        xhr.responseType = "text";
+        xhr.addEventListener("readystatechange", function() {
+            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                if (xhr.responseText === "modified") {
+                    check_command.classList.add("edited");
+                }
+                else if (xhr.responseText === "original") {
+                    check_command.classList.remove("edited");
+                }
+            }
+        });
+        xhr.send(fd);
+    }
+}
+
+python_reset.addEventListener("click", function() {
+    var check_command = selected_command;
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("command", check_command.innerHTML);
+    xhr.open("POST", "/resetsource", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            if (xhr.response.hasOwnProperty("output")) {
+                code_flask.update(xhr.response.output);
+                check_command.classList.remove("edited");
+            }
+        }
+    });
+    xhr.send(fd);
+});
+
 function checkSession() {
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -1344,6 +1484,9 @@ function checkSession() {
 window.addEventListener("focus", checkSession);
 
 window.addEventListener("beforeunload", function() {
+    if (selected_command !== null) {
+        updateSource();
+    }
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/quit", true);
     xhr.send();

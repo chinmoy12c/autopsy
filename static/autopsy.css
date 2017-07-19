@@ -403,12 +403,11 @@ input {
     flex-grow: 1;
 }
 
-#commands {
+#prompt-commands, #python-buttons {
     flex: none;
 }
 
 .btn-command {
-    font-family: "Menlo Regular", monospace;
     font-size: 10pt;
 }
 
@@ -464,6 +463,55 @@ input {
     margin-top: 1rem;
 }
 
+#python-container {
+    display: flex;
+    flex-grow: 1;
+    margin-top: 1rem;
+}
+
+#command-list {
+    border: 1px solid #ccc;
+    border-radius: 0.25rem 0 0 0.25rem;
+    flex: none;
+    width: 250px;
+    overflow: auto;
+}
+
+.python-command {
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: 0.5rem 1rem;
+}
+
+.python-command:last-child {
+    border-bottom: initial;
+}
+
+.edited::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: #0275d8;
+    margin-right: 0.25rem;
+    vertical-align: middle;
+}
+
+#python-program {
+    border-top: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+    border-radius: 0 0.25rem 0.25rem 0;
+    flex-grow: 1;
+    margin: 0;
+    padding: 1rem;
+    overflow: auto;
+}
+
 @keyframes dots-1 {
     from {
         opacity: 0;
@@ -491,11 +539,31 @@ input {
 }
 
 .mono-text {
-    font-family: "Menlo Regular", monospace;
+    background: initial;
+    font-family: "Menlo", monospace;
     font-size: 10pt;
-    white-space: pre;
-    margin: 1rem;
+    outline: none;
+}
+
+textarea {
+    font-family: "Menlo", monospace !important;
+    font-size: 10pt !important;
+    line-height: 1.5 !important;
+    opacity: 1 !important;
+}
+
+code {
+    font-family: "Menlo", monospace !important;
+    font-size: 10pt !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+}
+
+#output-text {
     display: inline-block;
+    margin: 1rem;
+    padding: 0;
+    white-space: pre;
 }
 
 .html-text {

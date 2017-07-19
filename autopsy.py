@@ -42,7 +42,8 @@ UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
 DATABASE = Path(app.root_path) / 'database' / 'cores.db'
 CLIENTLESS_GDB = Path(app.root_path).parent / 'clientlessGDB' / 'clientlessGdb.py'
 GEN_CORE_REPORT = Path(app.root_path).parent / 'clientlessGDB' / 'gen_core_report.sh'
-COMMANDS = [c.lower() for c in ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispblockinfo', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstacksbybp', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findmallocleak', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'walkblockchain', 'webvpn_print_block_failures']]
+COMMANDS_ORIG = ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispblockinfo', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstacksbybp', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findmallocleak', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'walkblockchain', 'webvpn_print_block_failures']
+COMMANDS = [c.lower() for c in COMMANDS_ORIG]
 DELETE_MIN = 5760
 
 coredump_queues = {}
@@ -139,26 +140,43 @@ def run_gdb(count, uuid, workspace, gdb_location):
         entered_commands += [command]
     enter_command('source ' + str(CLIENTLESS_GDB))
     enter_command('core-file ' + str(coredump_path))
+    enter_command('source ./.gdbinit')
+    commands_folder = UPLOAD_FOLDER / uuid / '.commands'
+    if commands_folder.exists():
+        commands = get_modified(uuid)
+        if len(commands) > 0:
+            enter_command('pi asaCmds = [c for c in asaCmds if c.__name__ not in ' + str(commands) + ']')
+            for c in commands:
+                modified_file = commands_folder / (c + '.modified')
+                enter_command('pi exec(' + repr(modified_file.read_text()) + ')')
+                enter_command('pi _addcommand(' + c + ')')
     running = True
     restart = False
+    logger_print = True
+    timeout = False
     while running:
         try:
-            logger.info('count %d - waiting', count)
+            if logger_print:
+                logger.info('count %d - waiting', count)
             coredump = coredump_queues[count].get(timeout=600)
             if coredump == '':
                 running = False
                 logger.info('count %d - quit', count)
-            elif start_coredump != coredump:
+            elif start_coredump != coredump and coredump != '.modified':
                 running = False
                 restart = True
                 logger.info('count %d - restart', count)
             else:
                 command = command_queues[count].get()
+                logger_print = not command.startswith('pi ')
+                timeout = False
                 enter_command(command)
                 gdb.stdin.write('0\n')
-                logger.info('count %d - wrote into gdb', count)
+                if logger_print:
+                    logger.info('count %d - %s', count, command)
                 output = ''
                 end = False
+                time_start = time()
                 while not end:
                     try:
                         line = read_queue.get_nowait()
@@ -168,17 +186,30 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             kill(gdb.pid, SIGINT)
                         except Empty:
                             pass
+                        if gdb.poll() != None:
+                            logger.info('count %d - gdb quit', count)
+                            end = True
+                            running = False
+                            output_queues[count].put('gdb quit\n')
+                        elif time() - time_start > 300:
+                            logger.info('count %d - gdb timeout', count)
+                            time_start = time()
+                            timeout = True
+                            kill(gdb.pid, SIGINT)
                     else:
                         undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
                             line = line[:undefined_index]
-                            logger.info('count %d - reached end', count)
+                            if logger_print:
+                                logger.info('count %d - reached end', count)
                             end = True
                         command_index = line.find('(gdb) ')
                         while entered_commands and command_index >= 0:
                             line = line[:command_index + 6] + entered_commands.pop(0) + '\n' + line[command_index + 6:]
                             command_index = line.find('(gdb)', command_index + 6)
                         output += line
+                if timeout:
+                    output += 'gdb timeout after 5 minutes\n'
                 output_queues[count].put(output)
                 entered_commands = []
                 abort_queues[count] = Queue()
@@ -252,9 +283,13 @@ def clean_uploads():
         for uuid in UPLOAD_FOLDER.iterdir():
             logger.info('testing uuid folder %s', uuid.name)
             for coredump in uuid.iterdir():
-                if no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 24 * 60 * 60:
+                if coredump.name != '.commands' and no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 24 * 60 * 60:
                     logger.info('removing directory %s', str(coredump))
                     remove_directory_and_parent(coredump)
+            child_dirs = [d for d in uuid.iterdir()]
+            if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
+                remove_directory_and_parent(child_dirs[0])
+                logger.info('removed .commands and parent')
         logger.info('clean finished')
 
 def no_such_coredump(uuid, coredump):
@@ -268,9 +303,6 @@ def no_such_coredump(uuid, coredump):
     return True
 
 def check_filename(uuid, filename):
-    #if filename.endswith('.tar'):
-    #    logger.info('ends with tar')
-    #    return 'ok'
     if filename.endswith('.gz'):
         secure = secure_filename(filename[:-3])
         logger.info('secure filename is %s', secure)
@@ -308,6 +340,26 @@ def compile_decoder_text(directory, coredump, thread, registers, aslr_start, asl
         aslr = 'ASLR enabled, text region ' + aslr + '\n'
     traceback = '\n'.join([str(i - 1) + ': ' + line.split()[1] for i, line in enumerate(backtraces[len(backtraces) - thread - 1].splitlines()) if match('0x[0-9a-f]+', line.split()[1])])
     return 'Thread Name:\n' + '\n'.join(registers.split('\n')[1:]) + 'Cisco Adaptive Security Appliance Software Version ' + version_paren + '\nCompiled on  by builders\nHardware: ' + hardware + '\n' + aslr + 'Traceback:\n' + traceback
+
+def get_modified(uuid):
+    commands = []
+    commands_folder = UPLOAD_FOLDER / uuid / '.commands'
+    if not commands_folder.exists():
+        return commands
+    for c in COMMANDS_ORIG:
+        command_file = commands_folder / (c + '.modified')
+        if command_file.exists():
+            commands += [c]
+    return commands
+
+def reload_command(count, command, source):
+    if count in running_counts:
+        queue_add(count, '.modified', 'pi asaCmds = [c for c in asaCmds if c.__name__ != \'' + command + '\']')
+        output_queues[count].get()
+        queue_add(count, '.modified', 'pi exec(' + repr(source) + ')')
+        output_queues[count].get()
+        queue_add(count, '.modified', 'pi _addcommand(' + command + ')')
+        output_queues[count].get()
 
 def update_timestamp(uuid, coredump):
     timestamp = int(time() * 1000)
@@ -351,7 +403,7 @@ def index():
     logger.info('coredump_queues is %s', str(coredump_queues))
     logger.info('running_counts is %s', str(running_counts))
     enum_threads()
-    return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
+    return render_template('autopsy.html', uuid=uuid, coredumps=coredumps, modified=get_modified(uuid))
 
 @app.route('/help', methods=['GET'])
 def help():
@@ -400,7 +452,7 @@ def load_key():
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
-    return jsonify(uuid=uuid, coredumps=coredumps)
+    return jsonify(uuid=uuid, coredumps=coredumps, modified=get_modified(uuid))
 
 @app.route('/generatekey', methods=['POST'])
 def generate_key():
@@ -708,6 +760,10 @@ def build():
         session.pop('current', None)
         return jsonify(output='invalid filename')
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
+    if not filepath.exists():
+        logger.info('gen_core_report removed filepath %s', str(filepath))
+        session.pop('current', None)
+        return jsonify(report='build failed')
     logger.info(report.splitlines()[0])
     report_file = directory / 'gen_core_report.txt'
     report_file.write_text(report)
@@ -757,6 +813,21 @@ def build():
     except:
         logger.info('decoder text failed')
         decoder_file.write_text('decoder text failed')
+    try:
+        commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
+        if not commands_folder.exists():
+            commands_folder.mkdir(parents=True, exist_ok=True)
+            queue_add(session['count'], filename, 'pi import inspect')
+            output_queues[session['count']].get()
+            for c in COMMANDS_ORIG:
+                command_file = commands_folder / c
+                queue_add(session['count'], filename, 'pi print inspect.getsource(' + c + ')')
+                command_file.write_text('\n'.join(output_queues[session['count']].get().split('\n')[1:]).rstrip())
+            logger.info('commands written')
+        else:
+            logger.info('commands already generated')
+    except:
+        logger.info('commands failed')
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
@@ -861,6 +932,68 @@ def command_input():
         queue_add(session['count'], request.form['coredump'], request.form['command'])
         return jsonify(output=escape(output_queues[session['count']].get()), timestamp=timestamp)
     return jsonify(output=escape(result), timestamp=timestamp)
+
+@app.route('/getsource', methods=['POST'])
+def get_source():
+    if not 'uuid' in session:
+        return jsonify(output='missing session')
+    commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
+    if not commands_folder.exists():
+        return jsonify(error='error: upload a core dump')
+    command_file = commands_folder / (request.form['command'] + '.modified')
+    if not command_file.exists():
+        command_file = commands_folder / request.form['command']
+    if command_file.exists():
+        return jsonify(output=command_file.read_text())
+    logger.info('%s does not exist', request.form['command'])
+    return jsonify(error='command does not exist')
+
+@app.route('/updatesource', methods=['POST'])
+def update_source():
+    if not 'uuid' in session:
+        return 'missing session'
+    commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
+    if not commands_folder.exists():
+        return 'error: upload a core dump'
+    modified_file = commands_folder / (request.form['command'] + '.modified')
+    original_file = commands_folder / request.form['command']
+    command_file = modified_file
+    if not command_file.exists():
+        command_file = original_file
+    if command_file.exists():
+        new_lines_fixed = '\n'.join(request.form['source'].splitlines())
+        if command_file.read_text() != new_lines_fixed:
+            if original_file.read_text() == new_lines_fixed:
+                if modified_file.exists():
+                    modified_file.unlink()
+                logger.info("%s is original", request.form['command'])
+                reload_command(session['count'], request.form['command'], original_file.read_text())
+                return 'original'
+            modified_file.write_text(request.form['source'])
+            reload_command(session['count'], request.form['command'], request.form['source'])
+            logger.info("%s is modified", request.form['command'])
+            return 'modified'
+        return 'not modified'
+    logger.info('%s does not exist', request.form['command'])
+    return 'command does not exist'
+
+@app.route('/resetsource', methods=['POST'])
+def reset_source():
+    if not 'uuid' in session:
+        return jsonify(output='missing session')
+    commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
+    if not commands_folder.exists():
+        return jsonify(error='error: upload a core dump')
+    modified_file = commands_folder / (request.form['command'] + '.modified')
+    if modified_file.exists():
+        modified_file.unlink()
+    original_file = commands_folder / request.form['command']
+    if original_file.exists():
+        logger.info('reset %s', request.form['command'])
+        reload_command(session['count'], request.form['command'], original_file.read_text())
+        return jsonify(output=original_file.read_text())
+    logger.info('%s does not exist', request.form['command'])
+    return jsonify(error='command does not exist')
 
 @app.route('/quit', methods=['POST'])
 def quit():

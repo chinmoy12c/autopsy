@@ -6,6 +6,8 @@
         <title>Autopsy</title>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" href="{{ url_for('static', filename='prism.css') }}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/CodeFlask.js/0.2.0/codeflask.min.css">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
@@ -104,7 +106,7 @@
                         <div class="form-group row" id="link-url-group">
                             <label for="link-url" class="col-2 col-form-label">URL</label>
                             <div class="col-10">
-                                <input type="url" class="form-control" id="link-url" placeholder="http://cisco.com/path/to/coredump.gz" spellcheck="false">
+                                <input type="url" class="form-control" id="link-url" placeholder="https://cisco.com/path/to/coredump.gz" spellcheck="false">
                             </div>
                         </div>
                         <div class="form-group row" id="link-username-group">
@@ -207,7 +209,7 @@
                 </div>
                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
+                        <a class="nav-link active" id="prompt-tab" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" data-toggle="tab" href="#python" role="tab">Python</a>
@@ -215,7 +217,7 @@
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="prompt" role="tab-panel">
-                        <div class="btn-toolbar" id="commands" role="toolbar" aria-label="commands">
+                        <div class="btn-toolbar" id="prompt-commands" role="toolbar" aria-label="prompt-commands">
                             <div class="btn-group mr-2" role="group" aria-label="report">
                                 <button type="button" id="gen-report" class="btn btn-secondary btn-command" disabled>gen_core_report</button>
                                 <button type="button" id="backtrace" class="btn btn-secondary btn-command" disabled>backtrace</button>
@@ -239,6 +241,16 @@
                         </div>
                     </div>
                     <div class="tab-pane" id="python" role="tab-panel">
+                        <div class="btn-group" id="python-buttons" role="group" aria-label="python-buttons">
+                            <button type="button" id="python-new" class="btn btn-secondary btn-command" disabled>new</button>
+                            <button type="button" id="python-delete" class="btn btn-secondary btn-command" disabled>delete</button>
+                            <button type="button" id="python-reset" class="btn btn-secondary btn-command" disabled>reset</button>
+                        </div>
+                        <div id="python-container">
+                            <div id="command-list">
+                            </div>
+                            <div id="python-program"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -246,9 +258,12 @@
         <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+        <script src="{{ url_for('static', filename='prism.js') }}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/CodeFlask.js/0.2.0/codeflask.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
             loadCoredumps({{ coredumps|tojson }});
+            loadPython({{ modified|tojson }});
         </script>
     </body>
 </html>

@@ -1,5 +1,5 @@
 *.pyc
-flask.log
+flasklogs/
 gunicorn.pid
 __pycache__/
 database/
