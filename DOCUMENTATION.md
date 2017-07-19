@@ -14,7 +14,8 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [File output](#file-output)
 * [ASA decoder](#asa-decoder)
 * [Running GDB](#running-gdb)
- * [GDB timeout](#gdb-timeout)
+ * [GDB timeouts](#gdb-timeouts)
+* [Code editor](#code-editor)
 * [Clean-up script](#clean-up-script)
 * [Thread monitoring](#thread-monitoring)
 * [Functions in `autopsy.py`](#functions-in-autopsypy)
@@ -84,9 +85,13 @@ When a user analyzes a core dump with a command, GDB starts up in a background t
 
 When a command is sent to a GDB thread, both `coredump_queues` and `command_queues` are updated.
 
-### GDB timeout
+### GDB timeouts
 
-If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
+If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. Furthermore, a command will be aborted if it takes more than 5 minutes to run. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
+
+## Code editor
+
+Autopsy allows users to view and modify the source code of the commands used to analyze core dumps. The original versions of each function are stored in a `.commands` folder, which is located inside each UUID folder. These are generated when the user first uploads a core dump. Modifications to these functions are stored in `*-modified` files inside the same folder.
 
 ## Clean-up script
 
@@ -112,6 +117,8 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `no_such_coredump`: tests whether a UUID and a core dump with a particular name already exists.
 * `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
 * `compile_decoder_text`: extracts information from the core dump and associated files, which is compiled into a format suitable for the ASA traceback decoder.
+* `get_modified`: returns a list of GDB commands that have been modified.
+* `reload_command`: updates a command in GDB that has been modified.
 * `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
 * `enum_threads`: prints all active threads. Called every time the page is loaded.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
@@ -132,13 +139,16 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `decode`: submits `decoder.txt` to the ASA traceback decoder and returns the output, or returns the contents of `decoder_output.html` if it already exists.
 * `abort`: aborts the current command.
 * `command_input`: manages launching the GDB thread and communicates with the thread using the appropriate queues.
+* `get_source`: returns the source code of a command.
+* `update_source`: updates the source code of a command.
+* `reset_source`: resets the source code of a command to the original version.
 * `quit`: quits a GDB thread. Called when the user closes the Autopsy window.
 * `check_session`: checks whether the session UUID matches the UUID shown on the page. Used to check whether the cookie has changed.
 * `start`: called when the server starts. Launches the clean-up script.
 
 ## JavaScript
 
-Much of the JavaScript used on the web page is used for updating the user interface, as Autopsy is designed to be a [single-page application](https://en.wikipedia.org/wiki/Single-page_application). Autopsy uses XMLHttpRequest to send POST requests to the server when the user interacts with the application.
+Much of the JavaScript used on the web page is used for updating the user interface, as Autopsy is designed to be a [single-page application](https://en.wikipedia.org/wiki/Single-page_application). Autopsy uses XMLHttpRequest to send POST requests to the server when the user interacts with the application and Prism and [CodeFlask.js](https://github.com/kazzkiq/CodeFlask.js) to implement the code editor.
 
 ### Storage
 
