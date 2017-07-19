@@ -23,6 +23,8 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 * `static` contains four files for the web application:
  * `autopsy.css` is the CSS file.
  * `autopsy.js` is the JavaScript file.
+ * `prism.css` is the CSS file for [Prism](https://github.com/PrismJS/prism), a syntax highlighter.
+ * `prism.js` is the JavaScript file for Prism.
  * `scalpel.png` is the favicon.
  * `scalpel.svg` is an SVG version of `scalpel.png` and is displayed on the top-left corner of the application.
 * `templates` contains `autopsy.html`, which is the HTML for the main application, and `help.html`, which is the HTML for the help page.
@@ -59,8 +61,8 @@ The installation should set up six folders in the main `Autopsy` directory:
 * `Autopsy` contains the contents of this repository.
 * `clientlessGDB` contains the contents of the clientlessGDB respository.
 * `logrotate` contains files used for managing nginx log files.
-* `nginx` contains an installation of nginx 1.13.2.
-* `python` contains an installation of Python 3.6.1.
+* `nginx` contains an installation of nginx 1.13.3.
+* `python` contains an installation of Python 3.6.2.
 * `virtualenv-15.1.0` contains an installation of virtualenv, which creates a virtual Python environment.
 
 It is recommended to keep the installations of nginx, Python, and virtualenv up to date (possibly by periodically updating `install.sh`).
