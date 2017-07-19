@@ -13,10 +13,10 @@ echo ${ticket} > clientlessGDB/ticket.txt
 mkdir -p python
 cd python
 python_dir=$(pwd)
-wget https://www.python.org/ftp/python/3.6.1/Python-3.6.1.tar.xz
-tar -xf Python-3.6.1.tar.xz
-rm Python-3.6.1.tar.xz
-cd Python-3.6.1
+wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tar.xz
+tar -xf Python-3.6.2.tar.xz
+rm Python-3.6.2.tar.xz
+cd Python-3.6.2
 ./configure --prefix=${python_dir}
 make
 make test
@@ -36,10 +36,10 @@ cd ..
 mkdir -p nginx
 cd nginx
 nginx_dir=$(pwd)
-wget http://nginx.org/download/nginx-1.13.2.tar.gz
-tar -xf nginx-1.13.2.tar.gz
-rm nginx-1.13.2.tar.gz
-cd nginx-1.13.2
+wget http://nginx.org/download/nginx-1.13.3.tar.gz
+tar -xf nginx-1.13.3.tar.gz
+rm nginx-1.13.3.tar.gz
+cd nginx-1.13.3
 ./configure --with-http_ssl_module --prefix=${nginx_dir}
 make
 make install
