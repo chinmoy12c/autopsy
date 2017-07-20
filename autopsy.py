@@ -287,7 +287,7 @@ def clean_uploads():
                     logger.info('removing directory %s', str(coredump))
                     remove_directory_and_parent(coredump)
             child_dirs = [d for d in uuid.iterdir()]
-            if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
+            if len(child_dirs) == 1 and child_dirs[0].name == '.commands' and getmtime(child_dirs[0]) < time() - 24 * 60 * 60:
                 remove_directory_and_parent(child_dirs[0])
                 logger.info('removed .commands and parent')
         logger.info('clean finished')

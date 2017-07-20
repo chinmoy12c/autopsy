@@ -107,5 +107,5 @@ ${base_dir}/nginx/logs/*.log {
 }
 EOF
 echo "0 0 * * 0 logrotate -s ${base_dir}/logrotate/status ${base_dir}/logrotate/logrotate.conf > /dev/null 2>&1" > cronjob
-crontab cronjob
+(crontab -l ; cat cronjob) | crontab -
 cd ../Autopsy
