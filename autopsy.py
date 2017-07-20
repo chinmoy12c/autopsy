@@ -191,7 +191,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             end = True
                             running = False
                             output_queues[count].put('gdb quit\n')
-                        elif time() - time_start > 300:
+                        elif time() - time_start > 24 * 60 * 60 * 14:
                             logger.info('count %d - gdb timeout', count)
                             time_start = time()
                             timeout = True
