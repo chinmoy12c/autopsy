@@ -212,7 +212,7 @@
                         <a class="nav-link active" id="prompt-tab" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-toggle="tab" href="#python" role="tab">Editor</a>
+                        <a class="nav-link" id="python-tab" data-toggle="tab" href="#python" role="tab">Editor</a>
                     </li>
                 </ul>
                 <div class="tab-content">
@@ -263,7 +263,7 @@
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
             loadCoredumps({{ coredumps|tojson }});
-            loadPython({{ modified|tojson }});
+            loadPython();
         </script>
     </body>
 </html>

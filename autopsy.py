@@ -138,18 +138,13 @@ def run_gdb(count, uuid, workspace, gdb_location):
         nonlocal entered_commands
         gdb.stdin.write(command + '\n')
         entered_commands += [command]
-    enter_command('source ' + str(CLIENTLESS_GDB))
+    modified_file = UPLOAD_FOLDER / uuid / '.commands' / 'modified.py'
+    if modified_file.exists():
+        enter_command('source ' + str(modified_file))
+    else:
+        enter_command('source ' + str(CLIENTLESS_GDB))
     enter_command('core-file ' + str(coredump_path))
     enter_command('source ./.gdbinit')
-    commands_folder = UPLOAD_FOLDER / uuid / '.commands'
-    if commands_folder.exists():
-        commands = get_modified(uuid)
-        if len(commands) > 0:
-            enter_command('pi asaCmds = [c for c in asaCmds if c.__name__ not in ' + str(commands) + ']')
-            for c in commands:
-                modified_file = commands_folder / (c + '.modified')
-                enter_command('pi exec(' + repr(modified_file.read_text()) + ')')
-                enter_command('pi _addcommand(' + c + ')')
     running = True
     restart = False
     logger_print = True
@@ -341,26 +336,6 @@ def compile_decoder_text(directory, coredump, thread, registers, aslr_start, asl
     traceback = '\n'.join([str(i - 1) + ': ' + line.split()[1] for i, line in enumerate(backtraces[len(backtraces) - thread - 1].splitlines()) if match('0x[0-9a-f]+', line.split()[1])])
     return 'Thread Name:\n' + '\n'.join(registers.split('\n')[1:]) + 'Cisco Adaptive Security Appliance Software Version ' + version_paren + '\nCompiled on  by builders\nHardware: ' + hardware + '\n' + aslr + 'Traceback:\n' + traceback
 
-def get_modified(uuid):
-    commands = []
-    commands_folder = UPLOAD_FOLDER / uuid / '.commands'
-    if not commands_folder.exists():
-        return commands
-    for c in COMMANDS_ORIG:
-        command_file = commands_folder / (c + '.modified')
-        if command_file.exists():
-            commands += [c]
-    return commands
-
-def reload_command(count, command, source):
-    if count in running_counts:
-        queue_add(count, '.modified', 'pi asaCmds = [c for c in asaCmds if c.__name__ != \'' + command + '\']')
-        output_queues[count].get()
-        queue_add(count, '.modified', 'pi exec(' + repr(source) + ')')
-        output_queues[count].get()
-        queue_add(count, '.modified', 'pi _addcommand(' + command + ')')
-        output_queues[count].get()
-
 def update_timestamp(uuid, coredump):
     timestamp = int(time() * 1000)
     db = get_db()
@@ -403,7 +378,7 @@ def index():
     logger.info('coredump_queues is %s', str(coredump_queues))
     logger.info('running_counts is %s', str(running_counts))
     enum_threads()
-    return render_template('autopsy.html', uuid=uuid, coredumps=coredumps, modified=get_modified(uuid))
+    return render_template('autopsy.html', uuid=uuid, coredumps=coredumps)
 
 @app.route('/help', methods=['GET'])
 def help():
@@ -452,7 +427,7 @@ def load_key():
         session['count'] = count
         count += 1
     logger.info('count is %d', session['count'])
-    return jsonify(uuid=uuid, coredumps=coredumps, modified=get_modified(uuid))
+    return jsonify(uuid=uuid, coredumps=coredumps)
 
 @app.route('/generatekey', methods=['POST'])
 def generate_key():
@@ -817,13 +792,7 @@ def build():
         commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
         if not commands_folder.exists():
             commands_folder.mkdir(parents=True, exist_ok=True)
-            queue_add(session['count'], filename, 'pi import inspect')
-            output_queues[session['count']].get()
-            for c in COMMANDS_ORIG:
-                command_file = commands_folder / c
-                queue_add(session['count'], filename, 'pi print inspect.getsource(' + c + ')')
-                command_file.write_text('\n'.join(output_queues[session['count']].get().split('\n')[1:]).rstrip())
-            logger.info('commands written')
+            logger.info('folder made')
         else:
             logger.info('commands already generated')
     except:
@@ -940,13 +909,10 @@ def get_source():
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
     if not commands_folder.exists():
         return jsonify(error='error: upload a core dump')
-    command_file = commands_folder / (request.form['command'] + '.modified')
+    command_file = commands_folder / 'modified.py'
     if not command_file.exists():
-        command_file = commands_folder / request.form['command']
-    if command_file.exists():
-        return jsonify(output=command_file.read_text())
-    logger.info('%s does not exist', request.form['command'])
-    return jsonify(error='command does not exist')
+        command_file = CLIENTLESS_GDB
+    return jsonify(output=command_file.read_text())
 
 @app.route('/updatesource', methods=['POST'])
 def update_source():
@@ -955,27 +921,12 @@ def update_source():
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
     if not commands_folder.exists():
         return 'error: upload a core dump'
-    modified_file = commands_folder / (request.form['command'] + '.modified')
-    original_file = commands_folder / request.form['command']
-    command_file = modified_file
-    if not command_file.exists():
-        command_file = original_file
-    if command_file.exists():
-        new_lines_fixed = '\n'.join(request.form['source'].splitlines())
-        if command_file.read_text() != new_lines_fixed:
-            if original_file.read_text() == new_lines_fixed:
-                if modified_file.exists():
-                    modified_file.unlink()
-                logger.info("%s is original", request.form['command'])
-                reload_command(session['count'], request.form['command'], original_file.read_text())
-                return 'original'
-            modified_file.write_text(request.form['source'])
-            reload_command(session['count'], request.form['command'], request.form['source'])
-            logger.info("%s is modified", request.form['command'])
-            return 'modified'
-        return 'not modified'
-    logger.info('%s does not exist', request.form['command'])
-    return 'command does not exist'
+    modified_file = commands_folder / 'modified.py'
+    modified_file.write_text(request.form['source'])
+    if 'count' in session and session['count'] in running_counts:
+        queue_add(session['count'], '.modified', 'source ' + str(modified_file))
+        output_queues[session['count']].get()
+    return 'wrote update'
 
 @app.route('/resetsource', methods=['POST'])
 def reset_source():
@@ -984,16 +935,12 @@ def reset_source():
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
     if not commands_folder.exists():
         return jsonify(error='error: upload a core dump')
-    modified_file = commands_folder / (request.form['command'] + '.modified')
-    if modified_file.exists():
-        modified_file.unlink()
-    original_file = commands_folder / request.form['command']
-    if original_file.exists():
-        logger.info('reset %s', request.form['command'])
-        reload_command(session['count'], request.form['command'], original_file.read_text())
-        return jsonify(output=original_file.read_text())
-    logger.info('%s does not exist', request.form['command'])
-    return jsonify(error='command does not exist')
+    modified_file = commands_folder / 'modified.py'
+    modified_file.write_text(CLIENTLESS_GDB.read_text())
+    if 'count' in session and session['count'] in running_counts:
+        queue_add(session['count'], '.modified', 'source ' + str(modified_file))
+        output_queues[session['count']].get()
+    return jsonify(output=modified_file.read_text())
 
 @app.route('/quit', methods=['POST'])
 def quit():

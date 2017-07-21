@@ -66,7 +66,6 @@ var currently_selected = null;
 
 var code_flask = new CodeFlask;
 code_flask.run("#python-program", {language: "python"});
-python_program.firstChild.disabled = true;
 
 function updateLocalStorage(uuid, coredumps) {
     var core_history_string = localStorage.getItem("history");
@@ -1334,18 +1333,16 @@ function addAutocompleteListeners() {
     }
 }
 
-function loadPython(modified) {
+function loadPython() {
     for (var i = 0; i < commands.length; i++) {
         var python_command = document.createElement("div");
         python_command.classList.add("python-command");
         python_command.classList.add("not-clicked");
-        if (modified.indexOf(commands[i]) >= 0) {
-            python_command.classList.add("edited");
-        }
         python_command.innerHTML = commands[i];
         command_list.insertBefore(python_command, null);
     }
     addCommandListeners();
+    getSource();
 }
 
 function addCommandListeners() {
@@ -1361,38 +1358,44 @@ function addCommandListeners() {
 
 function selectCommand(python_command) {
     if (selected_command !== null) {
-        updateSource();
         if (selected_command.innerHTML !== python_command.innerHTML) {
             python_command.classList.remove("not-clicked");
             python_command.classList.add("clicked");
             selected_command.classList.remove("clicked");
             selected_command.classList.add("not-clicked");
             selected_command = python_command;
-            getSource(python_command.innerHTML);
+            scrollToCommand(python_command.innerHTML);
         }
         else {
             python_command.classList.remove("clicked");
             python_command.classList.add("not-clicked");
             selected_command = null;
-            python_reset.disabled = true;
-            code_flask.update("");
-            python_program.firstChild.disabled = true;
         }
     }
     else {
         python_command.classList.remove("not-clicked");
         python_command.classList.add("clicked");
         selected_command = python_command;
-        python_reset.disabled = false;
-        getSource(python_command.innerHTML);
-        python_program.firstChild.disabled = false;
+        scrollToCommand(python_command.innerHTML);
     }
 }
 
-function getSource(command) {
+function scrollToCommand(command) {
+    if (send_update) {
+        var re = new RegExp("^def *" + command + " *\\(", "m");
+        var index = code_flask.textarea.value.search(re);
+        if (index >= 0) {
+            var textarea = python_program.firstChild;
+            textarea.selectionStart = index;
+            textarea.selectionEnd = index;
+            textarea.blur();
+            textarea.focus();
+        }
+    }
+}
+
+function getSource() {
     var xhr = new XMLHttpRequest();
-    var fd = new FormData();
-    fd.append("command", command);
     xhr.open("POST", "/getsource", true);
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
@@ -1400,20 +1403,22 @@ function getSource(command) {
             if (xhr.response.hasOwnProperty("error")) {
                 send_update = false;
                 code_flask.update(xhr.response.error);
+                python_reset.disabled = true;
+                python_program.firstChild.disabled = true;
             }
             else {
                 send_update = true;
                 code_flask.update(xhr.response.output);
+                python_reset.disabled = false;
+                python_program.firstChild.disabled = false;
             }
         }
     });
-    xhr.send(fd);
+    xhr.send();
 }
 
 $("#prompt-tab").on("shown.bs.tab", function() {
-    if (selected_command !== null) {
-        updateSource();
-    }
+    updateSource();
 });
 
 function updateSource() {
@@ -1421,40 +1426,24 @@ function updateSource() {
         var check_command = selected_command;
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
-        fd.append("command", check_command.innerHTML);
         fd.append("source", code_flask.textarea.value);
         xhr.open("POST", "/updatesource", true);
-        xhr.responseType = "text";
-        xhr.addEventListener("readystatechange", function() {
-            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                if (xhr.responseText === "modified") {
-                    check_command.classList.add("edited");
-                }
-                else if (xhr.responseText === "original") {
-                    check_command.classList.remove("edited");
-                }
-            }
-        });
         xhr.send(fd);
     }
 }
 
 python_reset.addEventListener("click", function() {
-    var check_command = selected_command;
     var xhr = new XMLHttpRequest();
-    var fd = new FormData();
-    fd.append("command", check_command.innerHTML);
     xhr.open("POST", "/resetsource", true);
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             if (xhr.response.hasOwnProperty("output")) {
                 code_flask.update(xhr.response.output);
-                check_command.classList.remove("edited");
             }
         }
     });
-    xhr.send(fd);
+    xhr.send();
 });
 
 function checkSession() {

@@ -490,17 +490,6 @@ input {
     border-bottom: initial;
 }
 
-.edited::before {
-    content: "";
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 2px;
-    background-color: #0275d8;
-    margin-right: 0.25rem;
-    vertical-align: middle;
-}
-
 #python-program {
     border-top: 1px solid #ccc;
     border-right: 1px solid #ccc;
