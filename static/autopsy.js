@@ -1385,6 +1385,7 @@ function selectCommand(python_command) {
             python_command.classList.remove("clicked");
             python_command.classList.add("not-clicked");
             selected_command = null;
+            code_mirror.focus();
         }
     }
     else {
