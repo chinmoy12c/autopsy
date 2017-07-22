@@ -64,8 +64,23 @@ var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
 
-var code_flask = new CodeFlask;
-code_flask.run("#python-program", {language: "python"});
+var code_mirror = CodeMirror(python_program, {mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true});
+
+code_mirror.addKeyMap({"Tab": function(code_mirror) {
+        if (code_mirror.somethingSelected()) {
+            code_mirror.indentSelection("add");
+            return;
+        }
+        code_mirror.execCommand("insertSoftTab");
+    },
+    "Shift-Tab": function(code_mirror) {
+        code_mirror.indentSelection("subtract");
+    }
+});
+
+window.addEventListener("resize", function() {
+    code_mirror.setSize(null, python_program.clientHeight);
+});
 
 function updateLocalStorage(uuid, coredumps) {
     var core_history_string = localStorage.getItem("history");
@@ -477,7 +492,7 @@ function reset() {
     selected_command = null;
     send_update = false;
     python_reset.disabled = true;
-    code_flask.update("");
+    code_mirror.setValue("");
     python_program.firstChild.disabled = true;
 }
 
@@ -1383,14 +1398,13 @@ function selectCommand(python_command) {
 function scrollToCommand(command) {
     if (send_update) {
         var re = new RegExp("^def *" + command + " *\\(", "m");
-        var index = code_flask.textarea.value.search(re);
+        var index = code_mirror.getValue().search(re);
         if (index >= 0) {
-            var textarea = python_program.firstChild;
-            textarea.selectionStart = index;
-            textarea.selectionEnd = index;
-            textarea.blur();
-            textarea.focus();
+            var pos = code_mirror.posFromIndex(index);
+            code_mirror.scrollTo(null, code_mirror.charCoords(pos, "local").top - python_program.clientHeight / 5);
+            code_mirror.setCursor(pos);
         }
+        code_mirror.focus();
     }
 }
 
@@ -1402,15 +1416,15 @@ function getSource() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             if (xhr.response.hasOwnProperty("error")) {
                 send_update = false;
-                code_flask.update(xhr.response.error);
+                code_mirror.setValue(xhr.response.error);
                 python_reset.disabled = true;
-                python_program.firstChild.disabled = true;
+                code_mirror.setOption("readOnly", "nocursor");
             }
             else {
                 send_update = true;
-                code_flask.update(xhr.response.output);
+                code_mirror.setValue(xhr.response.output);
                 python_reset.disabled = false;
-                python_program.firstChild.disabled = false;
+                code_mirror.setOption("readOnly", false);
             }
         }
     });
@@ -1421,12 +1435,17 @@ $("#prompt-tab").on("shown.bs.tab", function() {
     updateSource();
 });
 
+$("#python-tab").on("shown.bs.tab", function() {
+    code_mirror.setSize(null, python_program.clientHeight);
+    code_mirror.refresh();
+});
+
 function updateSource() {
     if (send_update) {
         var check_command = selected_command;
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
-        fd.append("source", code_flask.textarea.value);
+        fd.append("source", code_mirror.getValue());
         xhr.open("POST", "/updatesource", true);
         xhr.send(fd);
     }
@@ -1439,7 +1458,7 @@ python_reset.addEventListener("click", function() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             if (xhr.response.hasOwnProperty("output")) {
-                code_flask.update(xhr.response.output);
+                code_mirror.setValue(xhr.response.output);
             }
         }
     });
