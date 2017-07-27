@@ -16,6 +16,7 @@ This file serves as documentation for Autopsy. It assumes that you have read [`R
 * [Running GDB](#running-gdb)
  * [GDB timeouts](#gdb-timeouts)
 * [Code editor](#code-editor)
+* [`.commands` folder](#commands-folder)
 * [Clean-up script](#clean-up-script)
 * [Thread monitoring](#thread-monitoring)
 * [Functions in `autopsy.py`](#functions-in-autopsypy)
@@ -87,11 +88,15 @@ When a command is sent to a GDB thread, both `coredump_queues` and `command_queu
 
 ### GDB timeouts
 
-If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. Furthermore, a command will be aborted if it takes more than 2 weeks to run. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
+If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. Furthermore, a command will be aborted if it takes more than 1 hour to run by default; the user can increase this limit to 400 hours. This value is stored inside a `timeout` file. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
 
 ## Code editor
 
-Autopsy allows users to view and modify the source code of the commands used to analyze core dumps. The original versions of each function are stored in a `.commands` folder, which is located inside each UUID folder. These are generated when the user first uploads a core dump. Modifications to these functions are stored in `*-modified` files inside the same folder.
+Autopsy allows users to edit `clientlessGdb.py` to suit their needs. Their modified version is stored in a `modified.py` file.
+
+## `.commands` folder
+
+Each UUID folder contains a `.commands` folder, which stores content that is specific to each UUID (rather than each core dump). This folder contains the `timeout` and `modified.py` files.
 
 ## Clean-up script
 
