@@ -799,15 +799,6 @@ def build():
     except:
         logger.info('decoder text failed')
         decoder_file.write_text('decoder text failed')
-    try:
-        commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
-        if not commands_folder.exists():
-            commands_folder.mkdir(parents=True, exist_ok=True)
-            logger.info('folder made')
-        else:
-            logger.info('commands already generated')
-    except:
-        logger.info('commands failed')
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
