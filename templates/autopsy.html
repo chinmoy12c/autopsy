@@ -5,8 +5,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>Autopsy</title>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/codemirror.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/codemirror.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/dialog/dialog.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/search/matchesonscrollbar.min.css" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/scroll/simplescrollbars.min.css" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
@@ -216,7 +219,7 @@
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="prompt" role="tab-panel">
-                        <div class="btn-toolbar" id="prompt-commands" role="toolbar" aria-label="prompt-commands">
+                        <div class="btn-toolbar justify-content-start" id="prompt-commands" role="toolbar" aria-label="prompt-commands">
                             <div class="btn-group mr-2" role="group" aria-label="report">
                                 <button type="button" id="gen-report" class="btn btn-secondary btn-command" disabled>gen_core_report</button>
                                 <button type="button" id="backtrace" class="btn btn-secondary btn-command" disabled>backtrace</button>
@@ -225,9 +228,14 @@
                             <div class="btn-group mr-2" role="group" aria-label="report">
                                 <button type="button" id="decode" class="btn btn-secondary btn-command" disabled>decode</button>
                             </div>
-                            <div class="btn-group" role="group" aria-label="clear">
+                            <div class="btn-group mr-2" role="group" aria-label="clear">
                                 <button type="button" id="clear-output" class="btn btn-secondary btn-command">clear</button>
                                 <button type="button" id="abort-gdb" class="btn btn-secondary btn-command" disabled>abort</button>
+                            </div>
+                            <div class="input-group ml-auto">
+                                <span class="input-group-addon timeout-label" id="timeout-label">timeout</span>
+                                <input class="form-control" id="timeout" type="number" min="1" max="400" step="1" value="1" aria-describedby="timeout-label">
+                                <span class="input-group-addon timeout-label">h</span>
                             </div>
                         </div>
                         <div id="command-form">
@@ -240,10 +248,9 @@
                         </div>
                     </div>
                     <div class="tab-pane" id="python" role="tab-panel">
-                        <div class="btn-group" id="python-buttons" role="group" aria-label="python-buttons">
-                            <button type="button" id="python-new" class="btn btn-secondary btn-command" disabled>new</button>
-                            <button type="button" id="python-delete" class="btn btn-secondary btn-command" disabled>delete</button>
+                        <div class="btn-group" id="python-commands" role="group" aria-label="python-buttons">
                             <button type="button" id="python-reset" class="btn btn-secondary btn-command" disabled>reset</button>
+                            <button type="button" id="python-diff" class="btn btn-secondary btn-command">show diff</button>
                         </div>
                         <div id="python-container">
                             <div id="command-list">
@@ -258,11 +265,22 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/codemirror.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/mode/diff/diff.min.js" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/mode/python/python.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/dialog/dialog.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/search/searchcursor.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/search/search.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/search/jump-to-line.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/search/matchesonscrollbar.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/edit/matchbrackets.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/selection/active-line.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/scroll/simplescrollbars.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.28.0/addon/scroll/annotatescrollbar.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
+            timeout.value = {{ timeout }};
         </script>
     </body>
 </html>

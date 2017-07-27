@@ -40,6 +40,8 @@ var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
 var python_reset = document.getElementById("python-reset");
+var python_diff = document.getElementById("python-diff");
+var timeout = document.getElementById("timeout");
 var command_list = document.getElementById("command-list");
 var python_program = document.getElementById("python-program");
 
@@ -53,7 +55,7 @@ var file_bad_credentials = false;
 var filename;
 var coredump_list;
 var checked = null;
-var selected_command = null;
+//var selected_command = null;
 var send_update = false;
 var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispblockinfo", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstacksbybp", "dispfiberstats", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findmallocleak", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showblocks", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "walkblockchain", "webvpn_print_block_failures"];
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
@@ -64,7 +66,7 @@ var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
 
-var code_mirror = CodeMirror(python_program, {mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true});
+var code_mirror = CodeMirror(python_program, {extraKeys: {"Cmd-F": "findPersistent", "Ctrl-F": "findPersistent"}, mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true, matchBrackets: true, scrollbarStyle: "simple", styleActiveLine: true});
 
 code_mirror.addKeyMap({"Tab": function(code_mirror) {
         if (code_mirror.somethingSelected()) {
@@ -341,7 +343,8 @@ previous_button.addEventListener("click", function() {
             uuid_value = xhr.response.uuid;
             reset();
             loadCoredumps(xhr.response.coredumps);
-            loadPython(xhr.response.modified);
+            loadPython();
+            timeout.value = xhr.response.timeout;
         }
     });
     xhr.send(fd);
@@ -489,11 +492,7 @@ function reset() {
     disableCommandButtons(true);
     abort_gdb.disabled = true;
     command_list.innerHTML = "";
-    selected_command = null;
-    send_update = false;
-    python_reset.disabled = true;
-    code_mirror.setValue("");
-    python_program.firstChild.disabled = true;
+    code_mirror.clearHistory();
 }
 
 load_button.addEventListener("click", function() {
@@ -511,7 +510,8 @@ load_button.addEventListener("click", function() {
             uuid_value = xhr.response.uuid;
             reset();
             loadCoredumps(xhr.response.coredumps);
-            loadPython(xhr.response.modified);
+            loadPython();
+            timeout.value = xhr.response.timeout;
         }
     });
     xhr.send(fd);
@@ -531,7 +531,8 @@ generate_button.addEventListener("click", function() {
             reset();
             coredump_list = [];
             updateLocalStorage(uuid_value, coredump_list);
-            loadPython(xhr.response.modified);
+            loadPython();
+            timeout.value = 300;
         }
     });
     xhr.send();
@@ -1357,6 +1358,7 @@ function loadPython() {
         command_list.insertBefore(python_command, null);
     }
     addCommandListeners();
+    //selected_command = null;
     getSource();
 }
 
@@ -1365,12 +1367,13 @@ function addCommandListeners() {
         (function() {
             var python_command = command_list.children[i];
             python_command.addEventListener("click", function() {
-                selectCommand(python_command);
+                scrollToCommand(python_command.innerHTML);
             });
         })();
     }
 }
 
+/*
 function selectCommand(python_command) {
     if (selected_command !== null) {
         if (selected_command.innerHTML !== python_command.innerHTML) {
@@ -1395,6 +1398,7 @@ function selectCommand(python_command) {
         scrollToCommand(python_command.innerHTML);
     }
 }
+*/
 
 function scrollToCommand(command) {
     if (send_update) {
@@ -1412,21 +1416,18 @@ function scrollToCommand(command) {
 function getSource() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/getsource", true);
-    xhr.responseType = "json";
+    xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.response.hasOwnProperty("error")) {
-                send_update = false;
-                code_mirror.setValue(xhr.response.error);
-                python_reset.disabled = true;
-                code_mirror.setOption("readOnly", "nocursor");
-            }
-            else {
-                send_update = true;
-                code_mirror.setValue(xhr.response.output);
-                python_reset.disabled = false;
-                code_mirror.setOption("readOnly", false);
-            }
+            python_diff.innerText = "show diff";
+            code_mirror.setOption("mode", {name: "python", version: 2});
+            code_mirror.setOption("lineNumbers", true);
+            code_mirror.setOption("matchBrackets", true);
+            code_mirror.setOption("styleActiveLine", true);
+            code_mirror.setValue(xhr.responseText);
+            send_update = true;
+            python_reset.disabled = false;
+            code_mirror.setOption("readOnly", false);
         }
     });
     xhr.send();
@@ -1443,7 +1444,6 @@ $("#python-tab").on("shown.bs.tab", function() {
 
 function updateSource() {
     if (send_update) {
-        var check_command = selected_command;
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
         fd.append("source", code_mirror.getValue());
@@ -1455,15 +1455,61 @@ function updateSource() {
 python_reset.addEventListener("click", function() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/resetsource", true);
-    xhr.responseType = "json";
+    xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            if (xhr.response.hasOwnProperty("output")) {
-                code_mirror.setValue(xhr.response.output);
-            }
+            code_mirror.setValue(xhr.responseText);
         }
     });
     xhr.send();
+});
+
+python_diff.addEventListener("click", function() {
+    if (python_diff.innerText === "show diff") {
+        python_diff.innerText = "show python";
+        python_reset.disabled = true;
+        send_update = false;
+        var xhr = new XMLHttpRequest();
+        var fd = new FormData();
+        fd.append("source", code_mirror.getValue());
+        xhr.open("POST", "/diffsource", true);
+        xhr.responseType = "text";
+        xhr.addEventListener("readystatechange", function() {
+            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                code_mirror.setOption("mode", "diff");
+                code_mirror.setOption("lineNumbers", false);
+                code_mirror.setOption("matchBrackets", false);
+                code_mirror.setOption("readOnly", "nocursor");
+                code_mirror.setOption("styleActiveLine", false);
+                code_mirror.setValue(xhr.responseText);
+            }
+        });
+        xhr.send(fd);
+    }
+    else {
+        getSource();
+    }
+});
+
+timeout.addEventListener("keydown", function(evt) {
+    if (evt.keyCode === 13/*Enter*/) {
+        timeout.blur();
+    }
+});
+
+timeout.addEventListener("blur", function() {
+    if (timeout.value === "" || timeout.valueAsNumber < 1) {
+        timeout.value = 1;
+    }
+    else if (timeout.valueAsNumber > 400) {
+        timeout.value = 400;
+    }
+    timeout.value = Math.trunc(timeout.valueAsNumber);
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("timeout", timeout.value);
+    xhr.open("POST", "/updatetimeout", true);
+    xhr.send(fd);
 });
 
 function checkSession() {
@@ -1493,9 +1539,7 @@ function checkSession() {
 window.addEventListener("focus", checkSession);
 
 window.addEventListener("beforeunload", function() {
-    if (selected_command !== null) {
-        updateSource();
-    }
+    updateSource();
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/quit", true);
     xhr.send();
