@@ -23,8 +23,6 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 * `static` contains four files for the web application:
  * `autopsy.css` is the CSS file.
  * `autopsy.js` is the JavaScript file.
- * `prism.css` is the CSS file for [Prism](https://github.com/PrismJS/prism), a syntax highlighter.
- * `prism.js` is the JavaScript file for Prism.
  * `scalpel.png` is the favicon.
  * `scalpel.svg` is an SVG version of `scalpel.png` and is displayed on the top-left corner of the application.
 * `templates` contains `autopsy.html`, which is the HTML for the main application, and `help.html`, which is the HTML for the help page.
