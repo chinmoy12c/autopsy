@@ -208,7 +208,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             command_index = line.find('(gdb)', command_index + 6)
                         output += line
                 if timeout:
-                    output += 'gdb timeout after ' + str(timeout_value) + ' seconds\n'
+                    output += 'gdb timeout after ' + str(timeout_value / 3600) + ' hours\n'
                 output_queues[count].put(output)
                 entered_commands = []
                 abort_queues[count] = Queue()
