@@ -116,15 +116,14 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `run_gdb`: runs GDB. This is called as a separate thread.
 * `startup`: launches GDB by calling `run_gdb`.
 * `queue_add`: adds a command for GDB using the appropriate queues.
-* `remove_parent_and_directory`: used to delete the core dump directory and UUID directory if it is empty afterwards.
+* `remove_directory_and_parent`: used to delete the core dump directory and UUID directory if it is empty afterwards.
 * `delete_coredump`: deletes a core dump and removes it from the database.
 * `clean_uploads`: runs every hour to remove old core dumps.
 * `no_such_coredump`: tests whether a UUID and a core dump with a particular name already exists.
 * `check_filename`: tests whether a particular filename is valid and works for both gzip and unzipped core dumps.
 * `compile_decoder_text`: extracts information from the core dump and associated files, which is compiled into a format suitable for the ASA traceback decoder.
-* `get_modified`: returns a list of GDB commands that have been modified.
-* `reload_command`: updates a command in GDB that has been modified.
 * `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
+* `get_timeout`: returns the value in the user's `timeout` file or 1 if it does not exist.
 * `enum_threads`: prints all active threads. Called every time the page is loaded.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
@@ -144,16 +143,18 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `decode`: submits `decoder.txt` to the ASA traceback decoder and returns the output, or returns the contents of `decoder_output.html` if it already exists.
 * `abort`: aborts the current command.
 * `command_input`: manages launching the GDB thread and communicates with the thread using the appropriate queues.
-* `get_source`: returns the source code of a command.
-* `update_source`: updates the source code of a command.
-* `reset_source`: resets the source code of a command to the original version.
+* `get_source`: returns the source code of the user's `modified.py` file (or `clientlessGdb.py` if `modified.py` does not exist).
+* `update_source`: updates the source code of the user's `modified.py` file.
+* `reset_source`: resets the source code of the user's `modified.py` file to the original version.
+* `diff_source`: returns a diff of the user's `modified.py` file with the original `clientlessGdb.py` file.
+* `update_timeout`: updates the user's `timeout` file.
 * `quit`: quits a GDB thread. Called when the user closes the Autopsy window.
 * `check_session`: checks whether the session UUID matches the UUID shown on the page. Used to check whether the cookie has changed.
 * `start`: called when the server starts. Launches the clean-up script.
 
 ## JavaScript
 
-Much of the JavaScript used on the web page is used for updating the user interface, as Autopsy is designed to be a [single-page application](https://en.wikipedia.org/wiki/Single-page_application). Autopsy uses XMLHttpRequest to send POST requests to the server when the user interacts with the application and Prism and [CodeFlask.js](https://github.com/kazzkiq/CodeFlask.js) to implement the code editor.
+Much of the JavaScript used on the web page is used for updating the user interface, as Autopsy is designed to be a [single-page application](https://en.wikipedia.org/wiki/Single-page_application). Autopsy uses XMLHttpRequest to send POST requests to the server when the user interacts with the application and [CodeMirror](https://github.com/codemirror/CodeMirror) to implement the code editor.
 
 ### Storage
 
@@ -169,4 +170,4 @@ Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/
 
 ## Adding additional commands
 
-If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `COMMANDS` in `autopsy.py`, and then add it to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order). If the command has options, add it to `options` as well, with special characters escaped.
+If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order), and if the command has options, add it to `options` as well, with special characters escaped.
