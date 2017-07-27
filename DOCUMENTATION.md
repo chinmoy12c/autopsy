@@ -92,7 +92,7 @@ If a GDB thread is left running without any commands being submitted, the thread
 
 ## Code editor
 
-Autopsy allows users to edit `clientlessGdb.py` to suit their needs. Their modified version is stored in a `modified.py` file.
+Autopsy allows users to edit `clientlessGdb.py` to suit their needs. The modified version is stored in a `modified.py` file.
 
 ## `.commands` folder
 
