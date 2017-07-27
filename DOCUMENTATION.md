@@ -88,7 +88,7 @@ When a command is sent to a GDB thread, both `coredump_queues` and `command_queu
 
 ### GDB timeouts
 
-If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. Furthermore, a command will be aborted if it takes more than 1 hour to run by default; the user can increase this limit to 400 hours. This value is stored inside a `timeout` file. It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
+If a GDB thread is left running without any commands being submitted, the thread will shut down after 10 minutes due to a queue timeout. Furthermore, a command will be aborted if it takes more than 1 hour to run by default; the user can increase this limit to 400 hours. This value is stored inside a `timeout` file (in hours). It is possible for a user to have a count that does not correspond to an active GDB thread, so the `running_counts` set keeps track of all counts that do have such a thread. A new thread will be started when the user submits a command.
 
 ## Code editor
 
