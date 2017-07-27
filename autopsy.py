@@ -42,8 +42,6 @@ UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
 DATABASE = Path(app.root_path) / 'database' / 'cores.db'
 CLIENTLESS_GDB = Path(app.root_path).parent / 'clientlessGDB' / 'clientlessGdb.py'
 GEN_CORE_REPORT = Path(app.root_path).parent / 'clientlessGDB' / 'gen_core_report.sh'
-#COMMANDS_ORIG = ['asacommands', 'checkibuf', 'checkoccamframe', 'dispak47anonymouspools', 'dispak47vols', 'dispallactiveawarectx', 'dispallactiveuctectx', 'dispallactiveucteoutway', 'dispallak47instance', 'dispallattachedthreads', 'dispallawarectx', 'dispallpoolsinak47instance', 'dispallthreads', 'dispalluctectx', 'dispallucteoutway', 'dispasastate', 'dispasathread', 'dispawareurls', 'dispbacktraces', 'dispblockinfo', 'dispcacheinfo', 'dispclhash', 'dispcrashthread', 'dispdpthreads', 'dispfiberinfo', 'dispfiberstacks', 'dispfiberstacksbybp', 'dispfiberstats', 'dispgdbthreadinfo', 'displuastack', 'displuastackbyl', 'displuastackbylreverse', 'dispmeminfo', 'dispmemregion', 'dispoccamframe', 'dispramfsdirtree', 'dispsiginfo', 'dispstackforthread', 'dispstackfromrbp', 'dispthreads', 'dispthreadstacks', 'disptypes', 'dispunmangleurl', 'dispurls', 'findString', 'findmallochdr', 'findmallocleak', 'findoccamframes', 'generatereport', 'searchMem', 'searchMemAll', 'search_mem', 'showak47info', 'showak47instances', 'showblocks', 'showconsolemessage', 'unescapestring', 'verifyoccaminak47instance', 'verifystacks', 'walkIntervals', 'walkblockchain', 'webvpn_print_block_failures']
-#COMMANDS = [c.lower() for c in COMMANDS_ORIG]
 DELETE_MIN = 5760
 
 coredump_queues = {}
@@ -897,9 +895,6 @@ def command_input():
     global running_counts, output_queues
     logger.info('%s', request.form['command'])
     timestamp = update_timestamp(session['uuid'], request.form['coredump'])
-    #if not request.form['command'].split(' ')[0].lower() in COMMANDS:
-    #    logger.info('%s: invalid command', request.form['command'])
-    #    return jsonify(output=request.form['command'] + ': invalid commmand', timestamp=timestamp)
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
     if not session['count'] in running_counts:

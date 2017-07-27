@@ -55,7 +55,6 @@ var file_bad_credentials = false;
 var filename;
 var coredump_list;
 var checked = null;
-//var selected_command = null;
 var send_update = false;
 var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispblockinfo", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstacksbybp", "dispfiberstats", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findmallocleak", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showblocks", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "walkblockchain", "webvpn_print_block_failures"];
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
@@ -1358,7 +1357,6 @@ function loadPython() {
         command_list.insertBefore(python_command, null);
     }
     addCommandListeners();
-    //selected_command = null;
     getSource();
 }
 
@@ -1372,33 +1370,6 @@ function addCommandListeners() {
         })();
     }
 }
-
-/*
-function selectCommand(python_command) {
-    if (selected_command !== null) {
-        if (selected_command.innerHTML !== python_command.innerHTML) {
-            python_command.classList.remove("not-clicked");
-            python_command.classList.add("clicked");
-            selected_command.classList.remove("clicked");
-            selected_command.classList.add("not-clicked");
-            selected_command = python_command;
-            scrollToCommand(python_command.innerHTML);
-        }
-        else {
-            python_command.classList.remove("clicked");
-            python_command.classList.add("not-clicked");
-            selected_command = null;
-            code_mirror.focus();
-        }
-    }
-    else {
-        python_command.classList.remove("not-clicked");
-        python_command.classList.add("clicked");
-        selected_command = python_command;
-        scrollToCommand(python_command.innerHTML);
-    }
-}
-*/
 
 function scrollToCommand(command) {
     if (send_update) {
