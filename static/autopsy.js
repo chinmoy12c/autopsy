@@ -1420,6 +1420,7 @@ $("#prompt-tab").on("shown.bs.tab", function() {
 $("#python-tab").on("shown.bs.tab", function() {
     code_mirror.setSize(null, python_program.clientHeight);
     code_mirror.refresh();
+    code_mirror.focus();
 });
 
 function updateSource() {
@@ -1439,6 +1440,7 @@ python_reset.addEventListener("click", function() {
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             code_mirror.setValue(xhr.responseText);
+            code_mirror.focus();
         }
     });
     xhr.send();
