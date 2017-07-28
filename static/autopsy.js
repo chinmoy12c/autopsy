@@ -1423,12 +1423,28 @@ $("#python-tab").on("shown.bs.tab", function() {
     code_mirror.focus();
 });
 
+function showSourceOutput(output) {
+    if (output !== "") {
+        output_text.parentElement.style.display = "block";
+        output_text.parentElement.style.overflow = "auto";
+        output_text.classList.remove("html-text");
+        output_text.classList.add("mono-text");
+        output_text.innerHTML = output;
+    }
+}
+
 function updateSource() {
     if (send_update) {
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
         fd.append("source", code_mirror.getValue());
         xhr.open("POST", "/updatesource", true);
+        xhr.responseType = "text";
+        xhr.addEventListener("readystatechange", function() {
+            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                showSourceOutput(xhr.responseText);
+            }
+        });
         xhr.send(fd);
     }
 }
@@ -1436,11 +1452,12 @@ function updateSource() {
 python_reset.addEventListener("click", function() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/resetsource", true);
-    xhr.responseType = "text";
+    xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            code_mirror.setValue(xhr.responseText);
+            code_mirror.setValue(xhr.response.display);
             code_mirror.focus();
+            showSourceOutput(xhr.response.output);
         }
     });
     xhr.send();
@@ -1457,7 +1474,7 @@ python_diff.addEventListener("click", function() {
         var fd = new FormData();
         fd.append("source", code_mirror.getValue());
         xhr.open("POST", "/diffsource", true);
-        xhr.responseType = "text";
+        xhr.responseType = "json";
         xhr.addEventListener("readystatechange", function() {
             if (xhr.readyState === xhr.DONE && xhr.status === 200) {
                 code_mirror.setOption("mode", "diff");
@@ -1465,7 +1482,8 @@ python_diff.addEventListener("click", function() {
                 code_mirror.setOption("matchBrackets", false);
                 code_mirror.setOption("readOnly", "nocursor");
                 code_mirror.setOption("styleActiveLine", false);
-                code_mirror.setValue(xhr.responseText);
+                code_mirror.setValue(xhr.response.display);
+                showSourceOutput(xhr.response.output);
             }
         });
         xhr.send(fd);

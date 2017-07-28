@@ -919,42 +919,52 @@ def update_source():
     if not commands_folder.exists():
         commands_folder.mkdir(parents=True, exist_ok=True)
     modified_file = commands_folder / 'modified.py'
-    modified_file.write_text('\n'.join(request.form['source'].splitlines()) + '\n')
+    updated_source = '\n'.join(request.form['source'].splitlines()) + '\n'
+    output = ''
+    if modified_file.exists() and modified_file.read_text() == updated_source:
+        return output
+    modified_file.write_text(updated_source)
     if 'count' in session and session['count'] in running_counts:
         queue_add(session['count'], '.modified', 'source ' + str(modified_file))
-        output_queues[session['count']].get()
-    return 'wrote update'
+        output = output_queues[session['count']].get()
+    return output
 
 @app.route('/resetsource', methods=['POST'])
 def reset_source():
     if not 'uuid' in session:
-        return 'missing session'
+        return jsonify(display='missing session', output='')
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
     if not commands_folder.exists():
         commands_folder.mkdir(parents=True, exist_ok=True)
     modified_file = commands_folder / 'modified.py'
-    modified_file.write_text(CLIENTLESS_GDB.read_text())
+    output = ''
+    original_source = CLIENTLESS_GDB.read_text()
+    if modified_file.exists() and modified_file.read_text() == original_source:
+        return jsonify(display=original_source, output=output)
+    modified_file.write_text(original_source)
     if 'count' in session and session['count'] in running_counts:
         queue_add(session['count'], '.modified', 'source ' + str(modified_file))
-        output_queues[session['count']].get()
-    return modified_file.read_text()
+        output = output_queues[session['count']].get()
+    return jsonify(display=original_source, output=output)
 
 @app.route('/diffsource', methods=['POST'])
 def diff_source():
     if not 'uuid' in session:
-        return 'missing session'
+        return jsonify(display='missing session', output='')
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
     if not commands_folder.exists():
         commands_folder.mkdir(parents=True, exist_ok=True)
+    updated_source = '\n'.join(request.form['source'].splitlines()) + '\n'
+    output = ''
+    if updated_source == CLIENTLESS_GDB.read_text():
+        return jsonify(display='no changes made', output=output)
     modified_file = commands_folder / 'modified.py'
-    modified_file.write_text('\n'.join(request.form['source'].splitlines()) + '\n')
+    modified_file.write_text(updated_source)
     if 'count' in session and session['count'] in running_counts:
         queue_add(session['count'], '.modified', 'source ' + str(modified_file))
-        output_queues[session['count']].get()
+        output = output_queues[session['count']].get()
     diff = run(['diff', '-u', str(CLIENTLESS_GDB), str(modified_file)], stdout=PIPE, universal_newlines=True).stdout
-    if diff == '':
-        return 'no changes made'
-    return diff
+    return jsonify(display=diff, output=output)
 
 @app.route('/updatetimeout', methods=['POST'])
 def update_timeout():
