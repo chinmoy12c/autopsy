@@ -88,6 +88,15 @@ p {
     color: #ffffff;
 }
 
+.message {
+    width: 100%;
+    background-color: #d9edf7;
+    text-align: center;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    font-size: 10pt;
+}
+
 .form-control::placeholder {
     color: #999;
 }
