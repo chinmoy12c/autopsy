@@ -1,4 +1,5 @@
 from cgi import escape
+from datetime import datetime
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
 from os import kill
@@ -394,6 +395,27 @@ def index():
 @app.route('/help', methods=['GET'])
 def help():
     return render_template('help.html')
+
+@app.route('/dump', methods=['GET'])
+def dump():
+    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp, workspace, gdb FROM cores ORDER BY uuid')
+    coredumps = cur.fetchall()
+    cur.close()
+    logger.info('DATABASE DUMP')
+    logger.info('**********')
+    prev_uuid = ''
+    for i in range(0, len(coredumps)):
+        row = coredumps[i]
+        if prev_uuid != row[0]:
+            prev_uuid = row[0]
+            logger.info('UUID: %s', row[0])
+        logger.info('\tCOREDUMP: %s', row[1])
+        logger.info('\tFILESIZE: %d', row[2])
+        logger.info('\tTIMESTAMP: %d (%s)', row[3], str(datetime.fromtimestamp(row[3] / 1000)))
+        logger.info('\tWORKSPACE: %s', row[4])
+        logger.info('\tGDB: %s', row[5])
+    logger.info('**********')
+    return 'ok'
 
 @app.route('/delete', methods=['POST'])
 def delete():
