@@ -293,11 +293,11 @@ def clean_uploads():
         logger.info('clean finished')
 
 def no_such_coredump(uuid, coredump):
-    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
+    cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
     coredumps = cur.fetchall()
     cur.close()
     if len(coredumps) != 0:
-        logger.info('uuid %s and filename %s exist', uuid, coredump)
+        logger.info('uuid %s and filename %s exist until %s', uuid, coredump, str(datetime.fromtimestamp(coredumps[0][0] / 1000 + DELETE_MIN * 60)))
         return False
     logger.info('uuid %s and filename %s do not exist', uuid, coredump)
     return True
