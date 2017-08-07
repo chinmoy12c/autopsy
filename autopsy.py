@@ -120,11 +120,21 @@ def run_gdb(count, uuid, workspace, gdb_location):
     img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
     if not img_path.exists():
         img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
+    if not img_path.exists():
+        logger.info('img_path %s does not exist', str(img_path))
+        running_counts.remove(count)
+        output_queues[count].put('dne')
+        return
     logger.info(gdb_location)
     logger.info(str(img_path))
     lina_path = img_path / 'asa' / 'bin' / 'lina'
     if not lina_path.exists():
         lina_path = img_path / 'smp'
+    if not lina_path.exists():
+        logger.info('lina_path %s does not exist', str(lina_path))
+        running_counts.remove(count)
+        output_queues[count].put('dne')
+        return
     logger.info(str(lina_path))
     gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
     read_queue = Queue()
@@ -560,7 +570,7 @@ def link_upload():
     if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
         logger.info('gz ok')
         return 'gz ok'
-    if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+    if file_test.startswith('ELF 64-bit LSB core file'):
         logger.info('core ok')
         return 'core ok'
     logger.info('removing file')
@@ -685,7 +695,7 @@ def file_upload():
                 if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
                     logger.info('gz ok')
                     return 'gz ok'
-                if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+                if file_test.startswith('ELF 64-bit LSB core file'):
                     logger.info('core ok')
                     return 'core ok'
                 logger.info('removing file')
@@ -739,7 +749,7 @@ def upload():
         session['current'] = filename
         logger.info('gz ok')
         return 'gz ok'
-    if file_test.startswith('ELF 64-bit LSB core file x86-64'):
+    if file_test.startswith('ELF 64-bit LSB core file'):
         session['current'] = filename
         logger.info('core ok')
         return 'core ok'
@@ -813,8 +823,13 @@ def build():
         delete_queues(session['count'])
         startup(session['count'], session['uuid'], filename)
         queue_add(session['count'], filename, '1')
-        output_queues[session['count']].get()
+        startup_result = output_queues[session['count']].get()
     decoder_file = directory / 'decoder.txt'
+    if startup_result == 'dne':
+        logger.info('dne')
+        delete_queues(session['count'])
+        decoder_file.write_text('decoder text failed')
+        return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
     try:
         siginfo_file = directory / (filename + '.siginfo.txt')
         siginfo = siginfo_file.read_text()
@@ -887,7 +902,10 @@ def decode():
         return jsonify(output=decoder_output.read_text(), timestamp=timestamp)
     decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
     try:
-        payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_file.read_text()}
+        decoder_text = decoder_file.read_text()
+        if decoder_text == 'decoder text failed':
+            return jsonify(output=decoder_text, timestamp=timestamp)
+        payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
         r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
         base_text = r.text.splitlines()
         base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
@@ -933,7 +951,11 @@ def command_input():
         delete_queues(session['count'])
         startup(session['count'], session['uuid'], request.form['coredump'])
         queue_add(session['count'], request.form['coredump'], request.form['command'])
-        return jsonify(output=escape(output_queues[session['count']].get()), timestamp=timestamp)
+        result = output_queues[session['count']].get()
+    if result == 'dne':
+        logger.info('dne')
+        delete_queues(session['count'])
+        result = 'gdb not supported'
     return jsonify(output=escape(result), timestamp=timestamp)
 
 @app.route('/getsource', methods=['POST'])
