@@ -299,7 +299,7 @@ def clean_uploads():
         global dump_counter
         if dump_counter == 0:
             dump_database()
-            dump_counter = (dump_counter + 1) % 24
+        dump_counter = (dump_counter + 1) % 24
 
 def no_such_coredump(uuid, coredump):
     cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
