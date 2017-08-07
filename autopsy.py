@@ -55,6 +55,8 @@ running_counts = set()
 count = 0
 count_lock = Lock()
 
+dump_counter = 0
+
 def _write(*args, **kwargs):
     content = args[0]
     if content in [' ', '', '\n', '\r', '\r\n']:
@@ -287,10 +289,17 @@ def clean_uploads():
                     logger.info('removing directory %s', str(coredump))
                     remove_directory_and_parent(coredump)
             child_dirs = [d for d in uuid.iterdir()]
-            if len(child_dirs) == 1 and child_dirs[0].name == '.commands' and getmtime(child_dirs[0]) < time() - 60 * 60:
-                remove_directory_and_parent(child_dirs[0])
-                logger.info('removed .commands and parent')
+            if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
+                if getmtime(child_dirs[0]) > time() - 60 * 60:
+                    logger.info('only .commands but too recent')
+                else:
+                    remove_directory_and_parent(child_dirs[0])
+                    logger.info('removed .commands and parent')
         logger.info('clean finished')
+        global dump_counter
+        if dump_counter == 0:
+            dump_database()
+            dump_counter = (dump_counter + 1) % 24
 
 def no_such_coredump(uuid, coredump):
     cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
@@ -361,6 +370,26 @@ def enum_threads():
     logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
     logger.info(named_threads)
 
+def dump_database():
+    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp, workspace, gdb FROM cores ORDER BY uuid')
+    coredumps = cur.fetchall()
+    cur.close()
+    logger.info('DATABASE DUMP')
+    logger.info('**********')
+    prev_uuid = ''
+    for i in range(0, len(coredumps)):
+        row = coredumps[i]
+        if prev_uuid != row[0]:
+            prev_uuid = row[0]
+            logger.info('UUID: %s', row[0])
+        logger.info('    COREDUMP:  %s', row[1])
+        logger.info('    FILESIZE:  %d', row[2])
+        logger.info('    TIMESTAMP: %d (%s)', row[3], str(datetime.fromtimestamp(row[3] / 1000)))
+        logger.info('    WORKSPACE: %s', row[4])
+        logger.info('    GDB:       %s', row[5])
+        logger.info('')
+    logger.info('**********')
+
 @app.route('/', methods=['GET'])
 def index():
     if 'uuid' in session:
@@ -398,24 +427,7 @@ def help():
 
 @app.route('/dump', methods=['GET'])
 def dump():
-    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp, workspace, gdb FROM cores ORDER BY uuid')
-    coredumps = cur.fetchall()
-    cur.close()
-    logger.info('DATABASE DUMP')
-    logger.info('**********')
-    prev_uuid = ''
-    for i in range(0, len(coredumps)):
-        row = coredumps[i]
-        if prev_uuid != row[0]:
-            prev_uuid = row[0]
-            logger.info('UUID: %s', row[0])
-        logger.info('    COREDUMP:  %s', row[1])
-        logger.info('    FILESIZE:  %d', row[2])
-        logger.info('    TIMESTAMP: %d (%s)', row[3], str(datetime.fromtimestamp(row[3] / 1000)))
-        logger.info('    WORKSPACE: %s', row[4])
-        logger.info('    GDB:       %s', row[5])
-        logger.info('')
-    logger.info('**********')
+    dump_database()
     return 'ok'
 
 @app.route('/delete', methods=['POST'])
