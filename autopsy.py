@@ -409,11 +409,12 @@ def dump():
         if prev_uuid != row[0]:
             prev_uuid = row[0]
             logger.info('UUID: %s', row[0])
-        logger.info('\tCOREDUMP: %s', row[1])
-        logger.info('\tFILESIZE: %d', row[2])
-        logger.info('\tTIMESTAMP: %d (%s)', row[3], str(datetime.fromtimestamp(row[3] / 1000)))
-        logger.info('\tWORKSPACE: %s', row[4])
-        logger.info('\tGDB: %s', row[5])
+        logger.info('    COREDUMP:  %s', row[1])
+        logger.info('    FILESIZE:  %d', row[2])
+        logger.info('    TIMESTAMP: %d (%s)', row[3], str(datetime.fromtimestamp(row[3] / 1000)))
+        logger.info('    WORKSPACE: %s', row[4])
+        logger.info('    GDB:       %s', row[5])
+        logger.info('')
     logger.info('**********')
     return 'ok'
 
