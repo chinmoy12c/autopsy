@@ -125,9 +125,10 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `update_timestamp`: updates the timestamp field in the database. Called when a core dump is analyzed.
 * `get_timeout`: returns the value in the user's `timeout` file or 1 if it does not exist.
 * `enum_threads`: prints all active threads. Called every time the page is loaded.
+* `dump_database`: logs a database dump. Called by `clean_uploads` once every 24 hours and by the user through `dump`.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
-* `dump`: logs a database dump.
+* `dump`: allows the user to log a database dump.
 * `delete`: uses `delete_coredump` to delete a core dump. Called when the × next to a core dump is clicked.
 * `test_key`: tests whether a UUID has core dumps in the database. Called when validating a key.
 * `load_key`: returns the core dump data for a particular UUID.
