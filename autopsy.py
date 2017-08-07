@@ -433,6 +433,7 @@ def index():
 
 @app.route('/help', methods=['GET'])
 def help():
+    logger.info('opened help')
     return render_template('help.html')
 
 @app.route('/dump', methods=['GET'])
