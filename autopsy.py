@@ -121,6 +121,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
     if not img_path.exists():
         img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
     if not img_path.exists():
+        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'mips'
+    if not img_path.exists():
         logger.info('img_path %s does not exist', str(img_path))
         running_counts.remove(count)
         output_queues[count].put('dne')
