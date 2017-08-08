@@ -179,7 +179,10 @@ def run_gdb(count, uuid, workspace, gdb_location):
                 logger_print = not command.startswith('pi ')
                 timeout = False
                 enter_command(command)
-                gdb.stdin.write('0\n')
+                if command == '0':
+                    gdb.stdin.write('1\n')
+                else:
+                    gdb.stdin.write('0\n')
                 if logger_print:
                     logger.info('count %d - %s', count, command)
                 output = ''
@@ -211,7 +214,10 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             timeout = True
                             kill(gdb.pid, SIGINT)
                     else:
-                        undefined_index = line.find('(gdb) Undefined command: "0"')
+                        if command == '0':
+                            undefined_index = line.find('(gdb) Undefined command: "1"')
+                        else:
+                            undefined_index = line.find('(gdb) Undefined command: "0"')
                         if undefined_index >= 0:
                             line = line[:undefined_index]
                             if logger_print:
