@@ -67,12 +67,13 @@ http {
 
     server {
         listen  9002;
-        return  301 https://$host$request_uri;
+        return  301 https://$host:9001$request_uri;
     }
 
     server {
         listen                  9001 ssl;
         client_max_body_size    0;
+        error_page 497          https://$host:9001$request_uri;
 
         location / {
             proxy_pass          http://app_servers;
