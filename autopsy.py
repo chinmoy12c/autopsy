@@ -827,7 +827,7 @@ def build():
         startup(session['count'], session['uuid'], filename)
     queue_add(session['count'], filename, '1')
     startup_result = output_queues[session['count']].get()
-    if startup_result == 'restart':
+    while startup_result == 'restart':
         logger.info('restart')
         delete_queues(session['count'])
         startup(session['count'], session['uuid'], filename)
@@ -955,7 +955,7 @@ def command_input():
         startup(session['count'], session['uuid'], request.form['coredump'])
     queue_add(session['count'], request.form['coredump'], request.form['command'])
     result = output_queues[session['count']].get()
-    if result == 'restart':
+    while result == 'restart':
         logger.info('restart')
         delete_queues(session['count'])
         startup(session['count'], session['uuid'], request.form['coredump'])
