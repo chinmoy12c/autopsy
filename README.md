@@ -128,6 +128,8 @@ The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which 
 
 Start nginx with `ng` and then start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
 
+You should monitor the running nginx and Gunicorn processes with `ps aux | grep -e nginx -e gunicorn` to ensure that no leftover processes are running.
+
 ## Logging
 
 By default, Autopsy logs output from `autopsy.py` to both the console and `flask.log`, which is located in the `flasklogs` folder. To turn off console logging, comment out (i.e. put a `#` in front of)
@@ -137,6 +139,8 @@ logger.addHandler(ch)
 at the top of `autopsy.py`.
 
 Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log`.
+
+You should ensure that `crontab -l` does not have any duplicate lines for rotating nginx logs. (The install process does not clear previous lines, so multiple lines can appear if you reinstall Autopsy.)
 
 ## Documentation
 
