@@ -140,9 +140,9 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `test_filename`: uses `check_filename` to test a file name.
 * `upload`: saves the file that a user uploads, checks whether it is valid, and deletes it if it is not.
 * `unzip`: unzips the uploaded file.
-* `build`: builds the workspace for the uploaded file using `gen_core_report.sh` and extracts information from its output. Also launches GDB to extract registers.
+* `build`: builds the workspace for the uploaded file using `gen_core_report.sh` and extracts information from its output.
 * `get_report`, `backtrace`, and `siginfo`: returns the contents of the relevant files for a core dump.
-* `decode`: submits `decoder.txt` to the ASA traceback decoder and returns the output, or returns the contents of `decoder_output.html` if it already exists.
+* `decode`: launches GDB to extract registers, submits `decoder.txt` to the ASA traceback decoder, and returns the output on first run, or returns the contents of `decoder_output.html` on subsequent runs.
 * `abort`: aborts the current command.
 * `command_input`: manages launching the GDB thread and communicates with the thread using the appropriate queues.
 * `get_source`: returns the source code of the user's `modified.py` file (or `clientlessGdb.py` if `modified.py` does not exist).
