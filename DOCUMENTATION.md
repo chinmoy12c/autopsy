@@ -53,7 +53,7 @@ A user has three ways to upload files: uploading a local file, submitting a link
 
 ### Uploading a local file
 
-When a local file is uploaded, the client tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`. After running `gen_core_report.sh`, GDB is launched in order to extract register values from the crashed thread. These are used to compile `decoder.txt`, which can be inputted into the [ASA traceback decoder](http://asa-decoder/asadecoder.php) to list possible bugs that caused the crash.
+When a local file is uploaded, the client tests if the name of the core dump is valid (i.e. no other core dumps under the client's UUID have the same name). If the name is valid, the client uploads the file. (The first file name test is purely for client convenience, as the server tests the file name again after the upload.) The server checks if the file is the right type with the Unix `file` command, and if so, unzips the core dump using `gunzip` (if it is a gzip file) and builds the workspace. The output of the build (from `gen_core_report.sh`) is stored in a text file called `gen_core_report.txt`.
 
 ### Submitting a link
 
@@ -73,7 +73,7 @@ If a user clicks one of the three buttons to analyze a core dump, Autopsy will r
 
 ## ASA decoder
 
-If the `decode` button for a core dump is clicked for the first time, Autopsy will submit the contents of `decoder.txt` to the ASA traceback decoder and display the output. Autopsy saves the output in `decoder_output.html` and reads from this file instead during subsequent runs.
+If the `decode` button for a core dump is clicked for the first time, GDB is launched in order to extract register values from the crashed thread. These are used to compile `decoder.txt`, which can be inputted into the [ASA traceback decoder](http://asa-decoder/asadecoder.php) to list possible bugs that caused the crash. Autopsy submits the contents of `decoder.txt` to the ASA traceback decoder and displays the output. Autopsy saves this output in `decoder_output.html` and reads from this file instead during subsequent runs.
 
 ## Running GDB
 
