@@ -44,6 +44,7 @@ DATABASE = Path(app.root_path) / 'database' / 'cores.db'
 CLIENTLESS_GDB = Path(app.root_path).parent / 'clientlessGDB' / 'clientlessGdb.py'
 GEN_CORE_REPORT = Path(app.root_path).parent / 'clientlessGDB' / 'gen_core_report.sh'
 DELETE_MIN = 5760
+DELETE_MIN_HALF_SEC = DELETE_MIN * 30
 
 coredump_queues = {}
 command_queues = {}
@@ -208,11 +209,14 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             end = True
                             running = False
                             output_queues[count].put('gdb quit\n')
-                        elif time() - time_start > timeout_value:
+                        running_time = time() - time_start
+                        if running_time > timeout_value:
                             logger.info('count %d - gdb timeout', count)
                             time_start = time()
                             timeout = True
                             kill(gdb.pid, SIGINT)
+                        if running_time > DELETE_MIN_HALF_SEC:
+                            update_timestamp(uuid, coredump)
                     else:
                         if command.startswith('0'):
                             undefined_index = line.find('(gdb) Undefined command: "1"')
@@ -821,43 +825,6 @@ def build():
         logger.info('workspace failed')
         remove_directory_and_parent(directory)
         return jsonify(report=report)
-    global running_counts, output_queues
-    if not session['count'] in running_counts:
-        logger.info('starting')
-        startup(session['count'], session['uuid'], filename)
-    queue_add(session['count'], filename, '1')
-    startup_result = output_queues[session['count']].get()
-    while startup_result == 'restart':
-        logger.info('restart')
-        delete_queues(session['count'])
-        startup(session['count'], session['uuid'], filename)
-        queue_add(session['count'], filename, '1')
-        startup_result = output_queues[session['count']].get()
-    decoder_file = directory / 'decoder.txt'
-    if startup_result == 'dne':
-        logger.info('dne')
-        delete_queues(session['count'])
-        decoder_file.write_text('decoder text failed')
-        return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
-    try:
-        siginfo_file = directory / (filename + '.siginfo.txt')
-        siginfo = siginfo_file.read_text()
-        thread = int((siginfo.splitlines()[0]).split()[-1])
-        queue_add(session['count'], filename, 'thread ' + str(thread))
-        output_queues[session['count']].get()
-        queue_add(session['count'], filename, 'info registers')
-        registers = output_queues[session['count']].get()
-        queue_add(session['count'], filename, 'p _lina_text_start')
-        aslr_start = output_queues[session['count']].get()
-        queue_add(session['count'], filename, 'p _lina_text_end')
-        aslr_end = output_queues[session['count']].get()
-        decoder_text = compile_decoder_text(directory, filename, thread, registers, aslr_start, aslr_end)
-        logger.info(decoder_text.splitlines()[0])
-        decoder_file.write_text(decoder_text)
-        logger.info('decoder file write')
-    except:
-        logger.info('decoder text failed')
-        decoder_file.write_text('decoder text failed')
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
 @app.route('/getreport', methods=['POST'])
@@ -865,10 +832,10 @@ def get_report():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+        return jsonify(output='no such coredump', timestamp=timestamp)
     gen_core_report_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'gen_core_report.txt'
     return jsonify(output=escape(gen_core_report_file.read_text()), timestamp=timestamp)
 
@@ -877,10 +844,10 @@ def backtrace():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+        return jsonify(output='no such coredump', timestamp=timestamp)
     backtrace_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.backtrace.txt')
     return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
 
@@ -889,10 +856,10 @@ def siginfo():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+        return jsonify(output='no such coredump', timestamp=timestamp)
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
 
@@ -901,19 +868,59 @@ def decode():
     logger.info('start')
     if not 'uuid' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
-    if no_such_coredump(session['uuid'], request.form['coredump']):
+    coredump = request.form['coredump']
+    timestamp = update_timestamp(session['uuid'], coredump)
+    if no_such_coredump(session['uuid'], coredump):
         logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
-    decoder_output = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder_output.html'
+        return jsonify(output='no such coredump', timestamp=timestamp)
+    directory = UPLOAD_FOLDER / session['uuid'] / coredump
+    decoder_output = directory / 'decoder_output.html'
     if decoder_output.exists():
         logger.info('already generated')
         return jsonify(output=decoder_output.read_text(), timestamp=timestamp)
-    decoder_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'decoder.txt'
+    decoder_file = UPLOAD_FOLDER / session['uuid'] / coredump / 'decoder.txt'
     try:
+        global running_counts, output_queues
+        if not session['count'] in running_counts:
+            logger.info('starting')
+            startup(session['count'], session['uuid'], coredump)
+        queue_add(session['count'], coredump, '1')
+        startup_result = output_queues[session['count']].get()
+        while startup_result == 'restart':
+            logger.info('restart')
+            delete_queues(session['count'])
+            startup(session['count'], session['uuid'], coredump)
+            queue_add(session['count'], coredump, '1')
+            startup_result = output_queues[session['count']].get()
+        decoder_file = directory / 'decoder.txt'
+        if startup_result == 'dne':
+            logger.info('dne')
+            delete_queues(session['count'])
+            decoder_file.write_text('decoder text failed')
+            return jsonify(filename=coredump, filesize=filesize, timestamp=timestamp)
+        try:
+            siginfo_file = directory / (coredump + '.siginfo.txt')
+            siginfo = siginfo_file.read_text()
+            thread = int((siginfo.splitlines()[0]).split()[-1])
+            queue_add(session['count'], coredump, 'thread ' + str(thread))
+            output_queues[session['count']].get()
+            queue_add(session['count'], coredump, 'info registers')
+            registers = output_queues[session['count']].get()
+            queue_add(session['count'], coredump, 'p _lina_text_start')
+            aslr_start = output_queues[session['count']].get()
+            queue_add(session['count'], coredump, 'p _lina_text_end')
+            aslr_end = output_queues[session['count']].get()
+            decoder_text = compile_decoder_text(directory, coredump, thread, registers, aslr_start, aslr_end)
+            logger.info(decoder_text.splitlines()[0])
+            decoder_file.write_text(decoder_text)
+            logger.info('decoder file write')
+        except:
+            logger.info('decoder text failed')
+            decoder_file.write_text('decoder text failed')
         decoder_text = decoder_file.read_text()
         if decoder_text == 'decoder text failed':
-            return jsonify(output=decoder_text, timestamp=timestamp)
+            decoder_output.write_text('failed')
+            return jsonify(output='failed', timestamp=timestamp)
         payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
         r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
         base_text = r.text.splitlines()
@@ -942,12 +949,12 @@ def command_input():
     logger.info('start')
     if not 'count' in session:
         return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     if no_such_coredump(session['uuid'], request.form['coredump']):
         logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=int(time() * 1000))
+        return jsonify(output='no such coredump', timestamp=timestamp)
     global running_counts, output_queues
     logger.info('%s', request.form['command'])
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
     logger.info('count is %d', session['count'])
     logger.info('running_counts is %s', str(running_counts))
     if not session['count'] in running_counts:
