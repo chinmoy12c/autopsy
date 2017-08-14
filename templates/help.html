@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <title>Help – Autopsy</title>
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
@@ -69,12 +69,12 @@
                             <div class="form">
                                 <label class="file">
                                     <input type="file" id="file-input" disabled>
-                                    <span id="file-picker" style="cursor: not-allowed;">
+                                    <span id="file-picker">
                                         <div id="file-container">
-                                            <div id="progress" style="width: 75%; opacity: 1;"></div>
+                                            <div id="progress" style="width: 75%;"></div>
                                             <div id="file-name">asa-5525-coredump.gz</div>
                                         </div>
-                                        <div class="browse-clickable" id="browse" style="cursor: pointer;">Cancel</div>
+                                        <div class="browse-clickable" id="browse">Cancel</div>
                                     </span>
                                 </label>
                             </div>

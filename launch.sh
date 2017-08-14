@@ -13,9 +13,10 @@ mkdir -p uploads
 alias fk="pkill -9 python ; pkill -9 flask"
 alias fl="pkill -9 python ; pkill -9 flask ; flask run --host=0.0.0.0 --no-reload --with-threads"
 alias gk="[ -f ${GUNICORN_PID} ] && kill -9 \$(cat ${GUNICORN_PID})"
-alias gu="[ -f ${GUNICORN_PID} ] && kill -9 \$(cat ${GUNICORN_PID}) ; gunicorn -b 127.0.0.1:5432 -p ${GUNICORN_PID} -t 999999 --threads 10 autopsy:app &"
+alias gu="[ -f ${GUNICORN_PID} ] && kill -9 \$(cat ${GUNICORN_PID}) ; gunicorn -b 127.0.0.1:5432 -k flask_sockets.worker -p ${GUNICORN_PID} -t 999999 --threads 10 autopsy:app &"
 alias nk="${NGINX_DIR} -s quit"
 alias ng="${NGINX_DIR} -s quit ; ${NGINX_DIR}"
+alias chk="ps aux | grep -e nginx -e gunicorn"
 source $PWD/venv/bin/activate
 export "FLASK_APP=autopsy.py"
 export "FLASK_DEBUG=0"

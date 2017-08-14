@@ -28,7 +28,7 @@ rm 15.1.0.tar.gz
 python virtualenv-15.1.0/virtualenv.py -p python/bin/python3.6 Autopsy/venv
 cd Autopsy
 . launch.sh
-pip install Flask requests requests-ntlm pexpect gunicorn
+pip install Flask requests requests-ntlm pexpect gunicorn flask_sockets
 flask initdb
 chmod 777 database/cores.db
 deactivate
@@ -36,10 +36,10 @@ cd ..
 mkdir -p nginx
 cd nginx
 nginx_dir=$(pwd)
-wget http://nginx.org/download/nginx-1.13.3.tar.gz
-tar -xf nginx-1.13.3.tar.gz
-rm nginx-1.13.3.tar.gz
-cd nginx-1.13.3
+wget http://nginx.org/download/nginx-1.13.4.tar.gz
+tar -xf nginx-1.13.4.tar.gz
+rm nginx-1.13.4.tar.gz
+cd nginx-1.13.4
 ./configure --with-http_ssl_module --prefix=${nginx_dir}
 make
 make install

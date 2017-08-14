@@ -19,6 +19,7 @@ from time import time
 from uuid import uuid4
 
 from flask import Flask, jsonify, g, render_template, request, session
+from flask_sockets import Sockets
 from pexpect import EOF, spawn, TIMEOUT
 from requests import get, post
 from requests.auth import HTTPBasicAuth
@@ -26,6 +27,7 @@ from requests_ntlm import HttpNtlmAuth
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+sockets = Sockets(app)
 
 logger = app.logger
 logger.setLevel(DEBUG)
@@ -57,6 +59,21 @@ count = 0
 count_lock = Lock()
 
 dump_counter = 0
+
+@sockets.route('/console')
+def console_test(ws):
+    while not ws.closed:
+        message = ws.receive()
+        if message != None:
+            if 'uuid' not in session:
+                ws.send('no uuid')
+            else:
+                logger.info(ws)
+                logger.info(session)
+                logger.info(message + ' ' + session['uuid'])
+                ws.send(message + ' ' + session['uuid'])
+        else:
+            logger.info('socket closed')
 
 def _write(*args, **kwargs):
     content = args[0]

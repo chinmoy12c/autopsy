@@ -2,24 +2,16 @@
 var uuid = document.getElementById("uuid");
 var uuids = document.getElementById("uuids");
 var previous_button = document.getElementById("previous-button");
-var key_group = document.getElementById("key-group");
 var load_key = document.getElementById("load-key");
 var load_button = document.getElementById("load-button");
 var generate_button = document.getElementById("generate-button");
-var link_url_group = document.getElementById("link-url-group");
 var link_url = document.getElementById("link-url");
-var link_username_group = document.getElementById("link-username-group");
 var link_username = document.getElementById("link-username");
-var link_password_group = document.getElementById("link-password-group");
 var link_password = document.getElementById("link-password");
 var link_button = document.getElementById("link-button");
-var file_server_group = document.getElementById("file-server-group");
 var file_server = document.getElementById("file-server");
-var file_path_group = document.getElementById("file-path-group");
 var file_path = document.getElementById("file-path");
-var file_username_group = document.getElementById("file-username-group");
 var file_username = document.getElementById("file-username");
-var file_password_group = document.getElementById("file-password-group");
 var file_password = document.getElementById("file-password");
 var file_button = document.getElementById("file-button");
 var browse = document.getElementById("browse");
@@ -388,7 +380,6 @@ $("#file-modal").on("hidden.bs.modal", function() {
 
 load_key.addEventListener("input", function() {
     if (load_key.value === "") {
-        key_group.className = "input-group";
         load_key.className = "form-control";
         load_button.disabled = true;
     }
@@ -403,13 +394,11 @@ load_key.addEventListener("input", function() {
             xhr.addEventListener("readystatechange", function() {
                 if (xhr.readyState === xhr.DONE && xhr.status === 200) {
                     if (xhr.responseText === "yes") {
-                        key_group.className = "input-group has-success";
-                        load_key.className = "form-control form-control-success";
+                        load_key.className = "form-control is-valid";
                         load_button.disabled = false;
                     }
                     else {
-                        key_group.className = "input-group has-danger";
-                        load_key.className = "form-control form-control-danger";
+                        load_key.className = "form-control is-invalid";
                         load_button.disabled = true;
                     }
                 }
@@ -417,8 +406,7 @@ load_key.addEventListener("input", function() {
             xhr.send(fd);
         }
         else {
-            key_group.className = "input-group has-warning";
-            load_key.className = "form-control form-control-warning";
+            load_key.className = "form-control is-invalid";
             load_button.disabled = true;
         }
     }
@@ -427,9 +415,7 @@ load_key.addEventListener("input", function() {
 function resetFileUpload(error, message) {
     browse.innerHTML = "Browse";
     browse.className = "browse-clickable";
-    browse.style.cursor = "pointer";
     input.disabled = false;
-    file_picker.style.cursor = "pointer";
     upload_button.innerHTML = message;
     if (error) {
         upload_button.className = "btn btn-danger";
@@ -445,17 +431,13 @@ function resetFileUpload(error, message) {
 function reset() {
     cores.innerHTML = "";
     load_key.value = "";
-    key_group.className = "input-group";
     load_key.className = "form-control";
     load_button.disabled = true;
     generate_button.disabled = false;
-    link_url_group.className = "form-group row";
     link_url.value = "";
     link_url.className = "form-control";
-    link_username_group.className = "form-group row";
     link_username.value = "";
     link_username.className = "form-control";
-    link_password_group.className = "form-group row";
     link_password.value = "";
     link_password.className = "form-control";
     link_button.disabled = true;
@@ -463,16 +445,12 @@ function reset() {
     link_button.innerHTML = "Submit";
     link_bad_url = false;
     link_bad_credentials = false;
-    file_server_group.className = "form-group row";
     file_server.value = "";
     file_server.className = "form-control";
-    file_path_group.className = "form-group row";
     file_path.value = "";
     file_path.className = "form-control";
-    file_username_group.className = "form-group row";
     file_username.value = "";
     file_username.className = "form-control";
-    file_password_group.className = "form-group row";
     file_password.value = "";
     file_password.className= "form-control";
     file_button.disabled = true;
@@ -551,7 +529,6 @@ link_url.addEventListener("input", function() {
     if (link_bad_url) {
         link_button.className = "btn btn-primary";
         link_button.innerHTML = "Submit";
-        link_url_group.className = "form-group row";
         link_url.className = "form-control";
         link_bad_url = false;
     }
@@ -567,9 +544,7 @@ link_username.addEventListener("input", function() {
         }
         link_button.className = "btn btn-primary";
         link_button.innerHTML = "Submit";
-        link_username_group.className = "form-group row";
         link_username.className = "form-control";
-        link_password_group.className = "form-group row";
         link_password.className = "form-control";
         link_bad_credentials = false;
     }
@@ -585,9 +560,7 @@ link_password.addEventListener("input", function() {
         }
         link_button.className = "btn btn-primary";
         link_button.innerHTML = "Submit";
-        link_username_group.className = "form-group row";
         link_username.className = "form-control";
-        link_password_group.className = "form-group row";
         link_password.className = "form-control";
         link_bad_credentials = false;
     }
@@ -603,7 +576,6 @@ file_server.addEventListener("input", function() {
     if (file_bad_server) {
         file_button.className = "btn btn-primary";
         file_button.innerHTML = "Submit";
-        file_server_group.className = "form-group row";
         file_server.className = "form-control";
         file_bad_server = false;
     }
@@ -619,7 +591,6 @@ file_path.addEventListener("input", function() {
     if (file_bad_path) {
         file_button.className = "btn btn-primary";
         file_button.innerHTML = "Submit";
-        file_path_group.className = "form-group row";
         file_path.className = "form-control";
         file_bad_path = false;
     }
@@ -635,9 +606,7 @@ file_username.addEventListener("input", function() {
     if (file_bad_credentials) {
         file_button.className = "btn btn-primary";
         file_button.innerHTML = "Submit";
-        file_username_group.className = "form-group row";
         file_username.className = "form-control";
-        file_password_group.className = "form-group row";
         file_password.className = "form-control";
         file_bad_credentials = false;
     }
@@ -653,9 +622,7 @@ file_password.addEventListener("input", function() {
     if (file_bad_credentials) {
         file_button.className = "btn btn-primary";
         file_button.innerHTML = "Submit";
-        file_username_group.className = "form-group row";
         file_username.className = "form-control";
-        file_password_group.className = "form-group row";
         file_password.className = "form-control";
         file_bad_credentials = false;
     }
@@ -668,10 +635,8 @@ function linkUpload(url, username, password, filename) {
     else {
         file_name.innerHTML = filename;
     }
-    file_picker.style.cursor = "not-allowed";
     input.disabled = true;
     browse.className = "browse-unclickable";
-    browse.style.cursor = "not-allowed";
     upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     downloaded.innerHTML = "";
@@ -725,31 +690,26 @@ link_button.addEventListener("click", function() {
                 case "url":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid URL";
-                    link_url_group.className = "form-group row has-danger";
-                    link_url.className = "form-control form-control-danger";
+                    link_url.className = "form-control is-invalid";
                     link_bad_url = true;
                     break;
                 case "duplicate":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Duplicate File";
-                    link_url_group.className = "form-group row has-danger";
-                    link_url.className = "form-control form-control-danger";
+                    link_url.className = "form-control is-invalid";
                     link_bad_url = true;
                     break;
                 case "invalid":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid File";
-                    link_url_group.className = "form-group row has-danger";
-                    link_url.className = "form-control form-control-danger";
+                    link_url.className = "form-control is-invalid";
                     link_bad_url = true;
                     break;
                 case "credentials":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid Credentials";
-                    link_username_group.className = "form-group row has-danger";
-                    link_username.className = "form-control form-control-danger";
-                    link_password_group.className = "form-group row has-danger";
-                    link_password.className = "form-control form-control-danger";
+                    link_username.className = "form-control is-invalid";
+                    link_password.className = "form-control is-invalid";
                     link_bad_credentials = true;
                     break;
                 case "ok":
@@ -768,10 +728,8 @@ function fileUpload(server, path, username, password, filename) {
     else {
         file_name.innerHTML = filename;
     }
-    file_picker.style.cursor = "not-allowed";
     input.disabled = true;
     browse.className = "browse-unclickable";
-    browse.style.cursor = "not-allowed";
     upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     downloaded.innerHTML = "";
@@ -832,38 +790,32 @@ file_button.addEventListener("click", function() {
                 case "server":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Invalid Server";
-                    file_server_group.className = "form-group row has-danger";
-                    file_server.className = "form-control form-control-danger";
+                    file_server.className = "form-control is-invalid";
                     file_bad_server = true;
                     break;
                 case "timeout":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Server Timeout";
-                    file_server_group.className = "form-group row has-danger";
-                    file_server.className = "form-control form-control-danger";
+                    file_server.className = "form-control is-invalid";
                     file_bad_server = true;
                     break;
                 case "invalid":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Invalid Path";
-                    file_path_group.className = "form-group row has-danger";
-                    file_path.className = "form-control form-control-danger";
+                    file_path.className = "form-control is-invalid";
                     file_bad_path = true;
                     break;
                 case "duplicate":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Duplicate File";
-                    file_path_group.className = "form-group row has-danger";
-                    file_path.classname = "form-control form-control-danger";
+                    file_path.classname = "form-control is-invalid";
                     file_bad_path = true;
                     break;
                 case "credentials":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Invalid Credentials";
-                    file_username_group.className = "form-group row has-danger";
-                    file_username.className = "form-control form-control-danger";
-                    file_password_group.className = "form-group row has-danger";
-                    file_password.className = "form-control form-control-danger";
+                    file_username.className = "form-control is-invalid";
+                    file_password.className = "form-control is-invalid";
                     file_bad_credentials = true;
                     break;
                 case "ok":
@@ -876,9 +828,7 @@ file_button.addEventListener("click", function() {
 });
 
 upload_button.addEventListener("click", function() {
-    browse.style.cursor = "pointer";
     input.disabled = true;
-    file_picker.style.cursor = "not-allowed";
     upload_button.disabled = true;
     upload_button.innerHTML = "Uploading…";
     progress.style.transition = "opacity 0s, width 0s";
@@ -934,14 +884,12 @@ function upload() {
                 case "gz ok":
                     browse.innerHTML = "Browse";
                     browse.className = "browse-unclickable";
-                    browse.style.cursor = "not-allowed";
                     upload_button.innerHTML = "Unzipping…";
                     unzip();
                     break;
                 case "core ok":
                     browse.innerHTML = "Browse";
                     browse.className = "browse-unclickable";
-                    browse.style.cursor = "not-allowed";
                     upload_button.innerHTML = "Building…";
                     build();
             }
