@@ -28,7 +28,7 @@ rm 15.1.0.tar.gz
 python virtualenv-15.1.0/virtualenv.py -p python/bin/python3.6 Autopsy/venv
 cd Autopsy
 . launch.sh
-pip install Flask requests requests-ntlm pexpect gunicorn flask_sockets
+pip install Flask requests requests-ntlm pexpect gunicorn
 flask initdb
 chmod 777 database/cores.db
 deactivate
