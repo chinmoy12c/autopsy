@@ -149,6 +149,9 @@ while getopts ":cpnlh" opt; do
             cat << 'EOF'
 Installer script for Autopsy.
 Run with no flags to install all needed components.
+
+Previous versions of these components should be uninstalled first before using the installer.
+
 Flags:
     -c: Install clientlessGDB
     -p: Install Python, virtualenv, and Flask
