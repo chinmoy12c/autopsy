@@ -177,63 +177,68 @@ def run_gdb(count, uuid, workspace, gdb_location):
                 logger.info('count %d - restart', count)
             else:
                 command = command_queues[count].get()
-                logger_print = not command.startswith('pi ')
-                timeout = False
-                enter_command(command)
-                if command.startswith('0'):
-                    gdb.stdin.write('1\n')
+                lowered_command = command.strip().lower()
+                if lowered_command == 'pi' or lowered_command == 'py':
+                    output = '(gdb) ' + command + '\n' + 'Not supported\n'
                 else:
-                    gdb.stdin.write('0\n')
-                if logger_print:
-                    logger.info('count %d - %s', count, command)
-                output = ''
-                end = False
-                time_start = time()
-                time_file = UPLOAD_FOLDER / uuid / '.commands' / 'timeout'
-                if time_file.exists():
-                    timeout_value = int(time_file.read_text())
-                else:
-                    timeout_value = 1
-                timeout_value *= 3600
-                while not end:
-                    try:
-                        line = read_queue.get_nowait()
-                    except Empty:
-                        try:
-                            abort = abort_queues[count].get_nowait()
-                            kill(gdb.pid, SIGINT)
-                        except Empty:
-                            pass
-                        if gdb.poll() != None:
-                            logger.info('count %d - gdb quit', count)
-                            end = True
-                            running = False
-                            output_queues[count].put('gdb quit\n')
-                        running_time = time() - time_start
-                        if running_time > timeout_value:
-                            logger.info('count %d - gdb timeout', count)
-                            time_start = time()
-                            timeout = True
-                            kill(gdb.pid, SIGINT)
-                        if running_time > DELETE_MIN_HALF_SEC:
-                            update_timestamp(uuid, coredump)
+                    logger_print = not command.startswith('pi ')
+                    timeout = False
+                    enter_command(command)
+                    if command.startswith('0'):
+                        gdb.stdin.write('1\n')
                     else:
-                        if command.startswith('0'):
-                            undefined_index = line.find('(gdb) Undefined command: "1"')
+                        gdb.stdin.write('0\n')
+                    if logger_print:
+                        logger.info('count %d - %s', count, command)
+                    output = ''
+                    end = False
+                    time_start = time()
+                    time_file = UPLOAD_FOLDER / uuid / '.commands' / 'timeout'
+                    if time_file.exists():
+                        timeout_value = int(time_file.read_text())
+                    else:
+                        timeout_value = 1
+                    timeout_value *= 3600
+                    while not end:
+                        try:
+                            line = read_queue.get_nowait()
+                        except Empty:
+                            try:
+                                abort = abort_queues[count].get_nowait()
+                                kill(gdb.pid, SIGINT)
+                                logger.info('count %d - abort', count)
+                            except Empty:
+                                pass
+                            if gdb.poll() != None:
+                                logger.info('count %d - gdb quit', count)
+                                end = True
+                                running = False
+                                output_queues[count].put('gdb quit\n')
+                            running_time = time() - time_start
+                            if running_time > timeout_value:
+                                logger.info('count %d - gdb timeout', count)
+                                time_start = time()
+                                timeout = True
+                                kill(gdb.pid, SIGINT)
+                            if running_time > DELETE_MIN_HALF_SEC:
+                                update_timestamp(uuid, coredump)
                         else:
-                            undefined_index = line.find('(gdb) Undefined command: "0"')
-                        if undefined_index >= 0:
-                            line = line[:undefined_index]
-                            if logger_print:
-                                logger.info('count %d - reached end', count)
-                            end = True
-                        command_index = line.find('(gdb) ')
-                        while entered_commands and command_index >= 0:
-                            line = line[:command_index + 6] + entered_commands.pop(0) + '\n' + line[command_index + 6:]
-                            command_index = line.find('(gdb)', command_index + 6)
-                        output += line
-                if timeout:
-                    output += 'gdb timeout after ' + str(timeout_value / 3600) + ' hours\n'
+                            if command.startswith('0'):
+                                undefined_index = line.find('(gdb) Undefined command: "1"')
+                            else:
+                                undefined_index = line.find('(gdb) Undefined command: "0"')
+                            if undefined_index >= 0:
+                                line = line[:undefined_index]
+                                if logger_print:
+                                    logger.info('count %d - reached end', count)
+                                end = True
+                            command_index = line.find('(gdb) ')
+                            while entered_commands and command_index >= 0:
+                                line = line[:command_index + 6] + entered_commands.pop(0) + '\n' + line[command_index + 6:]
+                                command_index = line.find('(gdb)', command_index + 6)
+                            output += line
+                    if timeout:
+                        output += 'gdb timeout after ' + str(timeout_value / 3600) + ' hours\n'
                 output_queues[count].put(output)
                 entered_commands = []
                 abort_queues[count] = Queue()
@@ -1064,11 +1069,12 @@ def quit():
     logger.info('start')
     if not 'count' in session:
         return 'missing session'
-    global running_counts, coredump_queues
+    global running_counts, coredump_queues, abort_queues
     if not session['count'] in running_counts:
         logger.info('not running')
         return 'not running'
     with queues_lock:
+        abort_queues[session['count']].put('abort')
         coredump_queues[session['count']].put('')
     logger.info('ok')
     return 'ok'
