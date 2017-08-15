@@ -307,9 +307,12 @@ def clean_uploads():
         for uuid in UPLOAD_FOLDER.iterdir():
             logger.info('testing uuid folder %s', uuid.name)
             for coredump in uuid.iterdir():
-                if coredump.name != '.commands' and no_such_coredump(uuid.name, coredump.name) and getmtime(coredump) < time() - 24 * 60 * 60:
-                    logger.info('removing directory %s', str(coredump))
-                    remove_directory_and_parent(coredump)
+                if coredump.name != '.commands' and no_such_coredump(uuid.name, coredump.name):
+                    if getmtime(coredump) > time() - 24 * 60 * 60:
+                        logger.info('%s is too recent', coredump.name)
+                    else:
+                        logger.info('removing directory %s', str(coredump))
+                        remove_directory_and_parent(coredump)
             child_dirs = [d for d in uuid.iterdir()]
             if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
                 if getmtime(child_dirs[0]) > time() - 60 * 60:
