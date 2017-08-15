@@ -158,7 +158,7 @@ EOF
             return
             ;;
         \?)
-            echo "Invalid flag."
+            echo "-$OPTARG: Invalid flag."
             return
             ;;
     esac
