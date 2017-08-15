@@ -430,6 +430,7 @@ input {
 
 .autocomplete-item {
     padding: 0 1rem;
+    cursor: default;
 }
 
 .autocomplete-item-selected {
