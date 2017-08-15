@@ -82,6 +82,7 @@ There are two ways to launch Autopsy: with the [Flask development server](http:/
  * `gu` to start the Gunicorn server
  * `nk` to kill the nginx server
  * `ng` to start nginx server
+ * `chk` to check which nginx and Gunicorn processes are running
 * Launches the virtual environment
 * Exports a Flask variable pointing to `autopsy.py`
 * Configures debug mode for Flask (off by default; set `FLASK_DEBUG` to 1 instead of 0 to enable debug mode)
@@ -128,7 +129,7 @@ The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which 
 
 Start nginx with `ng` and then start Gunicorn by running `gu` in the `Autopsy` folder. To stop the application, use `gk`. To shut down nginx as well, use `nk`.
 
-You should monitor the running nginx and Gunicorn processes with `ps aux | grep -e nginx -e gunicorn` to ensure that no leftover processes are running.
+You should monitor the running nginx and Gunicorn processes with `chk` to ensure that no leftover processes are running. (Typically, there should be two nginx and two Gunicorn processes per instance.)
 
 ## Logging
 
