@@ -213,7 +213,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
                                 logger.info('count %d - gdb quit', count)
                                 end = True
                                 running = False
-                                output_queues[count].put('gdb quit\n')
+                                with queues_lock:
+                                    output_queues[count].put('gdb quit\n')
                             running_time = time() - time_start
                             if running_time > timeout_value:
                                 logger.info('count %d - gdb timeout', count)
@@ -239,7 +240,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
                             output += line
                     if timeout:
                         output += 'gdb timeout after ' + str(timeout_value / 3600) + ' hours\n'
-                output_queues[count].put(output)
+                with queues_lock:
+                    output_queues[count].put(output)
                 entered_commands = []
                 abort_queues[count] = Queue()
         except Empty:
@@ -247,10 +249,12 @@ def run_gdb(count, uuid, workspace, gdb_location):
             running = False
     running_counts.remove(count)
     if restart:
-        output_queues[count].put('restart')
+        with queues_lock:
+            output_queues[count].put('restart')
         logger.info('count %d - inserted restart into output_queues', count)
     else:
-        delete_queues(count)
+        with queues_lock:
+            delete_queues(count)
         logger.info('count %d - no restart', count)
     logger.info('count %d - closing...', count)
     gdb.kill()
@@ -896,14 +900,16 @@ def decode():
         startup_result = output_queues[session['count']].get()
         while startup_result == 'restart':
             logger.info('restart')
-            delete_queues(session['count'])
+            with queues_lock:
+                delete_queues(session['count'])
             startup(session['count'], session['uuid'], coredump)
             queue_add(session['count'], coredump, '1')
             startup_result = output_queues[session['count']].get()
         decoder_file = directory / 'decoder.txt'
         if startup_result == 'dne':
             logger.info('dne')
-            delete_queues(session['count'])
+            with queues_lock:
+                delete_queues(session['count'])
             decoder_file.write_text('decoder text failed')
             return jsonify(filename=coredump, filesize=filesize, timestamp=timestamp)
         try:
@@ -972,13 +978,15 @@ def command_input():
     result = output_queues[session['count']].get()
     while result == 'restart':
         logger.info('restart')
-        delete_queues(session['count'])
+        with queues_lock:
+            delete_queues(session['count'])
         startup(session['count'], session['uuid'], request.form['coredump'])
         queue_add(session['count'], request.form['coredump'], request.form['command'])
         result = output_queues[session['count']].get()
     if result == 'dne':
         logger.info('dne')
-        delete_queues(session['count'])
+        with queues_lock:
+            delete_queues(session['count'])
         result = 'gdb not supported'
     return jsonify(output=escape(result), timestamp=timestamp)
 
@@ -1070,10 +1078,10 @@ def quit():
     if not 'count' in session:
         return 'missing session'
     global running_counts, coredump_queues, abort_queues
-    if not session['count'] in running_counts:
-        logger.info('not running')
-        return 'not running'
     with queues_lock:
+        if not session['count'] in running_counts:
+            logger.info('not running')
+            return 'not running'
         abort_queues[session['count']].put('abort')
         coredump_queues[session['count']].put('')
     logger.info('ok')
