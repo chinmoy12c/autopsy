@@ -387,7 +387,7 @@ input {
     flex-grow: 1;
 }
 
-#prompt-commands, #python-commands {
+#prompt-commands, #editor-commands {
     flex: none;
 }
 
@@ -456,7 +456,7 @@ input {
     margin-top: 1rem;
 }
 
-#python-container {
+#editor-container {
     display: flex;
     flex-grow: 1;
     margin-top: 1rem;
@@ -470,7 +470,7 @@ input {
     overflow: auto;
 }
 
-.python-command {
+.editor-command {
     border-bottom: 1px solid #ccc;
     overflow: hidden;
     white-space: nowrap;
@@ -479,11 +479,11 @@ input {
     cursor: default;
 }
 
-.python-command:last-child {
+.editor-command:last-child {
     border-bottom: initial;
 }
 
-#python-program {
+#editor-program {
     border-top: 1px solid #ccc;
     border-right: 1px solid #ccc;
     border-bottom: 1px solid #ccc;

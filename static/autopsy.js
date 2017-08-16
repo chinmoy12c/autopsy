@@ -31,11 +31,11 @@ var abort_gdb = document.getElementById("abort-gdb");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
-var python_reset = document.getElementById("python-reset");
-var python_diff = document.getElementById("python-diff");
+var editor_reset = document.getElementById("editor-reset");
+var editor_diff = document.getElementById("editor-diff");
 var timeout = document.getElementById("timeout");
 var command_list = document.getElementById("command-list");
-var python_program = document.getElementById("python-program");
+var editor_program = document.getElementById("editor-program");
 
 var uuid_value = uuid.innerHTML;
 var checked_uuid = null;
@@ -59,7 +59,7 @@ var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
 
-var code_mirror = CodeMirror(python_program, {extraKeys: {"Cmd-F": "findPersistent", "Ctrl-F": "findPersistent"}, mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true, matchBrackets: true, scrollbarStyle: "simple", styleActiveLine: true});
+var code_mirror = CodeMirror(editor_program, {extraKeys: {"Cmd-F": "findPersistent", "Ctrl-F": "findPersistent"}, mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true, matchBrackets: true, scrollbarStyle: "simple", styleActiveLine: true});
 
 code_mirror.addKeyMap({"Tab": function(code_mirror) {
         if (code_mirror.somethingSelected()) {
@@ -74,7 +74,7 @@ code_mirror.addKeyMap({"Tab": function(code_mirror) {
 });
 
 window.addEventListener("resize", function() {
-    code_mirror.setSize(null, python_program.clientHeight);
+    code_mirror.setSize(null, editor_program.clientHeight);
 });
 
 function updateLocalStorage(uuid, coredumps) {
@@ -1302,11 +1302,11 @@ function addAutocompleteListeners() {
 
 function loadPython() {
     for (var i = 0; i < commands.length; i++) {
-        var python_command = document.createElement("div");
-        python_command.classList.add("python-command");
-        python_command.classList.add("not-clicked");
-        python_command.innerHTML = commands[i];
-        command_list.insertBefore(python_command, null);
+        var editor_command = document.createElement("div");
+        editor_command.classList.add("editor-command");
+        editor_command.classList.add("not-clicked");
+        editor_command.innerHTML = commands[i];
+        command_list.insertBefore(editor_command, null);
     }
     addCommandListeners();
     getSource();
@@ -1315,9 +1315,9 @@ function loadPython() {
 function addCommandListeners() {
     for (var i = 0; i < command_list.childElementCount; i++) {
         (function() {
-            var python_command = command_list.children[i];
-            python_command.addEventListener("click", function() {
-                scrollToCommand(python_command.innerHTML);
+            var editor_command = command_list.children[i];
+            editor_command.addEventListener("click", function() {
+                scrollToCommand(editor_command.innerHTML);
             });
         })();
     }
@@ -1329,7 +1329,7 @@ function scrollToCommand(command) {
         var index = code_mirror.getValue().search(re);
         if (index >= 0) {
             var pos = code_mirror.posFromIndex(index);
-            code_mirror.scrollTo(null, code_mirror.charCoords(pos, "local").top - python_program.clientHeight / 5);
+            code_mirror.scrollTo(null, code_mirror.charCoords(pos, "local").top - editor_program.clientHeight / 5);
             code_mirror.setCursor(pos);
         }
         code_mirror.focus();
@@ -1342,14 +1342,14 @@ function getSource() {
     xhr.responseType = "text";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            python_diff.innerText = "show diff";
+            editor_diff.innerText = "show diff";
             code_mirror.setOption("mode", {name: "python", version: 2});
             code_mirror.setOption("lineNumbers", true);
             code_mirror.setOption("matchBrackets", true);
             code_mirror.setOption("styleActiveLine", true);
             code_mirror.setValue(xhr.responseText);
             send_update = true;
-            python_reset.disabled = false;
+            editor_reset.disabled = false;
             code_mirror.setOption("readOnly", false);
             if (scroll_loc != null && cursor_loc != null) {
                 code_mirror.setCursor(cursor_loc);
@@ -1365,8 +1365,8 @@ $("#prompt-tab").on("shown.bs.tab", function() {
     updateSource();
 });
 
-$("#python-tab").on("shown.bs.tab", function() {
-    code_mirror.setSize(null, python_program.clientHeight);
+$("#editor-tab").on("shown.bs.tab", function() {
+    code_mirror.setSize(null, editor_program.clientHeight);
     code_mirror.refresh();
     code_mirror.focus();
 });
@@ -1397,7 +1397,7 @@ function updateSource() {
     }
 }
 
-python_reset.addEventListener("click", function() {
+editor_reset.addEventListener("click", function() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/resetsource", true);
     xhr.responseType = "json";
@@ -1411,12 +1411,12 @@ python_reset.addEventListener("click", function() {
     xhr.send();
 });
 
-python_diff.addEventListener("click", function() {
-    if (python_diff.innerText === "show diff") {
+editor_diff.addEventListener("click", function() {
+    if (editor_diff.innerText === "show diff") {
         cursor_loc = code_mirror.getCursor();
         scroll_loc = code_mirror.getScrollInfo().top;
-        python_diff.innerText = "show python";
-        python_reset.disabled = true;
+        editor_diff.innerText = "show python";
+        editor_reset.disabled = true;
         send_update = false;
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
