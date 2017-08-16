@@ -13,7 +13,7 @@ from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
 from shutil import rmtree
 from sqlite3 import connect
-from sys import stdout, version
+from sys import exc_info, stdout, version
 from threading import Lock, Thread, enumerate as thread_enum
 from time import time
 from uuid import uuid4
@@ -378,12 +378,13 @@ def compile_decoder_text(directory, coredump, thread, registers, aslr_start, asl
     version_paren = version[0] + '.' + version[1] + '(' + version[2] + ')'
     if len(version) > 3:
         version_paren += version[3]
+    image = [line.split()[-1] for line in gen_core_report.splitlines() if line.startswith('Target:')][0]
     hardware = [line.split()[-1] for line in gen_core_report.splitlines() if line.startswith('Platform:')][0]
     aslr = ((aslr_start.split()[-1][2:] + '-') if match('0x[0-9a-f]+', aslr_start.split()[-1]) else '') + (aslr_end.split()[-1][2:] if match('0x[0-9a-f]+', aslr_end.split()[-1]) else '')
     if aslr != '':
         aslr = 'ASLR enabled, text region ' + aslr + '\n'
     traceback = '\n'.join([str(i - 1) + ': ' + line.split()[1] for i, line in enumerate(backtraces[len(backtraces) - thread - 1].splitlines()) if match('0x[0-9a-f]+', line.split()[1])])
-    return 'Thread Name:\n' + '\n'.join(registers.split('\n')[1:]) + 'Cisco Adaptive Security Appliance Software Version ' + version_paren + '\nCompiled on  by builders\nHardware: ' + hardware + '\n' + aslr + 'Traceback:\n' + traceback
+    return 'Thread Name:\n' + '\n'.join(registers.split('\n')[1:]) + 'Cisco Adaptive Security Appliance Software Version ' + version_paren + '\nCompiled on  by builders\nHardware: ' + hardware + '\n' + aslr + 'Traceback:\n' + traceback, image
 
 def update_timestamp(uuid, coredump):
     timestamp = int(time() * 1000)
@@ -923,18 +924,19 @@ def decode():
             aslr_start = output_queues[session['count']].get()
             queue_add(session['count'], coredump, 'p _lina_text_end')
             aslr_end = output_queues[session['count']].get()
-            decoder_text = compile_decoder_text(directory, coredump, thread, registers, aslr_start, aslr_end)
+            decoder_text, image = compile_decoder_text(directory, coredump, thread, registers, aslr_start, aslr_end)
             logger.info(decoder_text.splitlines()[0])
             decoder_file.write_text(decoder_text)
             logger.info('decoder file write')
-        except:
+        except Exception as e:
+            logger.info('exception on line %d', exc_info()[2].tb_lineno)
+            logger.info(e)
             logger.info('decoder text failed')
             decoder_file.write_text('decoder text failed')
-        decoder_text = decoder_file.read_text()
-        if decoder_text == 'decoder text failed':
             decoder_output.write_text('failed')
             return jsonify(output='failed', timestamp=timestamp)
-        payload = {'VERSION': 'AUTODETECT', 'IMAGE': 'AUTODETECT', 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
+        decoder_text = decoder_file.read_text()
+        payload = {'VERSION': 'AUTODETECT', 'IMAGE': image, 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
         r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
         base_text = r.text.splitlines()
         base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
