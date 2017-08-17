@@ -513,7 +513,7 @@ generate_button.addEventListener("click", function() {
             coredump_list = [];
             updateLocalStorage(uuid_value, coredump_list);
             loadPython();
-            timeout.value = 300;
+            timeout.value = 1;
         }
     });
     xhr.send();
