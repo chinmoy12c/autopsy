@@ -189,10 +189,13 @@ p {
     overflow: hidden;
 }
 
-.corename {
+.corerow {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+
+.corename {
     font-size: 1rem;
 }
 
@@ -256,12 +259,22 @@ p {
     color: #818a91;
 }
 
+#divider {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+}
+
 #analyzer {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
     padding: 2rem;
     min-width: 0;
+    position: relative;
 }
 
 .upload {

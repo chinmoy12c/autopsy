@@ -22,6 +22,7 @@ var upload_button = document.getElementById("upload-button");
 var downloaded = document.getElementById("downloaded");
 var progress = document.getElementById("progress");
 var cores = document.getElementById("cores");
+var divider = document.getElementById("divider");
 var gen_report = document.getElementById("gen-report");
 var backtrace = document.getElementById("backtrace");
 var siginfo = document.getElementById("siginfo");
@@ -144,7 +145,7 @@ function date(timestamp) {
 
 function loadCoredumps(coredumps) {
     for (var i = 0; i < coredumps.length; i++) {
-        var s = "<div class=\"coredump-box not-clicked\" id=\"" + coredumps[i][1] + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + coredumps[i][1] + "</p><p class=\"coresize\">" + humanFileSize(coredumps[i][2]) + "</p><p class=\"coredate\">" + date(coredumps[i][3]) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+        var s = "<div class=\"coredump-box not-clicked\" id=\"" + coredumps[i][1] + "\"><div class=\"coredump-inner\"><p class=\"corerow corename\">" + coredumps[i][1] + "</p><p class=\"corerow\"><span class=\"coresize\">" + humanFileSize(coredumps[i][2]) + "</span><span class=\"coredate\">" + date(coredumps[i][3]) + "</span></p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
         var corediv = document.createElement("div");
         corediv.classList.add("coredump-noanim");
         corediv.innerHTML = s;
@@ -972,7 +973,7 @@ function build() {
                 file_name.innerHTML = "Choose file…";
                 upload_button.disabled = true;
                 var new_filename = xhr.response.filename;
-                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corename\">" + new_filename + "</p><p class=\"coresize\">" + humanFileSize(xhr.response.filesize) + "</p><p class=\"coredate\">" + date(xhr.response.timestamp) + "</p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corerow corename\">" + new_filename + "</p><p class=\"corerow\"><span class=\"coresize\">" + humanFileSize(xhr.response.filesize) + "</span><span class=\"coredate\">" + date(xhr.response.timestamp) + "</span></p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
                 var corediv = document.createElement("div");
                 corediv.classList.add("coredump");
                 corediv.innerHTML = s;
@@ -1018,7 +1019,7 @@ function showLoading() {
 function showOutput(output, coredump, timestamp) {
     var coredump_box = document.getElementById(coredump);
     if (coredump_box !== null) {
-        var coredate = coredump_box.firstChild.lastChild;
+        var coredate = coredump_box.firstChild.lastChild.lastChild;
         coredate.innerHTML = date(timestamp);
     }
     output_text.innerHTML = output;
@@ -1085,7 +1086,7 @@ decode.addEventListener("click", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             var coredump_box = document.getElementById(coredump);
             if (coredump_box !== null) {
-                var coredate = coredump_box.firstChild.lastChild;
+                var coredate = coredump_box.firstChild.lastChild.lastChild;
                 coredate.innerHTML = date(xhr.response.timestamp);
             }
             var iframe = document.createElement("iframe");
@@ -1487,6 +1488,23 @@ function checkSession() {
 }
 
 window.addEventListener("focus", checkSession);
+
+divider.addEventListener("mousedown", function(evt) {
+    evt.preventDefault();
+    document.body.style.cursor = "col-resize";
+    window.addEventListener("mousemove", setCoreWidth);
+    window.addEventListener("mouseup", cleanWindow);
+});
+
+function setCoreWidth(evt) {
+    cores.style.width = Math.max(Math.min(evt.clientX, 500), 100) + "px";
+}
+
+function cleanWindow() {
+    document.body.removeAttribute("style");
+    window.removeEventListener("mousemove", setCoreWidth);
+    window.removeEventListener("mouseup", cleanWindow);
+}
 
 window.addEventListener("beforeunload", function() {
     updateSource();
