@@ -159,8 +159,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
         enter_command('source ' + str(modified_file))
     else:
         enter_command('source ' + str(CLIENTLESS_GDB))
-    enter_command('core-file ' + str(coredump_path))
     enter_command('source ./.gdbinit')
+    enter_command('core-file ' + str(coredump_path))
     running = True
     restart = False
     logger_print = True
