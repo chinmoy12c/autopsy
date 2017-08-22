@@ -472,6 +472,13 @@ input {
     margin-top: 1rem;
 }
 
+#command-search {
+    font-size: 10pt;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    width: calc(250px - 0.25rem);
+}
+
 #editor-container {
     display: flex;
     flex-grow: 1;
@@ -483,6 +490,7 @@ input {
     border: 1px solid #ccc;
     border-radius: 0.25rem 0 0 0.25rem;
     flex: none;
+    font-size: 10pt;
     width: 250px;
     overflow: auto;
 }
@@ -497,7 +505,13 @@ input {
 }
 
 .editor-command:last-child {
-    border-bottom: initial;
+    margin-bottom: -1px;
+}
+
+.editor-command-none {
+    color: #818a91;
+    padding: 0.5rem 1rem;
+    cursor: default;
 }
 
 #editor-program {

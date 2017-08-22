@@ -32,6 +32,7 @@ var abort_gdb = document.getElementById("abort-gdb");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
+var command_search = document.getElementById("command-search");
 var editor_reset = document.getElementById("editor-reset");
 var editor_diff = document.getElementById("editor-diff");
 var timeout = document.getElementById("timeout");
@@ -471,6 +472,7 @@ function reset() {
     loading = false;
     disableCommandButtons(true);
     abort_gdb.disabled = true;
+    command_search.value = "";
     command_list.innerHTML = "";
     code_mirror.clearHistory();
     cursor_loc = null;
@@ -1318,11 +1320,37 @@ function addCommandListeners() {
         (function() {
             var editor_command = command_list.children[i];
             editor_command.addEventListener("click", function() {
-                scrollToCommand(editor_command.innerHTML);
+                scrollToCommand(editor_command.innerText);
             });
         })();
     }
 }
+
+function updateCommands() {
+    command_list.innerHTML = "";
+    var command = command_search.value.toLowerCase();
+    for (var i = 0; i < commands.length; i++) {
+        var index = commands[i].toLowerCase().indexOf(command);
+        if (index >= 0) {
+            var editor_command = document.createElement("div");
+            editor_command.classList.add("editor-command");
+            editor_command.classList.add("not-clicked");
+            editor_command.innerHTML = commands[i].substring(0, index) + "<span class=\"bold\">" + commands[i].substring(index, index + command.length) + "</span>" + commands[i].substring(index + command.length);
+            command_list.insertBefore(editor_command, null);
+        }
+    }
+    if (command_list.childElementCount > 0) {
+        addCommandListeners();
+    }
+    else {
+        var editor_command = document.createElement("div");
+        editor_command.classList.add("editor-command-none");
+        editor_command.innerHTML = "No commands";
+        command_list.insertBefore(editor_command, null);
+    }
+}
+
+command_search.addEventListener("input", updateCommands);
 
 function scrollToCommand(command) {
     if (send_update) {

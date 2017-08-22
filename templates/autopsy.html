@@ -225,7 +225,7 @@
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane active" id="prompt" role="tab-panel">
-                        <div class="btn-toolbar justify-content-start" id="prompt-commands" role="toolbar" aria-label="prompt-commands">
+                        <div class="btn-toolbar" id="prompt-commands" role="toolbar" aria-label="prompt-commands">
                             <div class="btn-group mr-2" role="group" aria-label="report">
                                 <button type="button" id="gen-report" class="btn btn-light btn-command" disabled>gen_core_report</button>
                                 <button type="button" id="backtrace" class="btn btn-light btn-command" disabled>backtrace</button>
@@ -240,7 +240,7 @@
                             </div>
                             <div class="input-group ml-auto">
                                 <span class="input-group-addon timeout-label" id="timeout-label">timeout</span>
-                                <input class="form-control" id="timeout" type="number" min="1" max="400" step="1" value="1" aria-describedby="timeout-label">
+                                <input type="number" class="form-control" id="timeout" min="1" max="400" step="1" value="1" aria-describedby="timeout-label">
                                 <span class="input-group-addon timeout-label">h</span>
                             </div>
                         </div>
@@ -254,9 +254,14 @@
                         </div>
                     </div>
                     <div class="tab-pane" id="editor" role="tab-panel">
-                        <div class="btn-group" id="editor-commands" role="group" aria-label="editor-commands">
-                            <button type="button" id="editor-reset" class="btn btn-light btn-command" disabled>reset</button>
-                            <button type="button" id="editor-diff" class="btn btn-light btn-command">show diff</button>
+                        <div class="btn-toolbar" id="editor-commands" role="toolbar" aria-label="editor-commands">
+                            <div class="input-group mr-2">
+                                <input type="text" class="form-control" id="command-search" placeholder="Search…" spellcheck="false">
+                            </div>
+                            <div class="btn-group" role="group" aria-label="editor-commands">
+                                <button type="button" id="editor-reset" class="btn btn-light btn-command" disabled>reset</button>
+                                <button type="button" id="editor-diff" class="btn btn-light btn-command">show diff</button>
+                            </div>
                         </div>
                         <div id="editor-container">
                             <div id="command-list">
