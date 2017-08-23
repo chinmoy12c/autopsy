@@ -307,34 +307,38 @@ def delete_coredump(uuid, coredump):
 
 def clean_uploads():
     with app.app_context():
-        logger.info('start')
-        cur = get_db().execute('SELECT uuid, coredump FROM cores WHERE timestamp < ?', (int(time() * 1000) - DELETE_MIN * 60 * 1000,))
-        coredumps = cur.fetchall()
-        cur.close()
-        logger.info('coredumps has %d items', len(coredumps))
-        for i in range(0, len(coredumps)):
-            delete_coredump(coredumps[i][0], coredumps[i][1])
-        for uuid in UPLOAD_FOLDER.iterdir():
-            logger.info('testing uuid folder %s', uuid.name)
-            for coredump in uuid.iterdir():
-                if coredump.name != '.commands' and no_such_coredump(uuid.name, coredump.name):
-                    if getmtime(coredump) > time() - 24 * 60 * 60:
-                        logger.info('%s is too recent', coredump.name)
+        try:
+            logger.info('start')
+            cur = get_db().execute('SELECT uuid, coredump FROM cores WHERE timestamp < ?', (int(time() * 1000) - DELETE_MIN * 60 * 1000,))
+            coredumps = cur.fetchall()
+            cur.close()
+            logger.info('coredumps has %d items', len(coredumps))
+            for i in range(0, len(coredumps)):
+                delete_coredump(coredumps[i][0], coredumps[i][1])
+            for uuid in UPLOAD_FOLDER.iterdir():
+                logger.info('testing uuid folder %s', uuid.name)
+                for coredump in uuid.iterdir():
+                    if coredump.name != '.commands' and no_such_coredump(uuid.name, coredump.name):
+                        if getmtime(coredump) > time() - 24 * 60 * 60:
+                            logger.info('%s is too recent', coredump.name)
+                        else:
+                            logger.info('removing directory %s', str(coredump))
+                            remove_directory_and_parent(coredump)
+                child_dirs = [d for d in uuid.iterdir()]
+                if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
+                    if getmtime(child_dirs[0]) > time() - 60 * 60:
+                        logger.info('only .commands but too recent')
                     else:
-                        logger.info('removing directory %s', str(coredump))
-                        remove_directory_and_parent(coredump)
-            child_dirs = [d for d in uuid.iterdir()]
-            if len(child_dirs) == 1 and child_dirs[0].name == '.commands':
-                if getmtime(child_dirs[0]) > time() - 60 * 60:
-                    logger.info('only .commands but too recent')
-                else:
-                    remove_directory_and_parent(child_dirs[0])
-                    logger.info('removed .commands and parent')
-        logger.info('clean finished')
-        global dump_counter
-        if dump_counter == 0:
-            dump_database()
-        dump_counter = (dump_counter + 1) % 24
+                        remove_directory_and_parent(child_dirs[0])
+                        logger.info('removed .commands and parent')
+            logger.info('clean finished')
+            global dump_counter
+            if dump_counter == 0:
+                dump_database()
+            dump_counter = (dump_counter + 1) % 24
+        except Exception as e:
+            logger.info('exception on line %d', exc_info()[2].tb_lineno)
+            logger.info(e)
 
 def no_such_coredump(uuid, coredump):
     cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
