@@ -1102,6 +1102,7 @@ def check_session():
 
 @app.route('/export', methods=['GET'])
 def export():
+    logger.info('start')
     if not 'uuid' in session:
         return 'missing session'
     cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ?', (session['uuid'],))
@@ -1131,6 +1132,7 @@ def export():
                 datazip.write(str(siginfo), session['uuid'] + '/' + coredump + '/' + coredump + '.siginfo.txt')
             if decoder_output.exists():
                 datazip.write(str(decoder_output), session['uuid'] + '/' + coredump + '/' + 'decoder_output.html')
+    logger.info('exporting')
     return send_file(str(zipfile), mimetype='application/octet-stream', as_attachment=True)
 
 @app.before_first_request
