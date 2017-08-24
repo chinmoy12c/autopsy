@@ -9,8 +9,8 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Development vs. production server](#development-vs-production-server)
+* [Using `launch.sh`](#using-launchsh)
 * [Getting started with the development server](#getting-started-with-the-development-server)
- * [Using `launch.sh`](#using-launchsh)
  * [Launching and quitting Autopsy](#launching-and-quitting-autopsy)
  * [Launch process](#launch-process)
 * [Using the production server](#using-the-production-server)
@@ -45,6 +45,8 @@ Autopsy only works on Cisco machines with Perforce access and appropriate versio
 
 ## Installation
 
+If you are reinstalling Autopsy, make sure to delete the previous version completely first and clean up the output of `crontab -l` (see the [logging section](#logging) below).
+
 Run the following commands to install Autopsy in a directory named `Autopsy`:
 ```
 mkdir Autopsy
@@ -69,9 +71,7 @@ It is recommended to keep the installations of nginx, Python, and virtualenv up 
 
 There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/0.12/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/0.12/deploying/). This guide will provide steps on using the development server as well as using nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/0.12/deploying/wsgi-standalone/).
 
-## Getting started with the development server
-
-### Using `launch.sh`
+## Using `launch.sh`
 
 `launch.sh` does several things:
 * Creates the `database`, `flasklogs`, and `uploads` folders if they don't exist
@@ -96,6 +96,10 @@ to execute this file. Your prompt should start with `(venv)`, indicating that yo
 deactivate
 ```
 You can continue to use `launch.sh` whenever you wish to enter the virtual environment.
+
+## Getting started with the development server
+
+If you just want to set up Autopsy, you can skip this section.
 
 ### Launching and quitting Autopsy
 
