@@ -21,7 +21,7 @@
                 <li><span class="bold">File uploader</span>: allows you to upload files and see upload progress. The file uploader can be found at the top of the interface.</li>
                 <li><span class="bold">Command interface</span>: lets you type in commands to analyze core dumps and view other related files. The interface is underneath the file uploader.</li>
                 <li><span class="bold">Code editor</span>: lets you view and modify the Python source code of these commands. The code editor can be accessed by clicking on the "Editor" tab.</li>
-                <li><span class="bold">Key manager</span>: allows you to access core dumps that other people have uploaded that are associated with a different key.</li> The key manager is the menu shown when clicking on the key in the top-right corner of the interface.</li>
+                <li><span class="bold">Key manager</span>: allows you to access core dumps that other people have uploaded that are associated with a different key and export data associated with a key.</li> The key manager is the menu shown when clicking on the key in the top-right corner of the interface.</li>
             </ul>
             <h2>Analyzing a core dump</h2>
             <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
@@ -107,25 +107,28 @@
             <p>The code editor can be accessed by clicking on the "Editor" tab. The right side of the code editor displays the source code of <code>clientlessGdb.py</code> (written in Python 2), and the left side contains a list of the commands (excluding helper functions) inside the file. These commands can be filtered by using the search function above. If you click on one of the commands, the editor jumps to its definition in the source code. You can modify this source code, and any modifications will be automatically saved when you click back to the "Prompt" tab or exit the page. Clicking the "reset" button restores the original version of the source code, and clicking the "show diff" button displays the changes made to the file.</p>
             <p class="p-second">The modifications that you make to the source code are specific to your key, so they are applied to all the core dumps you upload. They are saved for as long as your key has any uploaded core dumps. If you delete all your core dumps, these modifications will be deleted after an hour.</p>
             <h3 class="h3-margin">Key manager</h3>
-            <p>Every core dump that you upload is associated with the key displayed on the top-right corner of the interface. (The keys are version 4 <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier" target="_blank">UUIDs</a>.) Your key is stored as a cookie in your browser, allowing you to return to your core dumps even after closing Autopsy. If the cookie is missing, a new key will be automatically generated. The key manager dropdown menu allows you to change your key in three ways:</p>
+            <p>Every core dump that you upload is associated with the key displayed on the top-right corner of the interface. (The keys are version 4 <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier" target="_blank">UUIDs</a>.) Your key is stored as a cookie in your browser, allowing you to return to your core dumps even after closing Autopsy. If the cookie is missing, a new key will be automatically generated. The key manager dropdown menu allows you to change your key in three ways and also provides an option to export data:</p>
             <div class="figure-center">
                 <figure class="figure">
                     <div class="width-dropdown">
                         <div class="dropdown-menu">
-                            <button class="dropdown-item" type="button">Load previous key…</button>
+                            <a class="dropdown-item" href="">Load previous key…</a>
                             <div class="dropdown-divider"></div>
-                            <button class="dropdown-item" type="button">Load new key…</button>
-                            <button class="dropdown-item" type="button">Generate new key…</button>
+                            <a class="dropdown-item" href="">Load new key…</a>
+                            <a class="dropdown-item" href="">Generate new key…</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="">Export data…</a>
                         </div>
                     </div>
                     <figcaption class="figure-caption text-xs-center">The dropdown menu.</figcaption>
                 </figure>
             </div>
-            <p>Each option opens a modal window, allowing you to perform various actions.</p>
+            <p>The first three options open a modal window, allowing you to perform various actions.</p>
             <ul>
                 <li><span class="bold">Load previous key</span>: allows you to load one of up to 15 keys that you have most recently used. The core dumps associated with each key are displayed next to the core dump. This option gives you a place to store recent keys without having to save them somewhere else. Yon can also delete previous keys that you do not need.</li>
                 <li><span class="bold">Load new key</span>: allows you to load a new key. You can use this option to easily load someone else's core dumps for analysis rather than uploading separate copies. The text box that is displayed when you select this option changes color depending on what is entered: orange if the key is not in the proper format, red if the key is in the proper format but does not correspond to any core dumps, and green if the key has saved core dumps. The "Load" button is disabled until the text box turns green.</li>
                 <li><span class="bold">Generate new key</span>: generates a new key for you, which will reset the application. You can return to your previous key and core dumps by using the "Load previous key" menu.</li>
+                <li><span class="bold">Export data</span>: exports the source code of the <code>clientlessGdb.py</code> (which you may have modified), as well as the outputs (if they exist) of the command interface buttons for each core dump under your key. You must click the decode button at least once to generate its output first if you want to export the decoder output.</li>
             </ul>
             <h4>Key expiration</h4>
             <p>If a window pops up indicating that your key has expired, this means that the key stored in your cookie has been modified from somewhere other than the Autopsy window. This can happen either by deleting your key or by loading another key in a second Autopsy session. (Autopsy does not currently support using multiple keys at the same time.) You can recover the cookie by simply refreshing the page and loading your previous key.</p>

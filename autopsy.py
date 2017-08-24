@@ -17,8 +17,9 @@ from sys import exc_info, stdout, version
 from threading import Lock, Thread, enumerate as thread_enum
 from time import time
 from uuid import uuid4
+from zipfile import ZipFile
 
-from flask import Flask, jsonify, g, render_template, request, session
+from flask import Flask, jsonify, g, render_template, request, send_file, session
 from pexpect import EOF, spawn, TIMEOUT
 from requests import get, post
 from requests.auth import HTTPBasicAuth
@@ -1098,6 +1099,39 @@ def check_session():
         logger.info('%s and %s', request.form['uuid'], session['uuid'])
         return 'bad'
     return 'ok'
+
+@app.route('/export', methods=['GET'])
+def export():
+    if not 'uuid' in session:
+        return 'missing session'
+    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ?', (session['uuid'],))
+    coredumps = cur.fetchall()
+    cur.close()
+    commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
+    if not commands_folder.exists():
+        commands_folder.mkdir(parents=True, exist_ok=True)
+    zipfile = commands_folder / (session['uuid'] + '.zip')
+    with ZipFile(zipfile, 'w') as datazip:
+        modified_file = commands_folder / 'modified.py'
+        if modified_file.exists():
+            datazip.write(str(modified_file), session['uuid'] + '/' + 'clientlessGdb.py')
+        else:
+            datazip.write(str(CLIENTLESS_GDB), session['uuid'] + '/' + 'clientlessGdb.py')
+        for i in range(0, len(coredumps)):
+            coredump = coredumps[i][0]
+            gen_core_report = UPLOAD_FOLDER / session['uuid'] / coredump / 'gen_core_report.txt'
+            backtrace = UPLOAD_FOLDER / session['uuid'] / coredump / (coredump + '.backtrace.txt')
+            siginfo = UPLOAD_FOLDER / session['uuid'] / coredump / (coredump + '.siginfo.txt')
+            decoder_output = UPLOAD_FOLDER / session['uuid'] / coredump / 'decoder_output.html'
+            if gen_core_report.exists():
+                datazip.write(str(gen_core_report), session['uuid'] + '/' + coredump + '/' + 'gen_core_report.txt')
+            if backtrace.exists():
+                datazip.write(str(backtrace), session['uuid'] + '/' + coredump + '/' + coredump + '.backtrace.txt')
+            if siginfo.exists():
+                datazip.write(str(siginfo), session['uuid'] + '/' + coredump + '/' + coredump + '.siginfo.txt')
+            if decoder_output.exists():
+                datazip.write(str(decoder_output), session['uuid'] + '/' + coredump + '/' + 'decoder_output.html')
+    return send_file(str(zipfile), mimetype='application/octet-stream', as_attachment=True)
 
 @app.before_first_request
 def start():

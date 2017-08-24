@@ -25,10 +25,12 @@
                         <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
-                        <button class="dropdown-item" type="button" data-toggle="modal" data-target="#previous-modal">Load previous key…</button>
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">Load previous key…</a>
                         <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" type="button" data-toggle="modal" data-target="#load-modal">Load new key…</button>
-                        <button class="dropdown-item" type="button" data-toggle="modal" data-target="#generate-modal">Generate new key…</button>
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#load-modal">Load new key…</a>
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#generate-modal">Generate new key…</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="/export" id="export-data">Export data…</a>
                     </div>
                 </div>
             </div>
