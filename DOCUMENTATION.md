@@ -96,7 +96,7 @@ Autopsy allows users to edit `clientlessGdb.py` to suit their needs. The modifie
 
 ## `.commands` folder
 
-Each UUID folder contains a `.commands` folder, which stores content that is specific to each UUID (rather than each core dump). This folder contains the `timeout` and `modified.py` files.
+Each UUID folder contains a `.commands` folder, which stores content that is specific to each UUID (rather than each core dump). This folder contains the `timeout` and `modified.py` files and also stores the zip file that is generated for exported data.
 
 ## Clean-up script
 
@@ -152,6 +152,7 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `update_timeout`: updates the user's `timeout` file.
 * `quit`: quits a GDB thread. Called when the user closes the Autopsy window.
 * `check_session`: checks whether the session UUID matches the UUID shown on the page. Used to check whether the cookie has changed.
+* `export`: returns a zip file of data specific to the session UUID.
 * `start`: called when the server starts. Launches the clean-up script.
 
 ## JavaScript
