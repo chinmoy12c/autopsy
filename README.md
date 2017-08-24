@@ -127,7 +127,7 @@ to launch Autopsy.
 
 ## Using the production server
 
-The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application, the location of the nginx logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used.
+The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application (by default 9001), the location of the nginx logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used. You may have to modify the configuration file to point at the correct certificates.
 
 ## Running Autopsy
 
