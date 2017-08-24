@@ -326,6 +326,7 @@ $("#previous-modal").on("hidden.bs.modal", function() {
 previous_button.addEventListener("click", function() {
     previous_button.disabled = true;
     previous_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
+    updateSource(false);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("loadkey", checked_uuid);
@@ -482,6 +483,7 @@ function reset() {
 load_button.addEventListener("click", function() {
     load_button.disabled = true;
     load_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
+    updateSource(false);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("loadkey", load_key.value.toLowerCase());
@@ -504,6 +506,7 @@ load_button.addEventListener("click", function() {
 generate_button.addEventListener("click", function() {
     generate_button.disabled = true;
     generate_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Generating…";
+    updateSource(false);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/generatekey", true);
     xhr.responseType = "text";
@@ -1391,7 +1394,7 @@ function getSource() {
 }
 
 $("#prompt-tab").on("shown.bs.tab", function() {
-    updateSource();
+    updateSource(true);
 });
 
 $("#editor-tab").on("shown.bs.tab", function() {
@@ -1410,15 +1413,17 @@ function showSourceOutput(output) {
     }
 }
 
-function updateSource() {
+function updateSource(show_update) {
     if (send_update) {
+        console.log('update source');
         var xhr = new XMLHttpRequest();
         var fd = new FormData();
         fd.append("source", code_mirror.getValue());
         xhr.open("POST", "/updatesource", true);
         xhr.responseType = "text";
         xhr.addEventListener("readystatechange", function() {
-            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            if (xhr.readyState === xhr.DONE && xhr.status === 200 && show_update) {
+                console.log('show update');
                 showSourceOutput(xhr.responseText);
             }
         });
@@ -1535,7 +1540,7 @@ function cleanWindow() {
 }
 
 window.addEventListener("beforeunload", function() {
-    updateSource();
+    updateSource(false);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/quit", true);
     xhr.send();
