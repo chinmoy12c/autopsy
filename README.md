@@ -145,7 +145,7 @@ at the top of `autopsy.py`.
 
 Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log`.
 
-You should check that `crontab -l` does not have any duplicate lines for rotating nginx logs. (The install process does not clear previous lines, so multiple lines can appear if you reinstall Autopsy.)
+You should check that `crontab -l` does not have any duplicate lines for rotating nginx logs. (The install process does not clear previous lines, so multiple lines can appear if you reinstall Autopsy.) You can use `crontab -e` to delete the duplicate lines.
 
 ## Documentation
 
