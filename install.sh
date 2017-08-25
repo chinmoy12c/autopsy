@@ -53,7 +53,12 @@ nginx_install() {
     make
     make install
     cd ..
-    cat << 'EOF' > conf/nginx.conf
+    eport="5000"
+    while [[ "$eport" == "5000" ]] ; do
+        echo "Enter the external port you wish to use (anything except 5000):"
+        read eport
+    done
+    cat << EOF > conf/nginx.conf
 worker_processes    1;
 
 events {
@@ -71,26 +76,21 @@ http {
     keepalive_timeout   9999;
 
     upstream app_servers {
-        server  127.0.0.1:5432;
+        server  127.0.0.1:5000;
     }
 
     server {
-        listen  9002;
-        return  301 https://$host:9001$request_uri;
-    }
-
-    server {
-        listen                  9001 ssl;
+        listen                  $eport ssl;
         client_max_body_size    0;
-        error_page 497          https://$host:9001$request_uri;
+        error_page 497          https://\$host:$eport\$request_uri;
 
         location / {
             proxy_pass          http://app_servers;
             proxy_redirect      off;
-            proxy_set_header    Host $host;
-            proxy_set_header    X-Real-IP $remote_addr;
-            proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header    X-Forwarded-Proto $scheme;
+            proxy_set_header    Host \$host;
+            proxy_set_header    X-Real-IP \$remote_addr;
+            proxy_set_header    X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header    X-Forwarded-Proto \$scheme;
             proxy_read_timeout  9999;
         }
 
