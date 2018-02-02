@@ -55,7 +55,7 @@ git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/Autopsy.git
 cd Autopsy
 . install.sh
 ```
-You may have to enter your CEC credentials to clone the clientlessGDB repository, which is necessary for analyzing core dumps. You will also be prompted to enter your Perforce ticket.
+You may have to enter your CEC credentials to clone the clientlessGDB repository, which is necessary for analyzing core dumps. You will also be prompted to enter your Perforce ticket and an external port number (used to access Autopsy).
 
 The installation should set up six folders in the main `Autopsy` directory:
 * `Autopsy` contains the contents of this repository.
@@ -127,7 +127,7 @@ to launch Autopsy.
 
 ## Using the production server
 
-The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application (by default 9001), the location of the nginx logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used. You may have to modify the configuration file to point at the correct certificates.
+The configuration file for Autopsy is located at `nginx/conf/nginx.conf`, which specifies the port number for the application, the location of the nginx logs, and the website's certificate (`ssl_certificate` and `ssl_certificate_key`), among other things. Autopsy allows users to input their CEC credentials to access core dumps online and SCP files, so certificates should be used. You may have to modify the configuration file to point at the correct certificates.
 
 ## Running Autopsy
 
@@ -145,7 +145,7 @@ at the top of `autopsy.py`.
 
 Application logs are stored at `nginx/logs/access.log` and `nginx/logs/error.log`.
 
-You should check that `crontab -l` does not have any duplicate lines for rotating nginx logs. (The install process does not clear previous lines, so multiple lines can appear if you reinstall Autopsy.)
+You should check that `crontab -l` does not have any duplicate lines for rotating nginx logs. (The install process does not clear previous lines, so multiple lines can appear if you reinstall Autopsy.) You can use `crontab -e` to delete the duplicate lines.
 
 ## Documentation
 
