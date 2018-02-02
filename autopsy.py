@@ -121,7 +121,9 @@ def run_gdb(count, uuid, workspace, gdb_location):
     global coredump_queues, command_queues, abort_queues, output_queues
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
-    img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
+    img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
+    if not img_path.exists():
+        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
     if not img_path.exists():
         img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
     if not img_path.exists():
@@ -134,6 +136,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
     logger.info(gdb_location)
     logger.info(str(img_path))
     lina_path = img_path / 'asa' / 'bin' / 'lina'
+    if not lina_path.exists():
+        lina_path = img_path / 'lina'
     if not lina_path.exists():
         lina_path = img_path / 'smp'
     if not lina_path.exists():
@@ -636,19 +640,21 @@ def file_test():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=30)
+        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=60*15)
         logger.info('expect i is %d', i)
         if i == 0:
-            logger.info('bad server')
-            remove_directory_and_parent(directory)
-            return jsonify(message='server')
+            scp.sendintr()
+            logger.info('valid')
+            session['current'] = filename
+            logger.info('ok, filename is %s', filename)
+            return jsonify(message='ok', filename=filename)
         else:
             if i == 1:
                 logger.info('requires rsa')
                 scp.sendline('yes')
-                scp.expect('assword:', timeout=30)
+                scp.expect('assword:', timeout=60*15)
             scp.sendline(request.form['password'])
-            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=30)
+            j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=60*15)
             logger.info('expect j is %d', j)
             if j == 0:
                 logger.info('wrong credentials')
@@ -692,7 +698,7 @@ def file_upload():
     try:
         scp = spawn('scp', [request.form['username'] + '@' + request.form['server'] + ':' + request.form['path'], str(directory)], encoding='utf-8')
         scp.logfile_read = logger
-        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=30)
+        i = scp.expect([EOF, '\(yes/no\)\?', 'assword:'], timeout=60*15)
         logger.info('expect i is %d', i)
         if i == 0:
             remove_directory_and_parent(directory)
@@ -701,11 +707,11 @@ def file_upload():
             if i == 1:
                 logger.info('requires rsa')
                 scp.sendline('yes')
-                scp.expect('assword:', timeout=30)
+                scp.expect('assword:', timeout=60*15)
             scp.sendline(request.form['password'])
             j = 4
             while j == 4:
-                j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=30)
+                j = scp.expect(['assword:', 'syntax error', 'regular file', 'file or directory', 'ETA', EOF], timeout=60*15)
             logger.info('expect j is %d', j)
             if j == 0:
                 remove_directory_and_parent(directory)
@@ -942,7 +948,7 @@ def decode():
             return jsonify(output='failed', timestamp=timestamp)
         decoder_text = decoder_file.read_text()
         payload = {'VERSION': 'AUTODETECT', 'IMAGE': image, 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
-        r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=30)
+        r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=60*15)
         base_text = r.text.splitlines()
         base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
         logger.info(base_text.splitlines()[0]);
