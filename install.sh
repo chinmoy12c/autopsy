@@ -76,7 +76,7 @@ http {
     keepalive_timeout   9999;
 
     upstream app_servers {
-        server  127.0.0.1:5000;
+        server  127.0.0.1:5432;
     }
 
     server {
