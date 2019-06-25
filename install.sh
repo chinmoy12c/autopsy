@@ -7,7 +7,7 @@ fi
 
 clientlessGDB_install() {
     cd ..
-    git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
+    git clone git@gitlab-sjc.cisco.com:SSLMIDPATH/clientlessGDB.git
     echo "Enter your Perforce ticket:"
     read ticket
     echo ${ticket} > clientlessGDB/ticket.txt
@@ -49,7 +49,7 @@ nginx_install() {
     tar -xf nginx-1.13.4.tar.gz
     rm nginx-1.13.4.tar.gz
     cd nginx-1.13.4
-    ./configure --with-http_ssl_module --prefix=${nginx_dir}
+    ./configure --without-http_rewrite_module --with-http_ssl_module --prefix=${nginx_dir}
     make
     make install
     cd ..
