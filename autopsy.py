@@ -722,7 +722,8 @@ def file_test():
         remove_directory_and_parent(directory)
         return jsonify(message='timeout')
 
-
+# retrieves the core dump using SCP
+# BUT will not provide to user as of right now
 @app.route('/fileupload', methods=['POST'])
 def file_upload():
     logger.info('start')
@@ -786,6 +787,7 @@ def file_upload():
         remove_directory_and_parent(directory)
         return 'timeout'
 
+# calls check_filename function above to test a file name
 @app.route('/testfilename', methods=['POST'])
 def test_filename():
     if not 'uuid' in session:
@@ -794,6 +796,7 @@ def test_filename():
     logger.info('testing %s', filename)
     return check_filename(session['uuid'], filename)
 
+# saves a file that the user uploads, checks whether it is valid and deletes if not valid
 @app.route('/upload', methods=['POST'])
 def upload():
     logger.info('start')
@@ -836,6 +839,7 @@ def upload():
     logger.info('invalid')
     return 'invalid'
 
+# unzips the uploaded file
 @app.route('/unzip', methods=['POST'])
 def unzip():
     logger.info('start')
@@ -856,6 +860,7 @@ def unzip():
     logger.info('ok')
     return 'ok'
 
+# builds the workspace for the uploaded file using gen_core_report.sh and extracts info from its output
 @app.route('/build', methods=['POST'])
 def build():
     logger.info('start')
@@ -892,6 +897,7 @@ def build():
         return jsonify(report=report)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
+# returns the contents of the relevant files for a core dump
 @app.route('/getreport', methods=['POST'])
 def get_report():
     logger.info('start')
@@ -904,6 +910,7 @@ def get_report():
     gen_core_report_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / 'gen_core_report.txt'
     return jsonify(output=escape(gen_core_report_file.read_text()), timestamp=timestamp)
 
+# returns the contents of the relevant files for a core dump
 @app.route('/backtrace', methods=['POST'])
 def backtrace():
     logger.info('start')
@@ -916,6 +923,7 @@ def backtrace():
     backtrace_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.backtrace.txt')
     return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
 
+# returns the contents of the relevant files for a core dump
 @app.route('/siginfo', methods=['POST'])
 def siginfo():
     logger.info('start')
@@ -928,6 +936,8 @@ def siginfo():
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
 
+# launches GDB to extract registers, submits decoder.txt to the ASA traceback decoder
+# returns the output on first run, or returns the contents of decoder_output.html on subsequent runs
 @app.route('/decode', methods=['POST'])
 def decode():
     logger.info('start')
@@ -999,6 +1009,7 @@ def decode():
     logger.info('saved base text')
     return jsonify(output=base_text, timestamp=timestamp)
 
+# aborts the current command
 @app.route('/abort', methods=['POST'])
 def abort():
     logger.info('start')
@@ -1010,6 +1021,7 @@ def abort():
             abort_queues[session['count']].put('abort')
     return 'ok'
 
+# manages launching the GDB thread and communicates with the thread using the appropriate queues
 @app.route('/commandinput', methods=['POST'])
 def command_input():
     logger.info('start')
@@ -1040,6 +1052,7 @@ def command_input():
         result = 'gdb not supported'
     return jsonify(output=escape(result), timestamp=timestamp)
 
+# returns the source code of the user's modified.py file (or clientlessGdb.py if modified.py does not exist)
 @app.route('/getsource', methods=['POST'])
 def get_source():
     if not 'uuid' in session:
@@ -1050,6 +1063,7 @@ def get_source():
         command_file = CLIENTLESS_GDB
     return command_file.read_text()
 
+# updates the source code of the user's modified.py file
 @app.route('/updatesource', methods=['POST'])
 def update_source():
     if not 'uuid' in session:
@@ -1068,6 +1082,7 @@ def update_source():
         output = output_queues[session['count']].get()
     return output
 
+# resets the source code of the user's modified.py file to the original version
 @app.route('/resetsource', methods=['POST'])
 def reset_source():
     if not 'uuid' in session:
@@ -1086,6 +1101,7 @@ def reset_source():
         output = output_queues[session['count']].get()
     return jsonify(display=original_source, output=output)
 
+# returns a diff of the user's modified.py file with the original clientlessGdb.py file
 @app.route('/diffsource', methods=['POST'])
 def diff_source():
     if not 'uuid' in session:
@@ -1105,6 +1121,7 @@ def diff_source():
     diff = run(['diff', '-u', str(CLIENTLESS_GDB), str(modified_file)], stdout=PIPE, universal_newlines=True).stdout
     return jsonify(display=diff, output=output)
 
+# updates the user's timeout file
 @app.route('/updatetimeout', methods=['POST'])
 def update_timeout():
     if not 'uuid' in session:
@@ -1122,6 +1139,7 @@ def update_timeout():
     except:
         return 'not int'
 
+# quits a GDB thread, called when the user closes the Autopsy window
 @app.route('/quit', methods=['POST'])
 def quit():
     logger.info('start')
@@ -1137,6 +1155,8 @@ def quit():
     logger.info('ok')
     return 'ok'
 
+# checks whether the session UUID matches the UUID shown on the page
+# used to check whether the cookie has changed
 @app.route('/checksession', methods=['POST'])
 def check_session():
     if not 'uuid' in session:
@@ -1146,6 +1166,7 @@ def check_session():
         return 'bad'
     return 'ok'
 
+# returns a zip file of data specific to the session UUID
 @app.route('/export', methods=['GET'])
 def export():
     logger.info('start')
@@ -1181,6 +1202,7 @@ def export():
     logger.info('exporting')
     return send_file(str(zipfile), mimetype='application/octet-stream', as_attachment=True)
 
+# called when the server starts, launches the clean-up script
 @app.before_first_request
 def start():
     logger.info(version)
