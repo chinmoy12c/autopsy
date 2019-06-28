@@ -19,6 +19,8 @@
             <div class="navbar-nav mr-auto">
                 <a class="nav-item nav-link" href="help" target="_blank">Help</a>	
             </div>
+            <input type="hidden" value={{ uuid }} id="myInput">
+            <button onclick="myFunction()">Copy key</button>
             <div class="navbar-nav">
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="change-key" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -291,6 +293,12 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/annotatescrollbar.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
+            function myFunction() {
+                var copyText = document.getElementById("myInput");
+                copyText.select();
+                document.execCommand("copy");
+                alert("Copied the session key associated with these core files to share: " + copyText.value);
+            }
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
             timeout.value = {{ timeout }};
