@@ -499,6 +499,12 @@ def help():
     logger.info('opened help')
     return render_template('help.html')
 
+# returns the Demo HTML content
+@app.route('/demo', methods=['GET'])
+def demo():
+    logger.info('opened demo')
+    return render_template('demo.html')
+
 # allows the user to log a database 
 @app.route('/dump', methods=['GET'])
 def dump():
