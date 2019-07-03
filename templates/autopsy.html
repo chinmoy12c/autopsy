@@ -26,8 +26,8 @@
                         <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
-                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#copy-modal">Copy current key...</a>
-                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">Load previous key…</a>
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#copy-modal">Copy current key...</a> 
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">View previous key(s)…</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#load-modal">Load new key…</a>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#generate-modal">Generate new key…</a>
@@ -44,14 +44,13 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="copy-modal-label">Copy current key to share</h4>
+                        <h4 class="modal-title" id="copy-modal-label">Copy key here to share</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" value={{ uuid }} id="myInput">
-                        <button onclick="copyKey()">Copy Key</button>
+                       <font size="5">{{ uuid }}</font>
                     </div>
                 </div>
             </div>
@@ -60,7 +59,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="previous-modal-label">Load previous key</h4>
+                        <h4 class="modal-title" id="previous-modal-label">View previous key(s)</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -265,7 +264,8 @@
                             </div>
                         </div>
                         <div id="command-form">
-                            <input type="text" class="form-control" id="command-input" placeholder="Enter command…" spellcheck="false" disabled>
+                            <input value="" class="form-control" id="command-input" placeholder="Enter command…">
+                            <!--<button id="myBtn" onclick="remember_commands()">click and remember</button>-->
                             <div id="autocomplete">
                             </div>
                         </div>
@@ -309,12 +309,45 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/annotatescrollbar.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
-            function copyKey() {
-                var copyText = document.getElementById("myInput");
+           /* var command_array = []
+            //var input = document.getElementById("command-input");  line that caused me to be unable to upload core file =(
+            document.onkeydown = checkKey;
+            function checkKey(e) {
+                var event = window.event ? window.event : e;
+                // <up> to retrieve a past command one at a time
+                if (event.keyCode == 38) {
+                    alert('up');
+                    if (command_array.length == 0) {
+                        return;
+                    }
+                    var idx = command_array.length - 1;
+                    document.getElementById("command-input").value = command_array[idx];
+                }
+                // <enter> to save a command one at a time
+                if ((event.keyCode == 13)) {
+                    alert('enter');
+                    var command = document.getElementById("command-input").value;
+                    alert(command);
+                    command_array.push(command);
+                    alert(command_array);
+                }
+            };*/
+
+            /*function remember_commands() {
+                var command = document.getElementById("command-input").value;
+                alert(command);
+                command_array.push(command);
+                alert(command_array);
+            };*/
+
+            /*function copyKey() {
+                var copyText = document.getElementById("copy-input");
+                alert(copyText);
                 copyText.select();
                 document.execCommand("copy");
                 alert("Copied");
-            };
+            };*/
+
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
             timeout.value = {{ timeout }};  
