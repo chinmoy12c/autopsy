@@ -14,6 +14,25 @@
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
     </head>
     <body id="fixed">
+        <!--<script>
+        function copy_key() {
+          var textarea = document.createElement("textarea");
+          textarea.style.width = '0px';
+          textarea.style.height = '0px';
+          //var h = document.getelementbyid("hidden");
+          //h.appendChild(textarea)
+          document.querySelector("body").appendChild(textarea);
+          
+          var uuidval = document.getElementById("uuid");
+          var uuidtextbox = document.getElementById("uuidtextbox");
+          
+          textarea.value = uuidval.innerHTML;
+          textarea.select();
+          
+          document.execCommand('copy');
+          document.querySelector("body").removeChild(textarea);
+        }
+        </script>-->
         <nav class="navbar navbar-dark navbar-expand bg-dark">
             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
             <div class="navbar-nav mr-auto">
@@ -24,10 +43,10 @@
             <div class="navbar-nav">
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="change-key" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span>
+                        <span id="uuid">{{ uuid }}</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
-                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#copy-modal">Copy current key...</a> 
+                        <a class="dropdown-item" href="javascript:copy_key();">Copy current key...</a> 
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">View previous key(s)…</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#load-modal">Load new key…</a>
@@ -40,21 +59,6 @@
         </nav>
         <div class="message alert-primary">
             Found an issue? Email <a class="alert-link" href="mailto:autopsy@cisco.com">autopsy@cisco.com</a>.
-        </div>
-        <div class="modal fade" id="copy-modal" tabindex="-1" role="dialog" aria-labelledby="copy-modal-label" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title" id="copy-modal-label">Copy key here to share</h4>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                       <font size="5">{{ uuid }}</font>
-                    </div>
-                </div>
-            </div>
         </div>
         <div class="modal fade" id="previous-modal" tabindex="-1" role="dialog" aria-labelledby="previous-modal-label" aria-hidden="true">
             <div class="modal-dialog" role="document">
@@ -235,7 +239,7 @@
                     <button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
                     <div id="downloaded"></div>
                 </div>
-                <ul class="nav nav-tabs" role="tablist">
+                 <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="prompt-tab" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
                     </li>
@@ -310,6 +314,18 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/annotatescrollbar.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
+            function copy_key() {
+                 var textarea = document.createElement("textarea");
+                 textarea.style.width = '0px';
+                 textarea.style.height = '0px';
+                 document.querySelector("body").appendChild(textarea);
+                 var uuidval = document.getElementById("uuid");
+                 var uuidtextbox = document.getElementById("uuidtextbox");
+                 textarea.value = uuidval.innerHTML;
+                 textarea.select();
+                 document.execCommand('copy');
+                 document.querySelector("body").removeChild(textarea);
+            }
            /* var command_array = []
             //var input = document.getElementById("command-input");  line that caused me to be unable to upload core file =(
             document.onkeydown = checkKey;
