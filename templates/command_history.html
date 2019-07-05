@@ -1,7 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-
+<!-- jinja syntax to loop over a python dict to print out each value in the dict in a table format-->
     <body>
-        {{ command_history_list }}
+       <p> <b> Command History </b> </p>
+       <p> Note: The earliest command is at the top while the latest command is at the bottom </p>
+       <table>
+           {% for key, value in command_history_dict.items() %}
+               <tr>
+                   <th> {{ key }} </th>
+                   <td> {{ value }} </td>
+              </tr>
+           {% endfor %}
+        </table>
     </body>
 </html>
