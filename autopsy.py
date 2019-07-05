@@ -499,8 +499,9 @@ def index():
 def command_history():
     global command_history_list
     logger.info('opened command_history')
-    print(command_history_list)
-    return render_template('command_history.html', command_history_list=command_history_list)
+    # create a dict from a list as the index is needed in command_history.html
+    command_history_dict = { i : command_history_list[i] for i in range(0, len(command_history_list) ) }
+    return render_template('command_history.html', command_history_dict=command_history_dict)
 
 # returns the Help HTML content
 @app.route('/help', methods=['GET'])
