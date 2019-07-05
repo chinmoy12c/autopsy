@@ -12,27 +12,27 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/simplescrollbars.min.css" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
+        <script type = "text/javascript">
+            function copy_key() {
+                var textarea = document.createElement("textarea");
+                textarea.style.width = '0px';
+                textarea.style.height = '0px';
+                document.querySelector("body").appendChild(textarea);
+                var uuidval = document.getElementById("uuid");
+                var uuidtextbox = document.getElementById("uuidtextbox");
+                textarea.value = uuidval.innerHTML;
+                textarea.select();
+                document.execCommand('copy');
+                /*navigator.permissions.query({name: "clipboard-write"}).then(result => {
+                    if (result.state == "granted" || result.state == "prompt") {
+                        document.execCommand('copy');
+                    }
+                });*/
+                document.querySelector("body").removeChild(textarea);
+            }
+        </script>
     </head>
     <body id="fixed">
-        <script type = "text/javascript">
-        function copy_key() {
-          var textarea = document.createElement("textarea");
-          textarea.style.width = '0px';
-          textarea.style.height = '0px';
-          //var h = document.getelementbyid("hidden");
-          //h.appendChild(textarea)
-          document.querySelector("body").appendChild(textarea);
-          
-          var uuidval = document.getElementById("uuid");
-          var uuidtextbox = document.getElementById("uuidtextbox");
-          
-          textarea.value = uuidval.innerHTML;
-          textarea.select();
-          
-          document.execCommand('copy');
-          document.querySelector("body").removeChild(textarea);
-        }
-        </script>
         <nav class="navbar navbar-dark navbar-expand bg-dark">
             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
             <div class="navbar-nav mr-auto">
