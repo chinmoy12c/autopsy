@@ -43,7 +43,7 @@
             <div class="navbar-nav">
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="change-key" href="" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span id="uuid">{{ uuid }}</span>
+                        <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
                         <a class="dropdown-item" href="javascript:copy_key();">Copy current key...</a> 
@@ -239,7 +239,7 @@
                     <button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
                     <div id="downloaded"></div>
                 </div>
-                 <ul class="nav nav-tabs" role="tablist">
+                <ul class="nav nav-tabs" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="prompt-tab" data-toggle="tab" href="#prompt" role="tab">Prompt</a>
                     </li>
@@ -354,7 +354,7 @@
 
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
-            timeout.value = {{ timeout }};  
+            timeout.value = {{ timeout }}; 
         </script>
     </body>
 </html>
