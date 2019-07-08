@@ -909,15 +909,14 @@ upload_button.addEventListener("click", function() {
 });
 
 function upload() {
-    alert("upload function called");
+    //alert("upload function called");
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("file", input.files[0]);
     xhr.open("POST", "/upload", true);
     xhr.responseType = "text";
-    // FIXME: improve the  upload process in the front end here!
     xhr.upload.addEventListener("progress", function(evt) {
-         alert("xhr upload event listener for progress within the upload function called");
+        //alert("xhr upload event listener for progress within the upload function called");
         if (evt.lengthComputable) {
             var percent = Math.round(evt.loaded / evt.total * 100 * 10) / 10;
             progress.style.width = percent + "%";
@@ -925,7 +924,7 @@ function upload() {
         }
     });
     xhr.addEventListener("readystatechange", function() {
-        alert("xhr event listener for ready state change within the upload function called");
+        //alert("xhr event listener for ready state change within the upload function called");
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             removeListeners();
             switch (xhr.responseText) {
