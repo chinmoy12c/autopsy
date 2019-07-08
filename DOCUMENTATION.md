@@ -128,6 +128,8 @@ Autopsy prints the number and names of threads that are currently running to mon
 * `dump_database`: logs a database dump. Called by `clean_uploads` once every 24 hours and by the user through `dump`.
 * `index`: returns the Autopsy HTML, along with the data for any core dumps if the user has a UUID.
 * `help`: returns the help page HTML.
+* `demo`: returns the video demo page HTML.
+* `command history`: returns the command page HTML.
 * `dump`: allows the user to log a database dump.
 * `delete`: uses `delete_coredump` to delete a core dump. Called when the × next to a core dump is clicked.
 * `test_key`: tests whether a UUID has core dumps in the database. Called when validating a key.
