@@ -22,10 +22,10 @@ Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs o
 
 * `static` contains four files for the web application:
  * `autopsy.css` is the CSS file.
- * `autopsy.js` is the JavaScript file.
+ * `autopsy.js` is the JavaScript file, which works together with autopsy.html in the front end.
  * `scalpel.png` is the favicon.
  * `scalpel.svg` is an SVG version of `scalpel.png` and is displayed on the top-left corner of the application.
-* `templates` contains `autopsy.html`, which is the HTML for the main application, and `help.html`, which is the HTML for the help page.
+* `templates` contains `autopsy.html`, which is the HTML for the main application, `help.html`, which is the HTML for the help page, `demo.html`, which is the HTML for the video demo page and `command_history.html`, which is the HTML for the command history page.
 * `.gitignore` lists files that are ignored when committing. Some of these files will have to be created first before running the application.
 * `DOCUMENTATION.md` is the documentation for Autopsy.
 * `README.md` is this file.
