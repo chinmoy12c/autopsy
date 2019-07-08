@@ -23,11 +23,6 @@
                 textarea.value = uuidval.innerHTML;
                 textarea.select();
                 document.execCommand('copy');
-                /*navigator.permissions.query({name: "clipboard-write"}).then(result => {
-                    if (result.state == "granted" || result.state == "prompt") {
-                        document.execCommand('copy');
-                    }
-                });*/
                 document.querySelector("body").removeChild(textarea);
             }
         </script>
