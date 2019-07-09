@@ -175,4 +175,4 @@ Logs are stored in two locations: the `Autopsy/flasklogs` folder and the `nginx/
 
 ## Adding additional commands
 
-If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order), and if the command has options, add it to `options` as well, with special characters escaped.
+Important: If a new command is added to `clientlessGdb.py`, it is simple to add the command to Autopsy as well. Add the command name to `commands` in `autopsy.js` (note that `commands` must be in alphabetical order), and if the command has options, add it to `options` as well, with special characters escaped.
