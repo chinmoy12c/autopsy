@@ -55,7 +55,6 @@ command_queues = {}
 abort_queues = {}
 # stores the outputs from the GDB thread, if output is restart, Autopsy will launch another GDB thread
 output_queues = {}
-command_history_list = []
 queues_lock = Lock()
 
 running_counts = set()
@@ -300,11 +299,10 @@ def startup(count, uuid, coredump):
 
 # adds a command for GDB using the appropriate queues
 def queue_add(count, coredump, command):
-    global coredump_queues, command_queues, command_history_list
+    global coredump_queues, command_queues
     with queues_lock:
         coredump_queues[count].put(coredump)
         command_queues[count].put(command)
-        command_history_list.append(command)
 
 # used to delete the core dump directory and UUID directory if it is empty later
 def remove_directory_and_parent(directory):
@@ -493,15 +491,6 @@ def index():
     logger.info('running_counts is %s', str(running_counts))
     enum_threads()
     return render_template('autopsy.html', uuid=uuid, coredumps=coredumps, timeout=get_timeout(uuid))
-
-# returns the Command history HTML content
-@app.route('/command_history', methods=['GET'])
-def command_history():
-    global command_history_list
-    logger.info('opened command_history')
-    # create a dict from a list as the index is needed in command_history.html
-    command_history_dict = { i : command_history_list[i] for i in range(0, len(command_history_list) ) }
-    return render_template('command_history.html', command_history_dict=command_history_dict)
 
 # returns the Help HTML content
 @app.route('/help', methods=['GET'])
