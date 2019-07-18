@@ -78,12 +78,10 @@ code_mirror.addKeyMap({"Tab": function(code_mirror) {
 });
 
 window.addEventListener("resize", function() {
-    //alert("window event listener for resize called");
     code_mirror.setSize(null, editor_program.clientHeight);
 });
 
 function updateLocalStorage(uuid, coredumps) {
-    //alert("update local storage function called");
     var core_history_string = localStorage.getItem("history");
     var core_order_string = localStorage.getItem("order");
     if (core_history_string === null) {
@@ -109,7 +107,6 @@ function updateLocalStorage(uuid, coredumps) {
 }
 
 input.onchange = function() {
-    //alert("input onchange function called");
     filename = this.value;
     if (filename === "") {
         file_name.innerHTML = "Choose file…";
@@ -130,7 +127,6 @@ input.onchange = function() {
 };
 
 function humanFileSize(size) {
-    //alert("human file size function called");
     if (size === 0) {
         return "0 bytes";
     }
@@ -139,7 +135,6 @@ function humanFileSize(size) {
 }
 
 function date(timestamp) {
-    //alert("date function for a timestamp called");
     var d = new Date(timestamp);
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var hours = d.getHours();
@@ -152,7 +147,6 @@ function date(timestamp) {
 }
 
 function loadCoredumps(coredumps) {
-    //alert("load core dumps function for coredumps called");
     for (var i = 0; i < coredumps.length; i++) {
         var s = "<div class=\"coredump-box not-clicked\" id=\"" + coredumps[i][1] + "\"><div class=\"coredump-inner\"><p class=\"corerow corename\">" + coredumps[i][1] + "</p><p class=\"corerow\"><span class=\"coresize\">" + humanFileSize(coredumps[i][2]) + "</span><span class=\"coredate\">" + date(coredumps[i][3]) + "</span></p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
         var corediv = document.createElement("div");
@@ -168,7 +162,6 @@ function loadCoredumps(coredumps) {
 }
 
 function addCoredumpListeners() {
-    //alert("add core dump listeners function called");
     for (var i = 0; i < cores.childElementCount; i++) {
         (function() {
             var coredump_box = cores.children[i].firstChild;
@@ -185,7 +178,6 @@ function addCoredumpListeners() {
 }
 
 function disableCommandButtons(setting) {
-    //alert("disable command buttons function for a setting called");
     gen_report.disabled = setting;
     backtrace.disabled = setting;
     siginfo.disabled = setting;
@@ -194,7 +186,6 @@ function disableCommandButtons(setting) {
 }
 
 function deleteCoredump(id) {
-    //alert("delete core dump function for an id called");
     var id_box = document.getElementById(id).parentElement;
     id_box.addEventListener("animationend", function() {
         id_box.remove();
@@ -217,7 +208,6 @@ function deleteCoredump(id) {
 }
 
 function check(id) {
-    //alert("check function for an id called");
     var id_box = document.getElementById(id);
     if (checked !== id) {
         id_box.classList.remove("not-clicked");
@@ -239,7 +229,6 @@ function check(id) {
 }
 
 function addUUIDListeners() {
-    //alert("add UUID listeners function called");
     for (var i = 0; i < uuids.childElementCount; i++) {
         (function() {
             var uuid_box = uuids.children[i];
@@ -256,7 +245,6 @@ function addUUIDListeners() {
 }
 
 function deleteUUID(id) {
-    //alert("delete UUID function called");
     $("[data-toggle='popover']").popover("dispose");
     document.getElementById(id).remove();
     if (checked_uuid === id) {
@@ -279,7 +267,6 @@ function deleteUUID(id) {
 }
 
 function checkUUID(id) {
-    //alert("check UUID function called");
     var id_box = document.getElementById(id);
     if (checked_uuid !== id) {
         id_box.classList.remove("not-clicked");
@@ -301,7 +288,6 @@ function checkUUID(id) {
 }
 
 $("#previous-modal").on("show.bs.modal", function() {
-    //alert("previous modal on show.bs.modal function called");
     previous_button.disabled = true;
     var core_history_string = localStorage.getItem("history");
     var core_order_string = localStorage.getItem("order");
@@ -331,18 +317,15 @@ $("#previous-modal").on("show.bs.modal", function() {
 });
 
 $("#previous-modal").on("shown.bs.modal", function() {
-    //alert("previous modal on shown bs modal function called");
     $("[data-toggle='popover']").popover();
 });
 
 $("#previous-modal").on("hidden.bs.modal", function() {
-    //alert("previous modal on hidden bs modal function called");
     $("[data-toggle='popover']").popover("dispose");
     previous_button.innerHTML = "Load";
 });
 
 previous_button.addEventListener("click", function() {
-    //alert("previous button event listener for click called");
     previous_button.disabled = true;
     previous_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     updateSource(false);
@@ -366,27 +349,22 @@ previous_button.addEventListener("click", function() {
 });
 
 $("#load-modal").on("shown.bs.modal", function() {
-    //alert("load modal on shown bs modal function called");
     $("#load-key").focus();
 });
 
 $("#load-modal").on("hidden.bs.modal", function() {
-    //alert("load modal on hidden bs modal function called");
     load_button.innerHTML = "Load";
 });
 
 $("#generate-modal").on("hidden.bs.modal", function() {
-    //alert("generate modal on hidden bs modal function called");
     generate_button.innerHTML = "Generate";
 });
 
 $("#link-modal").on("shown.bs.modal", function() {
-    //alert("link modal on shown bs modal function called");
     $("#link-url").focus();
 });
 
 $("#link-modal").on("hidden.bs.modal", function() {
-    //alert("link modal on hidden bs modal function called");
     if (link_button.classList.contains("btn-primary")) {
         link_button.innerHTML = "Submit";
         if (link_url.value !== "") {
@@ -396,19 +374,16 @@ $("#link-modal").on("hidden.bs.modal", function() {
 });
 
 $("#file-modal").on("shown.bs.modal", function() {
-    //alert("file modal on shown bs modal function called");
     $("#file-server").focus();
 });
 
 $("#file-modal").on("hidden.bs.modal", function() {
-    //alert("file modal on hidden bs modal function called");
     if (file_button.classList.contains("btn-primary")) {
         file_button.innerHTML = "Submit";
     }
 });
 
 load_key.addEventListener("input", function() {
-    //alert("load key event listener for input called");
     if (load_key.value === "") {
         load_key.className = "form-control";
         load_button.disabled = true;
@@ -443,7 +418,6 @@ load_key.addEventListener("input", function() {
 });
 
 function resetFileUpload(error, message) {
-    //alert("reset file upload function called");
     browse.innerHTML = "Browse";
     browse.className = "browse-clickable";
     input.disabled = false;
@@ -461,7 +435,6 @@ function resetFileUpload(error, message) {
 }
 
 function reset() {
-    //alert("reset function called");
     cores.innerHTML = "";
     load_key.value = "";
     load_key.className = "form-control";
@@ -511,7 +484,6 @@ function reset() {
 }
 
 load_button.addEventListener("click", function() {
-    //alert("load button event listener for click called");
     load_button.disabled = true;
     load_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     updateSource(false);
@@ -535,7 +507,6 @@ load_button.addEventListener("click", function() {
 });
 
 generate_button.addEventListener("click", function() {
-    //alert("generate button event listener for click called");
     generate_button.disabled = true;
     generate_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Generating…";
     updateSource(false);
@@ -558,7 +529,6 @@ generate_button.addEventListener("click", function() {
 });
 
 link_url.addEventListener("input", function() {
-    //alert("link url event listener for input called");
     if (link_url.value === "") {
         link_button.disabled = true;
     }
@@ -574,7 +544,6 @@ link_url.addEventListener("input", function() {
 });
 
 link_username.addEventListener("input", function() {
-    //alert("link username event listener for input called");
     if (link_bad_credentials) {
         if (link_url.value === "") {
             link_button.disabled = true;
@@ -591,7 +560,6 @@ link_username.addEventListener("input", function() {
 });
 
 link_password.addEventListener("input", function() {
-    //alert("link password event listener for input called");
     if (link_bad_credentials) {
         if (link_url.value === "") {
             link_button.disabled = true;
@@ -608,7 +576,6 @@ link_password.addEventListener("input", function() {
 });
 
 file_server.addEventListener("input", function() {
-    //alert("file server event listener for input called");
     if (file_server.value === "" || file_path.value === "") {
         file_button.disabled = true;
     }
@@ -624,7 +591,6 @@ file_server.addEventListener("input", function() {
 });
 
 file_path.addEventListener("input", function() {
-    //alert("file path event listener for input called");
     if (file_server.value === "" || file_path.value === "") {
         file_button.disabled = true;
     }
@@ -640,7 +606,6 @@ file_path.addEventListener("input", function() {
 });
 
 file_username.addEventListener("input", function() {
-    //alert("file username event listener for input called");
     if (file_server.value === "" || file_path.value === "") {
         file_button.disabled = true;
     }
@@ -657,7 +622,6 @@ file_username.addEventListener("input", function() {
 });
 
 file_password.addEventListener("input", function() {
-    //alert("file password event listener for input called");
     if (file_server.value === "" || file_path.value === "") {
         file_button.disabled = true;
     }
@@ -674,7 +638,6 @@ file_password.addEventListener("input", function() {
 });
 
 function linkUpload(url, username, password, filename) {
-    //alert("link upload function called");
     if (filename === "") {
         file_name.innerHTML = url;
     }
@@ -718,7 +681,6 @@ function linkUpload(url, username, password, filename) {
 }
 
 link_button.addEventListener("click", function() {
-    //alert("link button event listener for click called");
     link_button.disabled = true;
     link_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…";
     var xhr = new XMLHttpRequest();
@@ -769,7 +731,6 @@ link_button.addEventListener("click", function() {
 });
 
 function fileUpload(server, path, username, password, filename) {
-    //alert("file upload function called");
     if (filename === "") {
         file_name.innerHTML = url;
     }
@@ -818,7 +779,6 @@ function fileUpload(server, path, username, password, filename) {
 }
 
 file_button.addEventListener("click", function() {
-    //alert("file button event listener for click called");
     file_button.disabled = "true";
     file_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…";
     var xhr = new XMLHttpRequest();
@@ -877,7 +837,6 @@ file_button.addEventListener("click", function() {
 });
 
 upload_button.addEventListener("click", function() {
-    //alert("upload button event listener for click called");
     input.disabled = true;
     upload_button.disabled = true;
     upload_button.innerHTML = "Uploading…";
@@ -911,14 +870,12 @@ upload_button.addEventListener("click", function() {
 });
 
 function upload() {
-    //alert("upload function called");
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("file", input.files[0]);
     xhr.open("POST", "/upload", true);
     xhr.responseType = "text";
     xhr.upload.addEventListener("progress", function(evt) {
-        //alert("xhr upload event listener for progress within the upload function called");
         if (evt.lengthComputable) {
             var percent = Math.round(evt.loaded / evt.total * 100 * 10) / 10;
             progress.style.width = percent + "%";
@@ -926,7 +883,6 @@ function upload() {
         }
     });
     xhr.addEventListener("readystatechange", function() {
-        //alert("xhr event listener for ready state change within the upload function called");
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             removeListeners();
             switch (xhr.responseText) {
@@ -949,12 +905,10 @@ function upload() {
         }
     });
     function abort() {
-        //alert("abort function within the upload function called");
         removeListeners();
         xhr.abort();
     }
     function cancel(evt) {
-        //alert("cancel function within the upload function called");
         removeListeners();
         xhr.abort();
         evt.preventDefault();
@@ -962,7 +916,6 @@ function upload() {
         upload_button.disabled = false;
     }
     function removeListeners() {
-        //alert("remove listeners function within the upload function called");
         previous_button.removeEventListener("click", abort);
         load_button.removeEventListener("click", abort);
         generate_button.removeEventListener("click", abort);
@@ -976,7 +929,6 @@ function upload() {
 }
 
 function unzip() {
-    //alert("unzip function called");
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/unzip", true);
     xhr.responseType = "text";
@@ -1011,12 +963,10 @@ function unzip() {
 
 // This is called after the upload function
 function build() {
-    //alert("build function called");
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/build", true);
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
-        //alert("xhr event listener for ready state change called within build"); 
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
             removeListeners();
             if (xhr.response.hasOwnProperty("report")) {
@@ -1067,7 +1017,6 @@ function build() {
 }
 
 function showLoading() {
-    //alert("show loading function called");
     output_text.parentElement.style.display = "block";
     output_text.parentElement.style.overflow = "auto";
     output_text.classList.remove("html-text");
@@ -1077,7 +1026,6 @@ function showLoading() {
 }
 
 function showOutput(output, coredump, timestamp) {
-    //alert("show output function called");
     var coredump_box = document.getElementById(coredump);
     if (coredump_box !== null) {
         var coredate = coredump_box.firstChild.lastChild.lastChild;
@@ -1088,7 +1036,6 @@ function showOutput(output, coredump, timestamp) {
 }
 
 gen_report.addEventListener("click", function() {
-    //alert("gen report event listener for click called");
     showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -1105,7 +1052,6 @@ gen_report.addEventListener("click", function() {
 });
 
 backtrace.addEventListener("click", function() {
-    //alert("backtrace event listener for click called");
     showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -1122,7 +1068,6 @@ backtrace.addEventListener("click", function() {
 });
 
 siginfo.addEventListener("click", function() {
-    //alert("sig info event listener for click called");
     showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -1139,7 +1084,6 @@ siginfo.addEventListener("click", function() {
 });
 
 decode.addEventListener("click", function() {
-    //alert("decode event listener for click called");
     showLoading();
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -1171,21 +1115,18 @@ decode.addEventListener("click", function() {
 });
 
 clear_output.addEventListener("click", function() {
-    //alert("clear output event listener for click called");
     if (!loading) {
         output_text.innerHTML = "";
     }
 });
 
 abort_gdb.addEventListener("click", function() {
-    //alert("abort gdb event listener for click called");
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/abort", true);
     xhr.send();
 });
 
 function updateAutocomplete() {
-    //alert("update auto complete function called");
     autocomplete_text = command_input.value;
     var command = autocomplete_text.toLowerCase();
     current_commands = [];
@@ -1221,7 +1162,6 @@ function updateAutocomplete() {
 command_input.addEventListener("input", updateAutocomplete);
 
 function commonPrefix(array) {
-    //alert("common prefix function called");
     var first = array[0];
     var last = array[array.length - 1];
     var i = 0;
@@ -1232,7 +1172,6 @@ function commonPrefix(array) {
 }
 
 command_input.addEventListener("keydown", function(evt) {
-    //alert("command input event listener for key down called");
     var selected_index;
     switch (evt.keyCode) {
         case 9://"Tab":
@@ -1346,17 +1285,14 @@ command_input.addEventListener("keydown", function(evt) {
 });
 
 command_input.addEventListener("blur", function() {
-    //alert("command input event listener for blur called");
     autocomplete.style.display = "none";
 });
 
 command_input.addEventListener("focus", function() {
-   //alert("command input event listener for focus called");
     updateAutocomplete();
 });
 
 function addAutocompleteListeners() {
-    //alert("add auto complete listeners function called");
     for (var i = 0; i < autocomplete.childElementCount; i++) {
         (function () {
             var autocomplete_item = autocomplete.children[i];
@@ -1375,7 +1311,6 @@ function addAutocompleteListeners() {
 }
 
 function loadPython() {
-    //alert("load python function called");
     for (var i = 0; i < commands.length; i++) {
         var editor_command = document.createElement("div");
         editor_command.classList.add("editor-command");
@@ -1388,7 +1323,6 @@ function loadPython() {
 }
 
 function addCommandListeners() {
-    //alert("add command listeners function called");
     for (var i = 0; i < command_list.childElementCount; i++) {
         (function() {
             var editor_command = command_list.children[i];
@@ -1400,7 +1334,6 @@ function addCommandListeners() {
 }
 
 function updateCommands() {
-    //alert("update commands function called");
     command_list.innerHTML = "";
     var command = command_search.value.toLowerCase();
     for (var i = 0; i < commands.length; i++) {
@@ -1427,7 +1360,6 @@ function updateCommands() {
 command_search.addEventListener("input", updateCommands);
 
 function scrollToCommand(command) {
-    //alert("scroll to command function called");
     if (send_update) {
         var re = new RegExp("^def *" + command + " *\\(", "m");
         var index = code_mirror.getValue().search(re);
@@ -1441,7 +1373,6 @@ function scrollToCommand(command) {
 }
 
 function getSource() {
-    //alert("get source function called");
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/getsource", true);
     xhr.responseType = "text";
@@ -1467,19 +1398,16 @@ function getSource() {
 }
 
 $("#prompt-tab").on("shown.bs.tab", function() {
-    //alert("prompt tab on shown bs tab function called");
     updateSource(true);
 });
 
 $("#editor-tab").on("shown.bs.tab", function() {
-    //alert("editor tab on shown bs tab function called");
     code_mirror.setSize(null, editor_program.clientHeight);
     code_mirror.refresh();
     code_mirror.focus();
 });
 
 function showSourceOutput(output) {
-    //alert("show source output function called");
     if (output !== "") {
         output_text.parentElement.style.display = "block";
         output_text.parentElement.style.overflow = "auto";
@@ -1490,7 +1418,6 @@ function showSourceOutput(output) {
 }
 
 function updateSource(show_update) {
-    //alert("update source function called");
     if (send_update) {
         console.log('update source');
         var xhr = new XMLHttpRequest();
@@ -1509,7 +1436,6 @@ function updateSource(show_update) {
 }
 
 editor_reset.addEventListener("click", function() {
-    //alert("editor reset event listener for click called");
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/resetsource", true);
     xhr.responseType = "json";
@@ -1524,7 +1450,6 @@ editor_reset.addEventListener("click", function() {
 });
 
 editor_diff.addEventListener("click", function() {
-    //alert("editor diff event listener for click called");
     if (editor_diff.innerText === "show diff") {
         cursor_loc = code_mirror.getCursor();
         scroll_loc = code_mirror.getScrollInfo().top;
@@ -1555,14 +1480,12 @@ editor_diff.addEventListener("click", function() {
 });
 
 timeout.addEventListener("keydown", function(evt) {
-    //alert("timeout event listener for keydown called");
     if (evt.keyCode === 13/*Enter*/) {
         timeout.blur();
     }
 });
 
 timeout.addEventListener("blur", function() {
-    //alert("timeout event listener for blur called");
     if (timeout.value === "" || timeout.valueAsNumber < 1) {
         timeout.value = 1;
     }
@@ -1578,7 +1501,6 @@ timeout.addEventListener("blur", function() {
 });
 
 function checkSession() {
-    //alert("check session called");
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     fd.append("uuid", uuid_value);
@@ -1605,7 +1527,6 @@ function checkSession() {
 window.addEventListener("focus", checkSession);
 
 divider.addEventListener("mousedown", function(evt) {
-    //alert("divider event listener for mousedown called");
     evt.preventDefault();
     document.body.style.cursor = "col-resize";
     window.addEventListener("mousemove", setCoreWidth);
@@ -1613,19 +1534,16 @@ divider.addEventListener("mousedown", function(evt) {
 });
 
 function setCoreWidth(evt) {
-    //alert("set core width function called");
     cores.style.width = Math.max(Math.min(evt.clientX, 500), 100) + "px";
 }
 
 function cleanWindow() {
-    //alert("clean window function called");
     document.body.removeAttribute("style");
     window.removeEventListener("mousemove", setCoreWidth);
     window.removeEventListener("mouseup", cleanWindow);
 }
 
 window.addEventListener("beforeunload", function() {
-    //alert("window event listener for before unload called");
     updateSource(false);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/quit", true);
