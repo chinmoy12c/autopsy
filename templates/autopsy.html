@@ -64,7 +64,7 @@
                         </button>
                     </div>
                     <div class="modal-body">
-                        <p>Up to 15 of your most-recently(uppermost) used keys are shown below. Note that the core dumps listed with a key may have changed since you last accessed the key.</p>
+                        <p>Up to 15 of your most-recently used keys are shown below. Note that the core dumps listed with a key may have changed since you last accessed the key.</p>
                     </div>
                     <div id="uuids">
                     </div>
@@ -79,7 +79,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="load-modal-label">Load an existing key</h4>
+                        <h4 class="modal-title" id="load-modal-label">Load new key</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -307,45 +307,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/annotatescrollbar.min.js" crossorigin="anonymous"></script>
         <script src="{{ url_for('static', filename='autopsy.js') }}"></script>
         <script type="text/javascript">
-            /*var command_array = []
-            //var input = document.getElementById("command-input");  line that caused me to be unable to upload core file =(
-            document.onkeydown = checkKey;
-            function checkKey(e) {
-                var event = window.event ? window.event : e;
-                // <up> to retrieve a past command one at a time
-                if (event.keyCode == 38) {
-                    alert('up');
-                    if (command_array.length == 0) {
-                        return;
-                    }
-                    var idx = command_array.length - 1;
-                    document.getElementById("command-input").value = command_array[idx];
-                }
-                // <enter> to save a command one at a time
-                if ((event.keyCode == 13)) {
-                    alert('enter');
-                    var command = document.getElementById("command-input").value;
-                    alert(command);
-                    command_array.push(command);
-                    alert(command_array);
-                }
-            };
-
-            function remember_commands() {
-                var command = document.getElementById("command-input").value;
-                alert(command);
-                command_array.push(command);
-                alert(command_array);
-            };
-
-            function copyKey() {
-                var copyText = document.getElementById("copy-input");
-                alert(copyText);
-                copyText.select();
-                document.execCommand("copy");
-                alert("Copied");
-            };*/
-
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
             timeout.value = {{ timeout }}; 
