@@ -41,7 +41,7 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
                         <a class="dropdown-item" onclick="javascript:copy_key();">Copy current key...</a>
-                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">View previous key(s)…</a>
+                        <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">Load previous key…</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#load-modal">Load new key…</a>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#generate-modal">Generate new key…</a>
@@ -58,7 +58,7 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="previous-modal-label">View previous key(s)</h4>
+                        <h4 class="modal-title" id="previous-modal-label">Load previous key</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-label="close">
                             <span aria-hidden="true">&times;</span>
                         </button>
@@ -309,7 +309,7 @@
         <script type="text/javascript">
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
-            timeout.value = {{ timeout }}; 
+            timeout.value = {{ timeout }};
         </script>
     </body>
 </html>
