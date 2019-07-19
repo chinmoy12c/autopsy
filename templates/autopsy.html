@@ -12,12 +12,27 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.29.0/addon/scroll/simplescrollbars.min.css" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
+        <script type = "text/javascript">
+            function copy_key() {
+                var textarea = document.createElement("textarea");
+                textarea.style.width = '0px';
+                textarea.style.height = '0px';
+                document.querySelector("body").appendChild(textarea);
+                var uuidval = document.getElementById("uuid");
+                var uuidtextbox = document.getElementById("uuidtextbox");
+                textarea.value = uuidval.innerHTML;
+                textarea.select();
+                document.execCommand('copy');
+                document.querySelector("body").removeChild(textarea);
+            }
+        </script>
     </head>
     <body id="fixed">
         <nav class="navbar navbar-dark navbar-expand bg-dark">
             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
             <div class="navbar-nav mr-auto">
-                <a class="nav-item nav-link" href="help" target="_blank">Help</a>	
+                <a class="nav-item nav-link" href="help" target="_blank">Help</a>
+                <a class="nav-item nav-link" href="demo" target="_blank">Demo</a>
             </div>
             <div class="navbar-nav">
                 <div class="nav-item dropdown">
@@ -25,6 +40,7 @@
                         <i class="fa fa-key" aria-hidden="true"></i><span id="uuid">{{ uuid }}</span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right" aria-labelledby="change-key">
+                        <a class="dropdown-item" onclick="javascript:copy_key();">Copy current key...</a>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#previous-modal">Load previous key…</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="" data-toggle="modal" data-target="#load-modal">Load new key…</a>
