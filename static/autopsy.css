@@ -308,6 +308,7 @@ input {
     line-height: 1.5;
     border: 1px solid #ccc;
     border-radius: 0.25rem;
+    cursor: pointer;
 }
 
 #file-container {
@@ -609,4 +610,33 @@ figure {
     display: block;
     position: static;
     float: none;
+}
+
+#body-admin {
+    margin-top: 8rem;
+}
+
+.table-bordered th {
+    cursor: pointer;
+}
+
+.table-sm {
+    font-size: 10pt;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.fa-sort {
+    margin-left: 0.5rem;
+}
+
+.fa-sort-up {
+    margin-left: 0.5rem;
+}
+
+.fa-sort-down {
+    margin-left: 0.5rem;
 }
