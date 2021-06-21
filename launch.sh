@@ -22,3 +22,13 @@ export "FLASK_APP=autopsy.py"
 export "FLASK_DEBUG=0"
 export LC_ALL=en_US.utf8
 export LANG=en_US.utf8
+
+autopsy_restart ()
+{
+    fk
+    gk
+    gk
+    gu
+    ng
+    fl&
+}

@@ -21,7 +21,8 @@
                 <li><span class="bold">File uploader</span>: allows you to upload files and see upload progress. The file uploader can be found at the top of the interface.</li>
                 <li><span class="bold">Command interface</span>: lets you type in commands to analyze core dumps and view other related files. The interface is underneath the file uploader.</li>
                 <li><span class="bold">Code editor</span>: lets you view and modify the Python source code of these commands. The code editor can be accessed by clicking on the "Editor" tab.</li>
-                <li><span class="bold">Key manager</span>: allows you to access core dumps that other people have uploaded that are associated with a different key and export data associated with a key.</li> The key manager is the menu shown when clicking on the key in the top-right corner of the interface.</li>
+                <li><span class="bold">Key manager</span>: allows you to access core dumps that other people have uploaded that are associated with a different key and export data associated with a key. The key manager is the menu shown when clicking on the key in the top-right corner of the interface.</li>
+                <li><span class="bold">Terminal interface</span>: lets you type in commands to analyze core dumps in a linux terminal-like interface. The output of previous commands will be available in the terminal. The terminal interface can be accessed by clicking on the "Console" tab.</li>
             </ul>
             <h2>Analyzing a core dump</h2>
             <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
@@ -61,9 +62,10 @@
                     <figcaption class="figure-caption text-xs-center">A sample core dump item.</figcaption>
                 </figure>
             </div>
-            <p>Selecting a core dump will enable the command interface for that core dump. Every time you analyze a core dump via the command interface, the last-accessed date for that core dump is updated. If a core dump has not been accessed within four days, it will be deleted automatically to conserve space.</p>
+            <p>Selecting a core dump will enable the command and terminal interfaces for that core dump. Every time you analyze a core dump via the command interface, the last-accessed date for that core dump is updated. If a core dump has not been accessed within four days, it will be deleted automatically to conserve space.</p>
             <h3 class="h3-margin">File uploader</h3>
-            <p>The file uploader allows you to upload core dumps in gzip or unzipped formats; other file types are not accepted. You can upload a file by clicking on the upload bar, submit a link to a core dump by clicking "submit link", or SCP a file by clicking "SCP file". Core dumps that are uploaded must also not share a name with any existing core dumps associated with the current key; you will receive an error if this is the case. Once a file begins the upload process, upload progress indicators appear, as shown below:</p>
+            <p>The file uploader allows you to upload core dumps in gzip or unzipped formats; other file types are not accepted. You can upload a local file by clicking on the upload bar or the "Browse" button. Core dumps that are uploaded must also not share a name with any existing core dumps associated with the current key; you will receive an error if this is the case. If the core dump shares a name with another core dump in a different session, a dialog will be displayed giving the core name and the UUID of the session where it exists. Here, the user can choose to upload the same core dump again in the current session, or load the old session.</p>
+           <p> Once a file begins the upload process, upload progress indicators appear, as shown below:</p>
             <div class="figure-center">
                 <figure class="figure">
                     <div class="width-700">
@@ -89,6 +91,14 @@
             </div>
             <p>You can cancel a local file upload by clicking the "Cancel" button, which takes the place of the "Browse" button during the upload process. (Canceling an upload from a URL or using SCP is not supported.) Once the core dump has been uploaded, you will still need to wait for the core dump to be unzipped (if it was uploaded as a gzip file) and a workspace (an environment to analyze the core dump) to be built, as indicated by the labels on the "Upload" button. The file uploader resets to allow further core dumps to be uploaded after a core dump has completed this procedure.</p>
             <p class="p-second">Note that the file size of your upload will be different than the file size of the core dump shown in the core dump list if you uploaded a gzip file since the core dump list shows the file size of the unzipped core file.</p>
+            <br>
+            <h4>Link upload</h4>
+            <p>You can also upload a core dump given a URL from the "Link" modal. The modal can be accessed by clicking the dropdown button next to the "Browse" button and choosing "Link" from the dropdown menu that appears. Only HTTP, FTP and TFTP protocols are supported. If necessary, provide the username and password for the server (do not provide CEC username and password for security reasons). TFTP does not support username and password.</p>
+            <p class="p-second">Note that upload progress indicators are not available for URL upload.</p>
+            <br>
+            <h4>Shared folder</h4>
+            <p>You can also copy core dumps to the /auto/autopsy folder and use the "Shared" modal to upload them to Autopsy. The modal can be accessed by clicking the dropdown button next to the "Browse" button and choosing "Shared" from the dropdown menu that appears.</p>
+            <p class="p-second">Note that upload progress indicators are not available for shared upload.</p>
             <h3 class="h3-margin">Command interface</h3>
             <p>There are two main ways to analyze a core dump: using the buttons on the top row of the interface or the text box below. Each button performs a unique action and is described by its label.</p>
             <ul>
@@ -132,6 +142,8 @@
             </ul>
             <h4>Key expiration</h4>
             <p>If a window pops up indicating that your key has expired, this means that the key stored in your cookie has been modified from somewhere other than the Autopsy window. This can happen either by deleting your key or by loading another key in a second Autopsy session. (Autopsy does not currently support using multiple keys at the same time.) You can recover the cookie by simply refreshing the page and loading your previous key.</p>
+            <h3 class="h3-margin">Terminal interface</h3>
+            <p>The terminal interface can be accessed by clicking the "Console" tab. Simply enter commands into the prompt and press Enter to execute it. The output will be displayed after the command finishes executing. The output of previous commands is preserved in the terminal, so you can simply scroll as needed. Up and down arrows allow you to navigate through the command history.</p>
         </div>
     </body>
 </html>

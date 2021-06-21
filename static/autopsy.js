@@ -9,6 +9,8 @@ var link_url = document.getElementById("link-url");
 var link_username = document.getElementById("link-username");
 var link_password = document.getElementById("link-password");
 var link_button = document.getElementById("link-button");
+var shared_core = document.getElementById("shared-core");
+var shared_button = document.getElementById("shared-button");
 var file_server = document.getElementById("file-server");
 var file_path = document.getElementById("file-path");
 var file_username = document.getElementById("file-username");
@@ -38,6 +40,16 @@ var editor_diff = document.getElementById("editor-diff");
 var timeout = document.getElementById("timeout");
 var command_list = document.getElementById("command-list");
 var editor_program = document.getElementById("editor-program");
+var console_tab = document.getElementById('console');
+var crash_info_text = document.getElementById('crash-info-text');
+var exists_new_core = document.getElementById('exists-new-core');
+var exists_old_core = document.getElementById('exists-old-core');
+var exists_uuid = document.getElementById('exists-uuid');
+var load_old = document.getElementById('load-old');
+var upload_new = document.getElementById('upload-new');
+var malloc_table;
+var malloc_unavailable_alert = document.getElementById('malloc-unavailable-alert');
+var malloc_loading_alert = document.getElementById('malloc-loading-alert');
 
 var uuid_value = uuid.innerHTML;
 var checked_uuid = null;
@@ -53,15 +65,54 @@ var send_update = false;
 var cursor_loc = null;
 var scroll_loc = null;
 // When adding a new command, add the new command to this list
-var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispblockinfo", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstacksbybp", "dispfiberstats", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findmallocleak", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showaspdrop", "showblocks", "showcounters", "showconsolemessage", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "walkblockchain", "webvpn_print_block_failures"];
+var commands = ["asacommands", "checkibuf", "checkoccamframe", "dispak47anonymouspools", "dispak47vols", "dispallactiveawarectx", "dispallactiveuctectx", "dispallactiveucteoutway", "dispallak47instance", "dispallattachedthreads", "dispallawarectx", "dispallpoolsinak47instance", "dispallthreads", "dispalluctectx", "dispallucteoutway", "dispasastate", "dispasathread", "dispawareurls", "dispbacktraces", "dispblockinfo", "dispcacheinfo", "dispclhash", "dispcrashthread", "dispdpthreads", "dispfiberinfo", "dispfiberstacks", "dispfiberstacksbybp", "dispfiberstats", "dispfreedlocalblocksnext", "dispgdbthreadinfo", "displuastack", "displuastackbyl", "displuastackbylreverse", "dispmeminfo", "dispmemregion", "dispoccamframe", "dispramfsdirtree", "dispsiginfo", "dispstackforthread", "dispstackfromrbp", "dispthreads", "dispthreadstacks", "disptypes", "dispunmangleurl", "dispurls", "findString", "findmallochdr", "findmallocleak", "findoccamframes", "generatereport", "searchMem", "searchMemAll", "search_mem", "showak47info", "showak47instances", "showaspdrop", "showblockclasses", "showblocks", "showblocksold", "showcounters", "showconsolemessage", "showsnortstatistics", "test_btree_iter", "unescapestring", "verifyoccaminak47instance", "verifystacks", "walkIntervals", "walkblockchain", "webvpn_print_block_failures"];
 // If new command has required argument, add the key-value pair here
 var options = {"checkibuf": "&lt;address&gt;", "checkoccamframe": "&lt;frame&gt;", "dispallthreads": "[&lt;verbosity&gt;]", "dispasathread": "&lt;thread name&gt; [&lt;verbosity&gt;]", "dispcrashthread": "[&lt;verbosity&gt;] [&lt;linux thread id&gt;]", "dispdpthreads": "[&lt;verbosity&gt;]", "dispgdbthreadinfo": "[&lt;verbosity&gt;]", "displuastack": "&lt;stack&gt; &lt;depth&gt;", "displuastackbyl": "&lt;L&gt; &lt;depth&gt;", "displuastackbylreverse": "&lt;L&gt; &lt;depth&gt;", "dispmemregion": "&lt;address&gt; &lt;length&gt;", "dispoccamframe": "&lt;address&gt;", "dispramfsdirtree": "&lt;ramfs node address&gt;", "dispstackforthread": "[&lt;threadname&gt;|&lt;thread address&gt;]", "dispstackfromrbp": "&lt;rbp&gt;", "dispthreads": "[&lt;verbosity&gt;]", "disptypes": "&lt;type&gt; &lt;address&gt;", "dispunmangleurl": "&lt;mangled URL&gt;", "findString": "&lt;string&gt;", "searchMem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "searchMemAll": "&lt;pattern&gt;", "search_mem": "&lt;address&gt; &lt;length&gt; &lt;pattern&gt;", "unescapestring": "&lt;string&gt;", "verifyoccaminak47instance": "&lt;ak47 instance name&gt;"};
 var loading = false;
+
+var element_loading = false;
 
 var enter_just_pressed = false;
 var current_commands = [];
 var autocomplete_text;
 var currently_selected = null;
+
+var protocols = ["http://", "tftp://", "ftp://"];
+var current_protocols = [];
+
+// xterm vars
+const term = new Terminal({
+    scrollback: 100000,
+    cursorStyle: 'block',
+    cursorBlink: false,
+    disableStdin: true,
+});
+const fitAddon = new FitAddon.FitAddon();
+var console_input = "";
+term.loadAddon(fitAddon);
+term.open(document.getElementById('console-container'));
+fitAddon.fit();
+term.write('\x1b[1;32mgdb $ ');
+fitAddon.fit();
+
+// Command history
+var command_history = new Array();
+var history_pos = -1; // -1 is the default, when Up arrow key is pressed, increment, Down arrow key, decrement
+
+var cursor = 0;
+
+// Initialize the malloc table display
+$(document).ready(function () {
+    malloc_table = $('#malloc-table').DataTable({
+        "ordering": true, // enable sorting
+        "scrollResize": true,
+        "scrollY": 100,
+        "scrollCollapse": true,
+        "paging": false,
+        "sScrollX" : "100%"
+    }).columns.adjust().draw();
+    $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
+});
 
 var code_mirror = CodeMirror(editor_program, {extraKeys: {"Cmd-F": "findPersistent", "Ctrl-F": "findPersistent"}, mode: {name: "python", version: 2}, indentUnit: 4, lineWrapping: true, lineNumbers: true, matchBrackets: true, scrollbarStyle: "simple", styleActiveLine: true});
 
@@ -79,6 +130,7 @@ code_mirror.addKeyMap({"Tab": function(code_mirror) {
 
 window.addEventListener("resize", function() {
     code_mirror.setSize(null, editor_program.clientHeight);
+    malloc_table.columns.adjust().draw();
 });
 
 function updateLocalStorage(uuid, coredumps) {
@@ -183,6 +235,8 @@ function disableCommandButtons(setting) {
     siginfo.disabled = setting;
     decode.disabled = setting;
     command_input.disabled = setting;
+    term.setOption("disableStdin", setting);
+    term.setOption("cursorBlink", !setting);
 }
 
 function deleteCoredump(id) {
@@ -217,13 +271,34 @@ function check(id) {
             checked_box.classList.remove("clicked");
             checked_box.classList.add("not-clicked");
         }
+        command_input.value = "";
+        output_text.innerHTML = "";
+        console_input = "";
+        term.clear();
+        term.write('\x1b[2K\r');
+        term.write('\x1b[1;32mgdb $ ');
+        command_history = new Array();
+        history_pos = -1;
         checked = id;
+        if (document.getElementById("crash-info-general-tab").classList.contains("active")) {
+            getCrashInfo();
+        }
+        malloc_table.clear().draw();
+        malloc_unavailable_alert.style.setProperty("display", "none");
+        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
+        if (document.getElementById("crash-info-malloc-tab").classList.contains("active")) {
+            getMallocDump();
+        }
         disableCommandButtons(false);
     }
     else {
         id_box.classList.remove("clicked");
         id_box.classList.add("not-clicked");
         checked = null;
+        crash_info_text.innerHTML = "";
+        malloc_table.clear().draw();
+        malloc_unavailable_alert.style.setProperty("display", "none");
+        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
         disableCommandButtons(true);
     }
 }
@@ -360,6 +435,19 @@ $("#generate-modal").on("hidden.bs.modal", function() {
     generate_button.innerHTML = "Generate";
 });
 
+$("#shared-modal").on("shown.bs.modal", function() {
+    $("shared-core").focus();
+});
+
+$("#shared-modal").on("hidden.bs.modal", function() {
+    if (shared_button.classList.contains("btn-primary")) {
+        shared_button.innerHTML = "Submit";
+        if (shared_core.value !== "") {
+            shared_button.disabled = false;
+        }
+    }
+});
+
 $("#link-modal").on("shown.bs.modal", function() {
     $("#link-url").focus();
 });
@@ -419,7 +507,7 @@ load_key.addEventListener("input", function() {
 
 function resetFileUpload(error, message) {
     browse.innerHTML = "Browse";
-    browse.className = "browse-clickable";
+    browse.className = "btn btn-primary nav-link browse-clickable";
     input.disabled = false;
     upload_button.innerHTML = message;
     if (error) {
@@ -451,6 +539,10 @@ function reset() {
     link_button.innerHTML = "Submit";
     link_bad_url = false;
     link_bad_credentials = false;
+    shared_button.disabled = true;
+    shared_button.className = "btn btn-primary";
+    shared_button.innerHTML = "Submit";
+    shared_core.value = "";
     file_server.value = "";
     file_server.className = "form-control";
     file_path.value = "";
@@ -481,6 +573,16 @@ function reset() {
     code_mirror.clearHistory();
     cursor_loc = null;
     scroll_loc = null;
+    console_input = "";
+    term.clear();
+    term.write('\x1b[2K\r');
+    term.write('\x1b[1;32mgdb $ ');
+    command_history = new Array();
+    history_pos = -1;
+    crash_info_text.innerHTML = "";
+    malloc_table.clear().draw();
+    malloc_unavailable_alert.style.setProperty("display", "none");
+    $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
 }
 
 load_button.addEventListener("click", function() {
@@ -528,34 +630,60 @@ generate_button.addEventListener("click", function() {
     xhr.send();
 });
 
-link_url.addEventListener("input", function() {
+link_url.addEventListener("input", function(event) {
+    if (!event.inputType.startsWith("delete") && link_url.value !== "") {
+        // Autocomplete
+        current_protocols = [];
+        for (var i = 0; i < protocols.length; i++) {
+            if (protocols[i].startsWith(link_url.value)) {
+                current_protocols.push(protocols[i]);
+            }
+        }
+        if (current_protocols.length == 1) {
+            link_url.value = current_protocols[0];
+            link_button.disabled = false;
+        }
+    }
+
     if (link_url.value === "") {
         link_button.disabled = true;
     }
-    else if (!link_bad_credentials) {
+    else if (link_url.value.startsWith("tftp")) {
+        link_username.value = "";
+        link_password.value = "";
+        link_username.disabled = true;
+        link_password.disabled = true;
+    }
+    else {
+        link_username.disabled = false;
+        link_password.disabled = false;
+    }
+
+    if (link_bad_credentials) {
+        link_bad_credentials = false;
+        link_button.className = "btn btn-primary";
+        link_button.innerHTML = "Submit";
+        link_username.className = "form-control";
+        link_password.className = "form-control";
+    }
+    else {
         link_button.disabled = false;
     }
+
+    if (link_url.validity.patternMismatch) {
+        link_button.disabled = true;
+        link_url.className = "form-control is-invalid";
+    }
+    else {
+        link_button.disabled = false;
+        link_url.className = "form-control";
+    }
+
     if (link_bad_url) {
         link_button.className = "btn btn-primary";
         link_button.innerHTML = "Submit";
         link_url.className = "form-control";
         link_bad_url = false;
-    }
-});
-
-link_username.addEventListener("input", function() {
-    if (link_bad_credentials) {
-        if (link_url.value === "") {
-            link_button.disabled = true;
-        }
-        else if (!link_bad_url) {
-            link_button.disabled = false;
-        }
-        link_button.className = "btn btn-primary";
-        link_button.innerHTML = "Submit";
-        link_username.className = "form-control";
-        link_password.className = "form-control";
-        link_bad_credentials = false;
     }
 });
 
@@ -573,6 +701,17 @@ link_password.addEventListener("input", function() {
         link_password.className = "form-control";
         link_bad_credentials = false;
     }
+});
+
+shared_core.addEventListener("input", function() {
+    if (shared_core.value !== "") {
+        shared_button.disabled = false;
+    }
+    else {
+        shared_button.disabled = true;
+    }
+    shared_button.className = "btn btn-primary";
+    shared_button.innerHTML = "Submit";
 });
 
 file_server.addEventListener("input", function() {
@@ -645,7 +784,7 @@ function linkUpload(url, username, password, filename) {
         file_name.innerHTML = filename;
     }
     input.disabled = true;
-    browse.className = "browse-unclickable";
+    browse.className = "btn btn-primary nav-link browse-unclickable";
     upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     downloaded.innerHTML = "";
@@ -673,8 +812,28 @@ function linkUpload(url, username, password, filename) {
                     break;
                 case "core ok":
                     upload_button.innerHTML = "Building…";
-                    build();
+                    build(false);
             }
+        }
+    });
+    xhr.send(fd);
+}
+
+function loadOldSession(old_uuid) {
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("loadkey", old_uuid);
+    xhr.open("POST", "/loadkey", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            $(".modal").modal("hide");
+            uuid.innerHTML = xhr.response.uuid;
+            uuid_value = xhr.response.uuid;
+            reset();
+            loadCoredumps(xhr.response.coredumps);
+            loadPython();
+            timeout.value = xhr.response.timeout;
         }
     });
     xhr.send(fd);
@@ -708,6 +867,31 @@ link_button.addEventListener("click", function() {
                     link_url.className = "form-control is-invalid";
                     link_bad_url = true;
                     break;
+                case "exists diff session": {
+                    let xhr = new XMLHttpRequest();
+                    let fd = new FormData();
+                    fd.append("coredump", url);
+                    xhr.open("POST", "/getcoresession", true);
+                    xhr.responseType = "json";
+                    xhr.addEventListener("readystatechange", function() {
+                        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                            $('.modal').modal('hide');
+                            exists_core.innerHTML = xhr.response.filename;
+                            exists_uuid.innerHTML = xhr.response.uuid;
+                            $('#exists-modal').modal('show');
+
+                            load_old.addEventListener("click", function() {
+                                loadOldSession(xhr.response.uuid);
+                            });
+                            upload_new.addEventListener("click", function() {
+                                $('#exists-modal').modal('hide');
+                                linkUpload(url, username, password, xhr.response.filename);
+                            });
+                        }
+                    });
+                    xhr.send(fd);
+                    break;
+                }
                 case "invalid":
                     link_button.className = "btn btn-danger";
                     link_button.innerHTML = "Invalid File";
@@ -730,6 +914,105 @@ link_button.addEventListener("click", function() {
     xhr.send(fd);
 });
 
+function sharedUpload(coredump) {
+    file_name.innerHTML = coredump;
+    input.disabled = true;
+    browse.className = "btn btn-primary nav-link browse-unclickable";
+    upload_button.className = "btn btn-primary";
+    upload_button.disabled = true;
+    downloaded.innerHTML = "";
+    upload_button.innerHTML = "Uploading…";
+    progress.style.transition = "opacity 0s, width 0s";
+    progress.style.width = "100%";
+    progress.style.opacity = 1;
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    fd.append("coredump", coredump);
+    xhr.open("POST", "/sharedupload", true);
+    xhr.responseType = "text";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            switch (xhr.responseText) {
+                case "timeout":
+                    resetFileUpload(true, "Server Timeout");
+                    upload_button.disabled = true;
+                    break;
+                case "invalid":
+                    resetFileUpload(true, "Invalid File");
+                    upload_button.disabled = true;
+                    break;
+                case "gz ok":
+                    upload_button.innerHTML = "Unzipping…";
+                    unzip();
+                    break;
+                case "core ok":
+                    upload_button.innerHTML = "Building…";
+                    build(false);
+            }
+        }
+    });
+    xhr.send(fd);
+}
+
+shared_button.addEventListener("click", function() {
+    shared_button.disabled = true;
+    shared_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…";
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var coredump = shared_core.value;
+    fd.append("coredump", coredump);
+    xhr.open("POST", "/sharedtest", true);
+    xhr.responseType = "text";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            switch (xhr.responseText) {
+                case "notfound":
+                    shared_button.className = "btn btn-danger";
+                    shared_button.innerHTML = "File Not Found";
+                    break;
+                case "duplicate":
+                    shared_button.className = "btn btn-danger";
+                    shared_button.innerHTML = "Duplicate";
+                    break;
+                case "exists diff session": {
+                    let xhr = new XMLHttpRequest();
+                    let fd = new FormData();
+                    fd.append("coredump", coredump);
+                    xhr.open("POST", "/getcoresession", true);
+                    xhr.responseType = "json";
+                    xhr.addEventListener("readystatechange", function() {
+                        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                            $('.modal').modal('hide');
+                            exists_core.innerHTML = xhr.response.filename;
+                            exists_uuid.innerHTML = xhr.response.uuid;
+                            $('#exists-modal').modal('show');
+
+                            load_old.addEventListener("click", function() {
+                                loadOldSession(xhr.response.uuid);
+                            });
+                            upload_new.addEventListener("click", function() {
+                                $('#exists-modal').modal('hide');
+                                sharedUpload(coredump);
+                            });
+                        }
+                    });
+                    xhr.send(fd);
+                    break;
+                }
+                case "invalid":
+                    shared_button.className = "btn btn-danger";
+                    shared_button.innerHTML = "Invalid";
+                    break;
+                case "ok":
+                    $("#shared-modal").modal("hide");
+                    sharedUpload(coredump);
+                    break;
+            }
+        }
+    });
+    xhr.send(fd);
+});
+
 function fileUpload(server, path, username, password, filename) {
     if (filename === "") {
         file_name.innerHTML = url;
@@ -738,7 +1021,7 @@ function fileUpload(server, path, username, password, filename) {
         file_name.innerHTML = filename;
     }
     input.disabled = true;
-    browse.className = "browse-unclickable";
+    browse.className = "btn btn-primary nav-link browse-unclickable";
     upload_button.className = "btn btn-primary";
     upload_button.disabled = true;
     downloaded.innerHTML = "";
@@ -771,7 +1054,7 @@ function fileUpload(server, path, username, password, filename) {
                     break;
                 case "core ok":
                     upload_button.innerHTML = "Building…";
-                    build();
+                    build(false);
             }
         }
     });
@@ -820,6 +1103,31 @@ file_button.addEventListener("click", function() {
                     file_path.classname = "form-control is-invalid";
                     file_bad_path = true;
                     break;
+                case "exists diff session": {
+                    let xhr = new XMLHttpRequest();
+                    let fd = new FormData();
+                    fd.append("coredump", path);
+                    xhr.open("POST", "/getcoresession", true);
+                    xhr.responseType = "json";
+                    xhr.addEventListener("readystatechange", function() {
+                        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                            $('.modal').modal('hide');
+                            exists_core.innerHTML = xhr.response.filename;
+                            exists_uuid.innerHTML = xhr.response.uuid;
+                            $('#exists-modal').modal('show');
+
+                            load_old.addEventListener("click", function() {
+                                loadOldSession(xhr.response.uuid);
+                            });
+                            upload_new.addEventListener("click", function() {
+                                $("#exists-modal").modal("hide");
+                                fileUpload(server, path, username, password, xhr.response.filename);
+                            });
+                        }
+                    });
+                    xhr.send(fd);
+                    break;
+                }
                 case "credentials":
                     file_button.className = "btn btn-danger";
                     file_button.innerHTML = "Invalid Credentials";
@@ -855,6 +1163,33 @@ upload_button.addEventListener("click", function() {
                     resetFileUpload(true, "Duplicate File");
                     upload_button.disabled = true;
                     break;
+                case "exists diff session": {
+                    let xhr = new XMLHttpRequest();
+                    let fd = new FormData();
+                    fd.append("coredump", filename);
+                    xhr.open("POST", "/getcoresession", true);
+                    xhr.responseType = "json";
+                    xhr.addEventListener("readystatechange", function() {
+                        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                            $('.modal').modal('hide');
+                            exists_core.innerHTML = xhr.response.filename;
+                            exists_uuid.innerHTML = xhr.response.uuid;
+                            $('#exists-modal').modal('show');
+
+                            load_old.addEventListener("click", function() {
+                                loadOldSession(xhr.response.uuid);
+                            });
+                            upload_new.addEventListener("click", function() {
+                                $('#exists-modal').modal('hide');
+                                browse.innerHTML = "Cancel";
+                                progress.style.transition = "opacity 1s, width 0.5s";
+                                upload();
+                            });
+                        }
+                    });
+                    xhr.send(fd);
+                    break;
+                }
                 case "invalid":
                     resetFileUpload(true, "Invalid File");
                     upload_button.disabled = true;
@@ -892,15 +1227,15 @@ function upload() {
                     break;
                 case "gz ok":
                     browse.innerHTML = "Browse";
-                    browse.className = "browse-unclickable";
+                    browse.className = "btn btn-primary nav-link browse-unclickable";
                     upload_button.innerHTML = "Unzipping…";
                     unzip();
                     break;
                 case "core ok":
                     browse.innerHTML = "Browse";
-                    browse.className = "browse-unclickable";
+                    browse.className = "btn btn-primary nav-link browse-unclickable";
                     upload_button.innerHTML = "Building…";
-                    build();
+                    build(false);
             }
         }
     });
@@ -942,7 +1277,7 @@ function unzip() {
                     break;
                 case "ok":
                     upload_button.innerHTML = "Building…";
-                    build();
+                    build(false);
             }
         }
     });
@@ -961,10 +1296,32 @@ function unzip() {
     xhr.send();
 }
 
+function handle_duplicate_core(response) {
+    $('.modal').modal('hide');
+    exists_old_core.innerHTML = response.oldfilename;
+    exists_new_core.innerHTML = response.newfilename;
+    exists_uuid.innerHTML = response.uuid;
+    $('#exists-modal').modal('show');
+
+    load_old.addEventListener("click", function() {
+        loadOldSession(response.uuid);
+    });
+    upload_new.addEventListener("click", function() {
+        $('#exists-modal').modal('hide');
+        build(true);
+    });
+
+}
+
 // This is called after the upload function
-function build() {
+// 	If duplicate = "true", skip the duplicate core check
+// 	Else If duplicate = "false", check for duplicate core using hash
+// (Used to circumvent checking when the user chooses to upload duplicate core in new session)
+function build(duplicate) {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/build", true);
+    var fd = new FormData();
+    fd.append("duplicate", String(duplicate));
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
@@ -977,27 +1334,32 @@ function build() {
                 }
             }
             else {
-                resetFileUpload(false, "Upload");
-                input.value = "";
-                file_name.innerHTML = "Choose file…";
-                upload_button.disabled = true;
-                var new_filename = xhr.response.filename;
-                var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corerow corename\">" + new_filename + "</p><p class=\"corerow\"><span class=\"coresize\">" + humanFileSize(xhr.response.filesize) + "</span><span class=\"coredate\">" + date(xhr.response.timestamp) + "</span></p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
-                var corediv = document.createElement("div");
-                corediv.classList.add("coredump");
-                corediv.innerHTML = s;
-                cores.insertBefore(corediv, cores.firstChild);
-                var coredump_box = document.getElementById(new_filename);
-                var delete_icon = coredump_box.lastChild.firstChild;
-                delete_icon.addEventListener("click", function(evt) {
-                    deleteCoredump(coredump_box.id);
-                    evt.stopImmediatePropagation();
-                });
-                coredump_box.addEventListener("click", function() {
-                    check(coredump_box.id);
-                });
-                coredump_list.unshift(new_filename);
-                updateLocalStorage(uuid_value, coredump_list);
+                if (xhr.response.output === 'hash duplicate') {
+                    handle_duplicate_core(xhr.response);
+                }
+                else {
+                    resetFileUpload(false, "Upload");
+                    input.value = "";
+                    file_name.innerHTML = "Choose file…";
+                    upload_button.disabled = true;
+                    var new_filename = xhr.response.filename;
+                    var s = "<div class=\"coredump-box not-clicked\" id=\"" + new_filename + "\"><div class=\"coredump-inner\"><p class=\"corerow corename\">" + new_filename + "</p><p class=\"corerow\"><span class=\"coresize\">" + humanFileSize(xhr.response.filesize) + "</span><span class=\"coredate\">" + date(xhr.response.timestamp) + "</span></p></div><div class=\"delete-box\"><p class=\"delete-icon\">×</p></div></div>";
+                    var corediv = document.createElement("div");
+                    corediv.classList.add("coredump");
+                    corediv.innerHTML = s;
+                    cores.insertBefore(corediv, cores.firstChild);
+                    var coredump_box = document.getElementById(new_filename);
+                    var delete_icon = coredump_box.lastChild.firstChild;
+                    delete_icon.addEventListener("click", function(evt) {
+                        deleteCoredump(coredump_box.id);
+                        evt.stopImmediatePropagation();
+                    });
+                    coredump_box.addEventListener("click", function() {
+                        check(coredump_box.id);
+                    });
+                    coredump_list.unshift(new_filename);
+                    updateLocalStorage(uuid_value, coredump_list);
+                }
             }
         }
     });
@@ -1013,7 +1375,7 @@ function build() {
     previous_button.addEventListener("click", abort);
     load_button.addEventListener("click", abort);
     generate_button.addEventListener("click", abort);
-    xhr.send();
+    xhr.send(fd);
 }
 
 function showLoading() {
@@ -1188,6 +1550,8 @@ command_input.addEventListener("keydown", function(evt) {
         case 13://"Enter":
             if ((currently_selected === null && command_input.value !== "") || (currently_selected !== null && !(currently_selected in options))) {
                 showLoading();
+                console_input = command_input.value;
+                term.write(console_input);
                 abort_gdb.disabled = false;
                 enter_just_pressed = true;
                 var xhr = new XMLHttpRequest();
@@ -1200,11 +1564,22 @@ command_input.addEventListener("keydown", function(evt) {
                 xhr.addEventListener("readystatechange", function() {
                     if (xhr.readyState === xhr.DONE && xhr.status === 200) {
                         showOutput(xhr.response.output, coredump, xhr.response.timestamp);
+
+                        // Show the output in console also
+                        var output = decodeHtml(xhr.response.output);
+                        output = output.replace(/\n/g, "\r\n");
+                        term.write('\r\n\x1b[37m');
+                        term.write(output);
+                        term.write('\x1b[32m\r\ngdb $ ');
+                        term.scrollToBottom();
+
                         abort_gdb.disabled = true;
                     }
                 });
                 xhr.send(fd);
+                addCommandToHistory(console_input); // Add the current executed command to the beginning of the array
                 command_input.value = "";
+                console_input = "";
                 updateAutocomplete();
             }
             else if (currently_selected !== null) {
@@ -1514,6 +1889,8 @@ function checkSession() {
                 $("#previous-modal").modal("hide");
                 $("#load-modal").modal("hide");
                 $("#generate-modal").modal("hide");
+                $("#shared-modal").modal("hide");
+                $("#exists-modal").modal("hide");
                 $("#link-modal").modal("hide");
                 $("#file-modal").modal("hide");
                 $("#expire-modal").modal("show");
@@ -1531,6 +1908,7 @@ divider.addEventListener("mousedown", function(evt) {
     document.body.style.cursor = "col-resize";
     window.addEventListener("mousemove", setCoreWidth);
     window.addEventListener("mouseup", cleanWindow);
+    window.addEventListener("mouseup", resizeTerminal);
 });
 
 function setCoreWidth(evt) {
@@ -1549,3 +1927,246 @@ window.addEventListener("beforeunload", function() {
     xhr.open("POST", "/quit", true);
     xhr.send();
 });
+
+// xterm.js console data event handler
+term.onData( (eventData) => {
+    if (!enter_just_pressed){
+        if (eventData === "\r"){        // Enter
+            // Reset command history
+            history_pos = -1;
+
+            console_input = console_input.trim();
+            if (console_input != ""){
+                term.write('\r\n\x1b[1;37m');
+                showLoading();
+                abort_gdb.disabled = false;
+                enter_just_pressed = true;
+                var xhr = new XMLHttpRequest();
+                var fd = new FormData();
+                var coredump = checked;
+                fd.append("coredump", checked);
+                fd.append("command", console_input);
+                xhr.open("POST", "/commandinput", true);
+                xhr.responseType = "json";
+                xhr.addEventListener("readystatechange", function() {
+                    if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+                        // Show the output in the Prompt tab also
+                        showOutput(xhr.response.output, coredump, xhr.response.timestamp);
+                        var output = decodeHtml(xhr.response.output);
+                        output = output.replace(/\n/g, "\r\n");
+                        term.write(output);
+                        term.write('\x1b[1;32m\r\ngdb $ ');
+                        abort_gdb.disabled = true;
+                    }
+                    enter_just_pressed = false;
+                });
+                xhr.send(fd);
+                addCommandToHistory(console_input); // Add the current executed command to the beginning of the array
+                console_input = "";
+            }
+            else{
+                term.write('\r\ngdb $ ');
+            }
+            cursor = 0;
+        }
+        else if (eventData === "\u007f"){       // Backspace
+            if (console_input.length >= 1 && cursor > 0){
+                console_input = console_input.substr(0, cursor-1) + console_input.substr(cursor);
+                term.write('\x1b[2K\r');
+                term.write('\x1b[1;32mgdb $ ');
+                term.write(console_input);
+                cursor--;
+                for (let i = 0 ; i < (console_input.length - cursor) ; i++){
+                    term.write("\u001b[D");
+                } 
+            }
+        }
+        else if (eventData === "\u000c"){       // Clear Screen
+            // TODO: History is lost when the terminal is cleared
+            term.clear();
+        }
+        else if (eventData === "\u001b[A"){ 	// Arrow Up
+            // Move to the previous executed command, if exists
+            if (history_pos < command_history.length-1){
+                history_pos++;
+
+                // Rewrite the prompt
+                term.write('\x1b[2K\r');
+                term.write('\x1b[1;32mgdb $ ');
+                console_input = command_history[history_pos];
+                term.write(console_input);
+                cursor = console_input.length;
+            }
+        }
+        else if (eventData === "\u001b[B"){         // Arrow Down
+            // Move to the next executed command, if exists
+            if (history_pos > 0){
+                history_pos--;
+
+                // Rewrite the prompt
+                term.write('\x1b[2K\r');
+                term.write('\x1b[1;32mgdb $ ');
+                console_input = command_history[history_pos];
+                term.write(console_input);
+                cursor = console_input.length;
+            }
+            else if (history_pos === 0){
+                history_pos--;
+
+                // Empty prompt
+                term.write('\x1b[2K\r');
+                term.write('\x1b[1;32mgdb $ ');
+                console_input = "";
+                cursor = 0;
+            }
+        }
+        else if (eventData === "\u001b[C") {	// Arrow Right
+            if (cursor < console_input.length){
+                cursor++;
+                term.write(eventData);
+            }
+        }
+        else if (eventData === "\u001b[D") {	// Arrow Left
+            if (cursor > 0){
+                cursor--;
+                term.write(eventData);
+            }
+        }
+        else {          // Printable characters
+            console_input = console_input.substr(0, cursor) + eventData + console_input.substr(cursor);
+            term.write('\x1b[2K\r');
+            term.write('\x1b[1;32mgdb $ ');
+            term.write(console_input);
+            cursor += eventData.length;
+            for (let i = 0 ; i < (console_input.length - cursor) ; i++){
+                term.write("\u001b[D");
+            }
+        }
+    }
+});
+
+// Add the executed command to the head of the command_history array, 
+// if it is not already present there 
+function addCommandToHistory(command){
+    if (command_history[0] !== command){
+        command_history.unshift(console_input);
+    }
+}
+
+// Resize the console when the window is resized
+window.addEventListener("resize", resizeTerminal);
+
+// If window resize happens when a different tab is selected, `fitAddon.fit()` will not work
+$('#console-tab').on('shown.bs.tab', function (e) {
+    fitAddon.fit();
+});
+
+function resizeTerminal() {
+    // Resize only if the console tab is the active tab
+    if (console_tab.classList.contains("active")){
+        fitAddon.fit();
+    }
+}
+
+function decodeHtml(html) {
+    var txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+$('#crash-info-general-tab').on('shown.bs.tab', function (e) {
+    if (checked !== null && crash_info_text.innerHTML === ""){
+            getCrashInfo();
+    }
+});
+
+function getCrashInfo(){
+    showElementLoading(crash_info_text);
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var coredump = checked;
+    fd.append("coredump", checked);
+    xhr.open("POST", "/systeminfo", true);
+    xhr.responseType = "json";
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            showCrashInfo(xhr.response.output, coredump, xhr.response.timestamp);
+        }
+    });
+    xhr.send(fd);
+}
+
+var crashinfoinfo;
+function showCrashInfo(output, coredump, timestamp) {
+    crashinfoinfo = output;
+    var coredump_box = document.getElementById(coredump);
+    if (coredump_box !== null) {
+        var coredate = coredump_box.firstChild.lastChild.lastChild;
+        coredate.innerHTML = date(timestamp);
+    }
+    crash_info_text.innerHTML = output;
+    element_loading = false;
+}
+
+$('#crash-info-malloc-tab').on('shown.bs.tab', function (e) {
+    if (checked !== null && malloc_table.rows().count() === 0){
+            getMallocDump();
+    }
+});
+
+function getMallocDump(){
+    var xhr = new XMLHttpRequest();
+    var fd = new FormData();
+    var coredump = checked;
+    fd.append("coredump", checked);
+    xhr.open("POST", "/mallocdump", true);
+    xhr.responseType = "json";
+    malloc_loading_alert.style.removeProperty("display");	// show loading
+    xhr.addEventListener("readystatechange", function() {
+        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+            if (xhr.response.available === "true") {
+                malloc_unavailable_alert.style.setProperty("display", "none");
+                $('#malloc-table').parents('div.dataTables_wrapper').first().show();
+                showMallocDump(xhr.response.output.toString(), coredump, xhr.response.timestamp);
+                malloc_loading_alert.style.setProperty("display", "none");	// hide loading
+            }
+            else {
+                malloc_loading_alert.style.setProperty("display", "none");	// hide loading
+                malloc_unavailable_alert.style.removeProperty("display");
+                malloc_table.clear().draw();
+                $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
+            }
+        }
+    });
+    xhr.send(fd);
+}
+
+function showMallocDump(output, coredump, timestamp) {
+    var coredump_box = document.getElementById(coredump);
+    if (coredump_box !== null) {
+        var coredate = coredump_box.firstChild.lastChild.lastChild;
+        coredate.innerHTML = date(timestamp);
+    }
+
+    // Format the malloc dump as a table
+    var output_lines = output.split("\n");
+    var output_line;
+    for (let index = 0 ; index < output_lines.length ; index++) {
+        output_line = output_lines[index].split("\t");
+        if (output_line.length < 4) {
+            continue;
+        }
+        malloc_table.row.add(output_line);
+    };
+
+    malloc_table.draw();
+}
+
+function showElementLoading(element) {
+    element.parentElement.style.display = "block";
+    element.parentElement.style.overflow = "auto";
+    element.classList.remove("html-text");
+    element.classList.add("mono-text");
+    element.innerHTML = "Loading.<span id=\"dots\"><span>.</span><span>.</span></span>";
+    element_loading = true;
+}

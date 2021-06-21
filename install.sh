@@ -34,7 +34,7 @@ python_virtualenv_flask_install() {
     python virtualenv-15.1.0/virtualenv.py -p python/bin/python3.6 Autopsy/venv
     cd Autopsy
     . launch.sh
-    pip install Flask requests requests-ntlm pexpect gunicorn
+    pip install Flask requests requests-ntlm pexpect gunicorn tftpy pyelftools
     flask initdb
     chmod 777 database/cores.db
     deactivate
@@ -58,6 +58,7 @@ nginx_install() {
         echo "Enter the external port you wish to use (anything except 5000):"
         read eport
     done
+    rm -f conf/nginx.conf
     cat << EOF > conf/nginx.conf
 worker_processes    1;
 

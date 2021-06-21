@@ -5,5 +5,6 @@ CREATE TABLE cores (
     filesize INT NOT NULL,
     timestamp INT NOT NULL,
     workspace TEXT NOT NULL,
-    gdb TEXT NOT NULL
+    gdb TEXT NOT NULL,
+    corehash TEXT NOT NULL
 );

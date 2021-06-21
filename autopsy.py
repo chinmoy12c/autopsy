@@ -1,9 +1,10 @@
 from cgi import escape
 from datetime import datetime
+from hashlib import sha512
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
-from os import kill
-from os.path import basename, getmtime
+from os import kill, devnull
+from os.path import basename, getmtime, exists
 from pathlib import Path
 from queue import Queue, Empty
 from re import findall, match, sub
@@ -11,19 +12,24 @@ from sched import scheduler
 from secrets import token_bytes
 from signal import SIGINT
 from subprocess import PIPE, Popen, run, STDOUT
-from shutil import rmtree
+from shutil import rmtree, copyfile
 from sqlite3 import connect
 from sys import exc_info, stdout, version
 from threading import Lock, Thread, enumerate as thread_enum
 from time import time
+from urllib.parse import urlparse 
 from uuid import uuid4
 from zipfile import ZipFile
 
 from flask import Flask, jsonify, g, render_template, request, send_file, session
+from ftplib import FTP
 from pexpect import EOF, spawn, TIMEOUT
 from requests import get, post
 from requests.auth import HTTPBasicAuth
 from requests_ntlm import HttpNtlmAuth
+from tftpy import TftpClient
+from tftpy.TftpShared import TftpTimeout
+from tftpy.TftpShared import TftpFileNotFoundError
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -375,6 +381,7 @@ def no_such_coredump(uuid, coredump):
     return True
 
 # tests whether a particular filename is valid and works for both gzip and unzipped core dumps
+# check if the coredump exists in CURRENT SESSION ONLY
 def check_filename(uuid, filename):
     if filename.endswith('.gz'):
         secure = secure_filename(filename[:-3])
@@ -498,12 +505,6 @@ def help():
     logger.info('opened help')
     return render_template('help.html')
 
-# returns the Demo HTML content
-@app.route('/demo', methods=['GET'])
-def demo():
-    logger.info('opened demo')
-    return render_template('demo.html')
-
 # allows the user to log a database 
 @app.route('/dump', methods=['GET'])
 def dump():
@@ -587,6 +588,18 @@ def link_test():
         return jsonify(message='missing session')
     logger.info('url is ' + request.form['url'])
     logger.info('username is ' + request.form['username'])
+
+    parsed_url = urlparse(request.form['url'])
+    logger.info('protocol is ' + parsed_url.scheme)
+
+    if (parsed_url.scheme == "http"):
+        return http_link_test(parsed_url, request)
+    elif (parsed_url.scheme == "ftp"):
+        return ftp_link_test(parsed_url, request)
+    elif (parsed_url.scheme == "tftp"):
+        return tftp_link_test(parsed_url, request)
+
+def http_link_test(parsed_url, request):
     try:
         logger.info('trying basic auth')
         r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
@@ -602,7 +615,7 @@ def link_test():
         return jsonify(message='url')
     logger.info('status code is %d', r.status_code)
     try:
-        filename = secure_filename(findall('filename="(.+)"', r.headers['content-disposition'])[0])
+        filename = basename(parsed_url.path)
         check_result = check_filename(session['uuid'], filename)
         if check_result != 'ok':
             return jsonify(message=check_result)
@@ -615,6 +628,53 @@ def link_test():
     logger.info('ok, filename is %s', filename)
     return jsonify(message='ok', filename=filename)
 
+def ftp_link_test(parsed_url, request):
+    try:
+        logger.info('trying ftp auth')
+        server = parsed_url.netloc
+        logger.info('server = ' + server)
+        ftp_conn = FTP(server)
+    except:
+        logger.info('invalid url')
+        return jsonify(message='url')
+
+    try:
+        ftp_conn.login(user=request.form['username'], passwd=request.form['password'])
+    except:
+        logger.info('invalid credentials')
+        return jsonify(message='credentials')
+
+    try:
+        ls_output = []
+        ftp_conn.dir(parsed_url.path, ls_output.append)
+        if len(ls_output) == 1:
+            filename = basename(parsed_url.path)
+            check_result = check_filename(session['uuid'], filename)
+            if check_result != 'ok':
+                return jsonify(message=check_result)
+        else:
+            logger.info('filename not found')
+            filename = 'coredump-' + str(int(time() * 1000))
+            while not no_such_coredump(session['uuid'], filename):
+                filename = 'coredump-' + str(int(time() * 1000))
+    except:
+        logger.info('filename not found')
+        filename = 'coredump-' + str(int(time() * 1000))
+        while not no_such_coredump(session['uuid'], filename):
+            filename = 'coredump-' + str(int(time() * 1000))
+    session['current'] = filename
+    logger.info('ok, filename is %s', filename)
+    return jsonify(message='ok', filename=filename)
+
+def tftp_link_test(parsed_url, request):
+    filename = basename(parsed_url.path)
+    check_result = check_filename(session['uuid'], filename)
+    if check_result != 'ok':
+        return jsonify(message=check_result)
+    session['current'] = filename
+    logger.info('ok, filename is %s', filename)
+    return jsonify(message='ok', filename=filename)
+
 # downloads the core dump from the URL, called when user uploads a core dump from a link
 # BUT will also not offer this to user as of right now
 @app.route('/linkupload', methods=['POST'])
@@ -622,6 +682,18 @@ def link_upload():
     logger.info('start')
     if not 'current' in session:
         return 'missing session'
+    
+    parsed_url = urlparse(request.form['url'])
+    logger.info('protocol is ' + parsed_url.scheme)
+
+    if (parsed_url.scheme == "http"):
+        return http_link_upload(parsed_url, request)
+    elif (parsed_url.scheme == 'ftp'):
+        return ftp_link_upload(parsed_url, request)
+    elif (parsed_url.scheme == 'tftp'):
+        return tftp_link_upload(parsed_url, request)
+
+def http_link_upload(parsed_url, request):
     try:
         r = get(request.form['url'], auth=HTTPBasicAuth(request.form['username'], request.form['password']), stream=True, timeout=30)
         if r.status_code == 401:
@@ -653,6 +725,146 @@ def link_upload():
         return 'core ok'
     logger.info('removing file')
     session.pop('current', None)
+    remove_directory_and_parent(directory)
+    logger.info('invalid')
+    return 'invalid'
+
+def ftp_link_upload(parsed_url, request):
+    try:
+        server = parsed_url.netloc
+        ftp_conn = FTP(server)
+    except:
+        return 'url'
+
+    try:
+        ftp_conn.login(user=request.form['username'], passwd=request.form['password'])
+    except:
+        return 'credentials'
+
+    filename = session['current']
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    filepath = directory / filename
+    try:
+        with open(str(filepath), 'wb') as f:
+            ftp_conn.retrbinary('RETR ' + parsed_url.path, f.write)
+        logger.info('saved file')
+        file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+        logger.info('file type is %s', file_test.rstrip())
+        if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+            logger.info('gz ok')
+            return 'gz ok'
+        if file_test.startswith('ELF 64-bit LSB core file'):
+            logger.info('core ok')
+            return 'core ok'
+        logger.info('removing file')
+        session.pop('current', None)
+        remove_directory_and_parent(directory)
+        logger.info('invalid')
+        return 'invalid'
+    except:
+        logger.info('removing file')
+        session.pop('current', None)
+        remove_directory_and_parent(directory)
+        logger.info('invalid')
+        return 'invalid'
+
+def tftp_link_upload(parsed_url, request):
+    server = parsed_url.netloc
+    tftp_conn = TftpClient(server)
+    filename = basename(parsed_url.path)
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    filepath = directory / filename
+    try:
+        tftp_conn.download(parsed_url.path, filepath)
+        check_result = check_filename(session['uuid'], filename)
+        if check_result != 'ok':
+            return check_result
+        logger.info('saved file')
+        file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+        logger.info('file type is %s', file_test.rstrip())
+        if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+            logger.info('gz ok')
+            return 'gz ok'
+        if file_test.startswith('ELF 64-bit LSB core file'):
+            logger.info('core ok')
+            return 'core ok'
+        logger.info('removing file')
+        session.pop('current', None)
+        remove_directory_and_parent(directory)
+        logger.info('invalid')
+        return 'invalid'
+    except TftpFileNotFoundError:
+        logger.info('removing file')
+        session.pop('current', None)
+        remove_directory_and_parent(directory)
+        logger.info('invalid')
+        return 'invalid'
+    except TftpTimeout:
+        logger.info('invalid url')
+        return 'invalid'
+
+# tests whether core exists in /auto/autopsy
+@app.route('/sharedtest', methods=['POST'])
+def shared_test():
+    logger.info('start')
+    if not 'uuid' in session:
+        return 'missing session'
+    coredump = request.form['coredump']
+    logger.info('coredump is ' + coredump)
+    if not exists('/auto/autopsy/'+coredump):
+        logger.info('file not found')
+        return 'notfound'
+    check_result = check_filename(session['uuid'], coredump)
+    return check_result
+
+# upload core from /auto/autopsy
+@app.route('/sharedupload', methods=['POST'])
+def shared_upload():
+    logger.info('start')
+    if not 'uuid' in session:
+        return 'missing session'
+    coredump = request.form['coredump']
+    logger.info('coredump is ' + coredump)
+    if not exists('/auto/autopsy/'+coredump):
+        logger.info('file not found')
+        return 'notfound'
+    file = open('/auto/autopsy/'+coredump, 'rb')
+    check_result = check_filename(session['uuid'], coredump)
+    if check_result != 'ok':
+        return check_result
+    logger.info('file name allowed and is %s', coredump)
+    filename = secure_filename(coredump)
+    logger.info('secure file name is %s', filename)
+    if filename.endswith('.gz'):
+        directory = UPLOAD_FOLDER / session['uuid'] / filename[:-3]
+    else:
+        directory = UPLOAD_FOLDER / session['uuid'] / filename
+    logger.info('making directory %s', str(directory))
+    directory.mkdir(parents=True, exist_ok=True)
+    filepath = directory / filename
+    copyfile('/auto/autopsy/'+coredump, filepath)
+    logger.info('saved file')
+    file_test = run(['file', '-b', str(filepath)], stdout=PIPE, universal_newlines=True).stdout
+    logger.info('file type is %s', file_test.rstrip())
+    if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+        session['current'] = filename
+        logger.info('gz ok')
+        return 'gz ok'
+    if file_test.startswith('ELF 64-bit LSB core file'):
+        session['current'] = filename
+        logger.info('core ok')
+        return 'core ok'
+    logger.info('removing file')
     remove_directory_and_parent(directory)
     logger.info('invalid')
     return 'invalid'
@@ -865,6 +1077,27 @@ def unzip():
     logger.info('ok')
     return 'ok'
 
+# calculates the sha512 hash of the core and checks whether another core with same hash exists
+def check_core_duplicate(uuid, filepath):
+    logger.info('start')
+    core_hash = sha512()
+    with open(filepath, 'rb') as core_file:
+        file_buffer = core_file.read(8192)
+        while len(file_buffer) > 0:
+            core_hash.update(file_buffer)
+            file_buffer = core_file.read(8192)
+    core_hash_string = core_hash.hexdigest()
+    logger.info(type(core_hash_string))
+    logger.info('core hash = %s', core_hash_string)
+    cur = get_db().execute('SELECT uuid,coredump,timestamp FROM cores WHERE corehash = ?', (core_hash_string,))
+    coredumps = cur.fetchall()
+    cur.close()
+    if len(coredumps) != 0:
+        logger.info('uuid %s and filename %s exist until %s', coredumps[0][0], coredumps[0][1], coredumps[0][2])
+        return (coredumps[0])
+    logger.info('core dump has no duplicates')
+    return None
+
 # builds the workspace for the uploaded file using gen_core_report.sh and extracts info from its output
 @app.route('/build', methods=['POST'])
 def build():
@@ -878,6 +1111,14 @@ def build():
         logger.info('filepath %s does not exist', str(filepath))
         session.pop('current', None)
         return jsonify(output='invalid filename')
+
+    # to circumvent duplicate core checking, set duplicate = "true"
+    if request.form['duplicate'] == "false":
+        duplicates = check_core_duplicate(session['uuid'], filepath)
+        if duplicates is not None:
+            logger.info("duplicate core with same hash found in another session")
+            return jsonify(output='hash duplicate', uuid=duplicates[0], oldfilename=duplicates[1], newfilename=filename)
+
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     if not filepath.exists():
         logger.info('gen_core_report removed filepath %s', str(filepath))
@@ -892,15 +1133,29 @@ def build():
     try:
         workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
         gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
+
+        core_hash = sha512()
+        with open(filepath, 'rb') as core_file:
+            file_buffer = core_file.read(8192)
+            while len(file_buffer) > 0:
+                core_hash.update(file_buffer)
+                file_buffer = core_file.read(8192)
+        logger.info('core hash = %s', core_hash.hexdigest())
+
         db = get_db()
-        db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location))
+        db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location, core_hash.hexdigest()))
         db.commit()
-        logger.info('inserted %s, %s, %d, %d, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location)
+        logger.info('inserted %s, %s, %d, %d, %s, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location, core_hash.hexdigest())
     except:
         logger.info('workspace failed')
         remove_directory_and_parent(directory)
         return jsonify(report=report)
+
+    dev_null = open(devnull, 'wb')
+    script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
+    Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
+    
 
 # returns the contents of the relevant files for a core dump
 @app.route('/getreport', methods=['POST'])
@@ -940,6 +1195,94 @@ def siginfo():
         return jsonify(output='no such coredump', timestamp=timestamp)
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
+
+# returns the contents of the relevant files for a core dump
+@app.route('/systeminfo', methods=['POST'])
+def systeminfo():
+    logger.info('start')
+    if not 'uuid' in session:
+        return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    if no_such_coredump(session['uuid'], request.form['coredump']):
+        logger.info('no such coredump')
+        return jsonify(output='no such coredump', timestamp=timestamp)
+    systeminfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.systeminfo.txt')
+    return jsonify(output=systeminfo_file.read_text(), timestamp=timestamp)
+
+# takes the malloc dump file as output, maps caller_pc to a function name and writes output to a different file
+def map_callerpc_to_function(mallocdump_file, mallocdump_full_file, coredump):
+    logger.info("start")
+    global running_counts, output_queues
+
+    mallocdump_file = open(str(mallocdump_file), "r")
+    mallocdump_full_file = open(str(mallocdump_full_file), "w")
+
+    for line in mallocdump_file:
+        line = line.split(", ")
+        if len(line) < 3:
+            continue
+        if line[0] == "(nil)":
+            line.insert(1, "-")
+            mallocdump_full_file.write("\t".join(line))
+            continue
+
+        caller_pc = line[0]
+        command = "list * " + caller_pc
+        logger.info('%s', command)
+        logger.info('count is %d', session['count'])
+        logger.info('running_counts is %s', str(running_counts))
+        if not session['count'] in running_counts:
+            logger.info('starting')
+            startup(session['count'], session['uuid'], coredump)
+        queue_add(session['count'], coredump, command)
+        result = output_queues[session['count']].get()
+        while result == 'restart':
+            logger.info('restart')
+            delete_queues(session['count'])
+            startup(session['count'], session['uuid'], coredump)
+            queue_add(session['count'], coredump, command)
+            result = output_queues[session['count']].get()
+        if result == 'dne':
+            logger.info('dne')
+            delete_queues(session['count'])
+            result = 'gdb not supported'
+            return "error"
+
+        """ Output of the list command: (We only need the second line)
+                (gdb) list * 0x55af80501dd7
+                0x55af80501dd7 is in ctm_hw_calloc_aligned (../slib/include/malloc_aligned.h:127).
+                122	../slib/include/malloc_aligned.h: No such file or directory.
+        """
+        result = result[result.find("(gdb) list *") : ]
+        result = result.split("\n")[1]				# take only the second line
+        function_name = result[result.find(" is in ")+7 : -1]	# take only the function name and file name in the second line
+        line.insert(1, function_name)				# function name will be the second column
+        mallocdump_full_file.write("\t".join(line)[0:-1] + "\n")
+
+    mallocdump_full_file.close()
+    return "success"
+
+# returns the contents of the relevant files for a core dump
+@app.route('/mallocdump', methods=['POST'])
+def mallocdump():
+    logger.info('start')
+    if not 'uuid' in session:
+        return jsonify(output='missing session', timestamp=int(time() * 1000))
+    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
+    if no_such_coredump(session['uuid'], request.form['coredump']):
+        logger.info('no such coredump')
+        return jsonify(output='no such coredump', timestamp=timestamp)
+    directory = UPLOAD_FOLDER / session['uuid'] / request.form['coredump']
+    mallocdump_file = directory / (request.form['coredump'] + '.mallocdump.txt')
+    mallocdump_full_file = directory / (request.form['coredump'] + '.mallocdump.full.txt')
+
+    if not exists(mallocdump_file):
+        return jsonify(available="false", output=escape("Memory analysis has not completed. Please refresh after a while to see the output."), timestamp=timestamp)
+    if not exists(mallocdump_full_file):
+        if map_callerpc_to_function(mallocdump_file, mallocdump_full_file, request.form['coredump']) == "error":
+            jsonify(available="false", output="Error in decoding caller_pc.", timestamp=timestamp)
+    return jsonify(available="true", output=escape(mallocdump_full_file.read_text()), timestamp=timestamp)
+
 
 # launches GDB to extract registers, submits decoder.txt to the ASA traceback decoder
 # returns the output on first run, or returns the contents of decoder_output.html on subsequent runs
@@ -1003,9 +1346,9 @@ def decode():
             return jsonify(output='failed', timestamp=timestamp)
         decoder_text = decoder_file.read_text()
         payload = {'VERSION': 'AUTODETECT', 'IMAGE': image, 'SRNUMBER': '', 'ALGORITHM': 'L', 'TRACEBACK': decoder_text}
-        r = post('http://asa-decoder/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=60*15)
+        r = post('https://asa-decoder.cisco.com/sch/asadecode-disp.php', auth=HTTPBasicAuth('AutopsyUser', 'Bz853F30_j'), data=payload, stream=True, timeout=60*15)
         base_text = r.text.splitlines()
-        base_text = base_text[0] + '\n<base href="http://asa-decoder/" target="_blank">\n' + '\n'.join(base_text[1:])
+        base_text = base_text[0] + '\n<base href="https://asa-decoder.cisco.com/" target="_blank">\n' + '\n'.join(base_text[1:])
         logger.info(base_text.splitlines()[0]);
     except:
         logger.info('base text failed')
@@ -1207,6 +1550,14 @@ def export():
     logger.info('exporting')
     return send_file(str(zipfile), mimetype='application/octet-stream', as_attachment=True)
 
+# called after every request to prevent caching on the browsers
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 # called when the server starts, launches the clean-up script
 @app.before_first_request
 def start():
@@ -1221,3 +1572,4 @@ def start():
     t.start()
 
 app.secret_key = token_bytes()
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
