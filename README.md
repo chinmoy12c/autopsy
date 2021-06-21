@@ -1,6 +1,6 @@
 # Autopsy
 
-Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs on [Flask](http://flask.pocoo.org/docs/1.0/), a Python web framework.
+Autopsy is a web-based core dump analyzer for Cisco ASA software. Autopsy runs on [Flask](http://flask.pocoo.org/docs/0.12/), a Python web framework.
 
 ## Table of contents
 
@@ -51,16 +51,9 @@ Run the following commands to install Autopsy in a directory named `Autopsy`:
 ```
 mkdir Autopsy
 cd Autopsy
-git clone https://gitlab-sjc.cisco.com/SSLMIDPATH/Autopsy.git
-git clone https://gitlab-sjc.cisco.com/SSLMIDPATH/clientlessGDB.git
-mv Autopsy/Dockerfile ../
-mv Autopsy/autopsy.py ../
-mv Autopsy/static/ ../
-mv Autopsy/templates/ ../
-mkdir Autopsy/static/
-mkdir Autopsy/templates/
-cd ..
-docker build -t <username>/autopsy .
+git clone https://wwwin-gitlab-sjc.cisco.com/SSLMIDPATH/Autopsy.git
+cd Autopsy
+. install.sh
 ```
 You may have to enter your CEC credentials to clone the clientlessGDB repository, which is necessary for analyzing core dumps. You will also be prompted to enter your Perforce ticket and an external port number (used to access Autopsy).
 
@@ -68,16 +61,15 @@ The installation should set up six folders in the main `Autopsy` directory:
 * `Autopsy` contains the contents of this repository.
 * `clientlessGDB` contains the contents of the clientlessGDB respository.
 * `logrotate` contains files used for managing nginx log files.
-* `nginx` contains an installation of nginx 1.15.1.
-* `python` contains an installation of Python 3.7.0.
-
-It is recommended to keep the installations of nginx and Python up to date (possibly by periodically updating `install.sh`).
+* `nginx` contains an installation of nginx 1.13.4.
+* `python` contains an installation of Python 3.6.2.
+* `virtualenv-15.1.0` contains an installation of virtualenv, which creates a virtual Python environment.
 
 It is recommended to keep the installations of nginx, Python, and virtualenv up to date (possibly by periodically updating `install.sh`).
 
 ## Development vs. production server
 
-There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/1.0/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/1.0/deploying/). This guide will provide steps on using the development server as well as using nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/1.0/deploying/wsgi-standalone/).
+There are two ways to launch Autopsy: with the [Flask development server](http://flask.pocoo.org/docs/0.12/server/) and with a production server like [nginx](https://nginx.org/). The development server is not suitable for production use; see more [here](http://flask.pocoo.org/docs/0.12/deploying/). This guide will provide steps on using the development server as well as using nginx as a proxy server to Autopsy running on [Gunicorn](http://gunicorn.org/), a Python HTTP server. This setup is detailed [here](http://flask.pocoo.org/docs/0.12/deploying/wsgi-standalone/).
 
 ## Using `launch.sh`
 
