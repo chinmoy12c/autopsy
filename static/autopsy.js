@@ -26,7 +26,6 @@ var divider = document.getElementById("divider");
 var gen_report = document.getElementById("gen-report");
 var backtrace = document.getElementById("backtrace");
 var siginfo = document.getElementById("siginfo");
-var systeminfo = document.getElementById("systeminfo");
 var decode = document.getElementById("decode");
 var clear_output = document.getElementById("clear-output");
 var abort_gdb = document.getElementById("abort-gdb");
@@ -182,7 +181,6 @@ function disableCommandButtons(setting) {
     gen_report.disabled = setting;
     backtrace.disabled = setting;
     siginfo.disabled = setting;
-    systeminfo.disabled = setting;
     decode.disabled = setting;
     command_input.disabled = setting;
 }
@@ -311,7 +309,7 @@ $("#previous-modal").on("show.bs.modal", function() {
                     content_string += "<p>" + core_history[uuid_string][j] + "</p>";
                 }
             }
-            uuid_list += "<div class=\"uuid-box not-clicked\" id=\"" + uuid_string + "\" data-toggle=\"popover\" data-animation=\"false\" data-content=\"" + content_string + "\" data-html=\"true\" data-trigger=\"hover\"><div class=\"uuid-inner\"><i class=\"fas fa-key\" aria-hidden=\"true\"></i><span class=\"uuid-item\">" + uuid_string + "</span></div><div class=\"delete-box delete-uuid\"><p class=\"delete-icon\">×</p></div></div>";
+            uuid_list += "<div class=\"uuid-box not-clicked\" id=\"" + uuid_string + "\" data-toggle=\"popover\" data-animation=\"false\" data-content=\"" + content_string + "\" data-html=\"true\" data-trigger=\"hover\"><div class=\"uuid-inner\"><i class=\"fa fa-key\" aria-hidden=\"true\"></i><span class=\"uuid-item\">" + uuid_string + "</span></div><div class=\"delete-box delete-uuid\"><p class=\"delete-icon\">×</p></div></div>";
         }
         uuids.innerHTML = uuid_list;
         addUUIDListeners();
@@ -329,7 +327,7 @@ $("#previous-modal").on("hidden.bs.modal", function() {
 
 previous_button.addEventListener("click", function() {
     previous_button.disabled = true;
-    previous_button.innerHTML = "<i class=\"fas fa-circle-notch fa-spin\"></i> Loading…";
+    previous_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     updateSource(false);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -487,7 +485,7 @@ function reset() {
 
 load_button.addEventListener("click", function() {
     load_button.disabled = true;
-    load_button.innerHTML = "<i class=\"fas fa-circle-notch fa-spin\"></i> Loading…";
+    load_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Loading…";
     updateSource(false);
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
@@ -510,7 +508,7 @@ load_button.addEventListener("click", function() {
 
 generate_button.addEventListener("click", function() {
     generate_button.disabled = true;
-    generate_button.innerHTML = "<i class=\"fas fa-circle-notch fa-spin\"></i> Generating…";
+    generate_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Generating…";
     updateSource(false);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/generatekey", true);
@@ -684,7 +682,7 @@ function linkUpload(url, username, password, filename) {
 
 link_button.addEventListener("click", function() {
     link_button.disabled = true;
-    link_button.innerHTML = "<i class=\"fas fa-circle-notch fa-spin\"></i> Submitting…";
+    link_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     var url = link_url.value;
@@ -782,7 +780,7 @@ function fileUpload(server, path, username, password, filename) {
 
 file_button.addEventListener("click", function() {
     file_button.disabled = "true";
-    file_button.innerHTML = "<i class=\"fas fa-circle-notch fa-spin\"></i> Submitting…";
+    file_button.innerHTML = "<i class=\"fa fa-circle-o-notch fa-spin\"></i> Submitting…";
     var xhr = new XMLHttpRequest();
     var fd = new FormData();
     var server = file_server.value;
@@ -1044,23 +1042,6 @@ gen_report.addEventListener("click", function() {
     var coredump = checked;
     fd.append("coredump", checked);
     xhr.open("POST", "/getreport", true);
-    xhr.responseType = "json";
-    xhr.addEventListener("readystatechange", function() {
-        if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-            showOutput(xhr.response.output, coredump, xhr.response.timestamp);
-        }
-    });
-    xhr.send(fd);
-});
-
-
-systeminfo.addEventListener("click", function() {
-    showLoading();
-    var xhr = new XMLHttpRequest();
-    var fd = new FormData();
-    var coredump = checked;
-    fd.append("coredump", checked);
-    xhr.open("POST", "/systeminfo", true);
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {

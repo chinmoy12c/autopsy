@@ -1,6 +1,5 @@
 from cgi import escape
 from datetime import datetime
-from functools import wraps
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
 from os import kill
@@ -20,7 +19,7 @@ from time import time
 from uuid import uuid4
 from zipfile import ZipFile
 
-from flask import Flask, jsonify, g, render_template, request, Response, send_file, session
+from flask import Flask, jsonify, g, render_template, request, send_file, session
 from pexpect import EOF, spawn, TIMEOUT
 from requests import get, post
 from requests.auth import HTTPBasicAuth
@@ -42,7 +41,7 @@ logger.addHandler(ch)
 logger.addHandler(fh)
 
 UPLOAD_FOLDER = Path(app.root_path) / 'uploads'
-DATABASE = Path(app.root_path) / 'database' / 'cores.sqlite'
+DATABASE = Path(app.root_path) / 'database' / 'cores.db'
 CLIENTLESS_GDB = Path(app.root_path).parent / 'clientlessGDB' / 'clientlessGdb.py'
 GEN_CORE_REPORT = Path(app.root_path).parent / 'clientlessGDB' / 'gen_core_report.sh'
 DELETE_MIN = 5760
@@ -64,8 +63,7 @@ count_lock = Lock()
 
 dump_counter = 0
 
-start_time = int(time() * 1000)
-
+# configures the logger to record output 
 def _write(*args, **kwargs):
     content = args[0]
     if content in [' ', '', '\n', '\r', '\r\n']:
@@ -291,7 +289,7 @@ def startup(count, uuid, coredump):
     set_queues(count)
     running_counts.add(count)
     coredump_queues[count].put(coredump)
-    cur = get_db().execute('SELECT workspace, gdb FROM cores WHERE uuid = ? AND coredump = ? AND deleted = 0', (uuid, coredump))
+    cur = get_db().execute('SELECT workspace, gdb FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
     workspace, gdb_location = cur.fetchall()[0]
     cur.close()
     worker = Thread(target=run_gdb, args=(count, uuid, workspace, gdb_location))
@@ -323,9 +321,9 @@ def remove_directory_and_parent(directory):
 def delete_coredump(uuid, coredump):
     logger.info('deleting uuid %s and coredump %s', uuid, coredump)
     db = get_db()
-    db.execute('UPDATE cores SET deleted = 1 WHERE uuid = ? AND coredump = ?', (uuid, coredump))
+    db.execute('DELETE FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
     db.commit()
-    logger.info('updated database')
+    logger.info('removed from database')
     directory = UPLOAD_FOLDER / uuid / coredump
     remove_directory_and_parent(directory)
 
@@ -334,7 +332,7 @@ def clean_uploads():
     with app.app_context():
         try:
             logger.info('start')
-            cur = get_db().execute('SELECT uuid, coredump FROM cores WHERE timestamp < ? AND deleted = 0', (int(time() * 1000) - DELETE_MIN * 60 * 1000,))
+            cur = get_db().execute('SELECT uuid, coredump FROM cores WHERE timestamp < ?', (int(time() * 1000) - DELETE_MIN * 60 * 1000,))
             coredumps = cur.fetchall()
             cur.close()
             logger.info('coredumps has %d items', len(coredumps))
@@ -367,7 +365,7 @@ def clean_uploads():
 
 # tests whether a UUID and a core dump with a particular name already exists
 def no_such_coredump(uuid, coredump):
-    cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ? AND deleted = 0', (uuid, coredump))
+    cur = get_db().execute('SELECT timestamp FROM cores WHERE uuid = ? AND coredump = ?', (uuid, coredump))
     coredumps = cur.fetchall()
     cur.close()
     if len(coredumps) != 0:
@@ -378,7 +376,6 @@ def no_such_coredump(uuid, coredump):
 
 # tests whether a particular filename is valid and works for both gzip and unzipped core dumps
 def check_filename(uuid, filename):
-    timestamp = int(time() * 1000)
     if filename.endswith('.gz'):
         secure = secure_filename(filename[:-3])
         logger.info('secure filename is %s', secure)
@@ -387,14 +384,8 @@ def check_filename(uuid, filename):
                 logger.info('gz ok')
                 return 'ok'
             logger.info('gz invalid')
-            db = get_db()
-            db.execute('INSERT INTO failed VALUES (?, ?, ?)', (uuid, filename, timestamp))
-            db.commit()
             return 'invalid'
         logger.info('gz duplicate')
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (uuid, filename, timestamp))
-        db.commit()
         return 'duplicate'
     secure = secure_filename(filename)
     logger.info('secure filename is %s', secure)
@@ -403,14 +394,8 @@ def check_filename(uuid, filename):
             logger.info('other ok')
             return 'ok'
         logger.info('other invalid')
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (uuid, filename, timestamp))
-        db.commit()
         return 'invalid'
     logger.info('other duplicate')
-    db = get_db()
-    db.execute('INSERT INTO failed VALUES (?, ?, ?)', (uuid, filename, timestamp))
-    db.commit()
     return 'duplicate'
 
 # extracts info from the core dump and associated files, which is compiled into a format suitable for ASA traceback decoder
@@ -450,7 +435,7 @@ def get_timeout(uuid):
 # prints all active threads, called everytime the page is loaded
 def enum_threads():
     enum_output = thread_enum()
-    named_threads = [thread.name for thread in enum_output if not thread.name.startswith('ThreadPool')]
+    named_threads = [thread.name for thread in enum_output if not thread.name.startswith('<')]
     logger.info('%d named threads and %d gunicorn (%d total)', len(named_threads), len(enum_output) - len(named_threads), len(enum_output))
     logger.info(named_threads)
 
@@ -481,7 +466,7 @@ def index():
     if 'uuid' in session:
         uuid = session['uuid']
         logger.info('uuid in session, value is %s', uuid)
-        cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ? AND deleted = 0', (uuid,))
+        cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
         coredumps = cur.fetchall()
         cur.close()
         logger.info('contents of coredumps')
@@ -513,36 +498,11 @@ def help():
     logger.info('opened help')
     return render_template('help.html')
 
-def check_auth(username, password):
-    return username == 'admin' and password == 'secret'
-
-def authenticate():
-    return Response('Invalid credentials', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        if not auth or not check_auth(auth.username, auth.password):
-            return authenticate()
-        return f(*args, **kwargs)
-    return decorated
-
-@app.route('/admin', methods=['GET'])
-@requires_auth
-def admin():
-    logger.info('opened admin')
-    cur = get_db().execute('SELECT uuid, coredump, filesize, originaltimestamp, timestamp, workspace, gdb, platform, version, deleted FROM cores ORDER BY uuid')
-    coredumps = cur.fetchall()
-    for i in range(len(coredumps)):
-        coredumps[i] = [i] + list(coredumps[i])
-    cur.close()
-    cur = get_db().execute('SELECT uuid, coredump, timestamp FROM failed ORDER BY uuid')
-    failed_uploads = cur.fetchall()
-    for i in range(len(failed_uploads)):
-        failed_uploads[i] = [i] + list(failed_uploads[i])
-    cur.close()
-    return render_template('admin.html', start_time=start_time, coredumps=coredumps, failed_uploads=failed_uploads)
+# returns the Demo HTML content
+@app.route('/demo', methods=['GET'])
+def demo():
+    logger.info('opened demo')
+    return render_template('demo.html')
 
 # allows the user to log a database 
 @app.route('/dump', methods=['GET'])
@@ -566,7 +526,7 @@ def test_key():
         return 'missing session'
     testkey = request.form['testkey']
     logger.info('%s', testkey)
-    cur = get_db().execute('SELECT uuid FROM cores WHERE uuid = ? AND deleted = 0', (testkey,))
+    cur = get_db().execute('SELECT uuid FROM cores WHERE uuid = ?', (testkey,))
     coredumps = cur.fetchall()
     cur.close()
     if len(coredumps) != 0:
@@ -582,7 +542,7 @@ def load_key():
         return jsonify(message='missing session')
     uuid = request.form['loadkey']
     logger.info('%s', uuid)
-    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ? AND deleted = 0', (uuid,))
+    cur = get_db().execute('SELECT uuid, coredump, filesize, timestamp FROM cores WHERE uuid = ?', (uuid,))
     coredumps = cur.fetchall()
     cur.close()
     session['uuid'] = uuid
@@ -882,9 +842,6 @@ def upload():
     logger.info('removing file')
     remove_directory_and_parent(directory)
     logger.info('invalid')
-    db = get_db()
-    db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-    db.commit()
     return 'invalid'
 
 # unzips the uploaded file
@@ -898,17 +855,11 @@ def unzip():
     if not filepath.exists():
         logger.info('filepath %s does not exist', str(filepath))
         session.pop('current', None)
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-        db.commit()
         return 'invalid filename'
     returncode = run(['gunzip', '-f', str(filepath)]).returncode
     if returncode != 0:
         logger.info('failed')
         session.pop('current', None)
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-        db.commit()
         return 'unzip failed'
     session['current'] = filename[:-3]
     logger.info('ok')
@@ -926,17 +877,11 @@ def build():
     if not filepath.exists():
         logger.info('filepath %s does not exist', str(filepath))
         session.pop('current', None)
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-        db.commit()
         return jsonify(output='invalid filename')
     report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     if not filepath.exists():
         logger.info('gen_core_report removed filepath %s', str(filepath))
         session.pop('current', None)
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-        db.commit()
         return jsonify(report='build failed')
     logger.info(report.splitlines()[0])
     report_file = directory / 'gen_core_report.txt'
@@ -947,18 +892,13 @@ def build():
     try:
         workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
         gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
-        platform = [line.split()[-1] for line in report.splitlines() if line.startswith('Platform:')][0]
-        version = [line.split()[-1] for line in report.splitlines() if line.startswith('Version:')][0]
         db = get_db()
-        db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, timestamp, workspace, gdb_location, platform, version, 0))
+        db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location))
         db.commit()
-        logger.info('inserted %s, %s, %d, %d, %d, %s, %s, %s, %s, %s into cores', session['uuid'], filename, filesize, timestamp, timestamp, workspace, gdb_location, platform, version, 0)
+        logger.info('inserted %s, %s, %d, %d, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location)
     except:
         logger.info('workspace failed')
         remove_directory_and_parent(directory)
-        db = get_db()
-        db.execute('INSERT INTO failed VALUES (?, ?, ?)', (session['uuid'], filename, int(time() * 1000)))
-        db.commit()
         return jsonify(report=report)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 
@@ -1001,18 +941,6 @@ def siginfo():
     siginfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.siginfo.txt')
     return jsonify(output=escape(siginfo_file.read_text()), timestamp=timestamp)
 
-@app.route('/systeminfo', methods=['POST'])
-def systeminfo():
-    logger.info('start')
-    if not 'uuid' in session:
-        return jsonify(output='missing session', timestamp=int(time() * 1000))
-    timestamp = update_timestamp(session['uuid'], request.form['coredump'])
-    if no_such_coredump(session['uuid'], request.form['coredump']):
-        logger.info('no such coredump')
-        return jsonify(output='no such coredump', timestamp=timestamp)
-    systeminfo_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.systeminfo.txt')
-    return jsonify(output=escape(systeminfo_file.read_text()), timestamp=timestamp)
-
 # launches GDB to extract registers, submits decoder.txt to the ASA traceback decoder
 # returns the output on first run, or returns the contents of decoder_output.html on subsequent runs
 @app.route('/decode', methods=['POST'])
@@ -1053,28 +981,7 @@ def decode():
         try:
             siginfo_file = directory / (coredump + '.siginfo.txt')
             siginfo = siginfo_file.read_text()
-            backtrace_file = directory / (coredump + '.backtrace.txt')
-            backtraces = backtrace_file.read_text().split('\n\n')
-            lina_sigcrash_threads = []
-            thread = 0
-            for b in backtraces:
-                lines = b.splitlines()
-                for l in lines:
-                    if "reboot" in l or "kill" in l:
-                        thread = int(lines[0].split()[-1])
-                        logger.info('thread from reboot or kill')
-                        logger.info('line is %s', l)
-                        break
-                    elif "lina_sigcrash" in l:
-                        lina_sigcrash_threads += [int(lines[0].split()[-1])]
-            if thread == 0:
-                if len(lina_sigcrash_threads) > 0:
-                    thread = lina_sigcrash_threads[0]
-                    logger.info('thread from sigcrash')
-                else:
-                    thread = int((siginfo.splitlines()[0]).split()[-1])
-                    logger.info('thread from siginfo')
-            logger.info('thread is %d', thread)
+            thread = int((siginfo.splitlines()[0]).split()[-1])
             queue_add(session['count'], coredump, 'thread ' + str(thread))
             output_queues[session['count']].get()
             queue_add(session['count'], coredump, 'info registers')
@@ -1270,7 +1177,7 @@ def export():
     logger.info('start')
     if not 'uuid' in session:
         return 'missing session'
-    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ? AND deleted = 0', (session['uuid'],))
+    cur = get_db().execute('SELECT coredump FROM cores WHERE uuid = ?', (session['uuid'],))
     coredumps = cur.fetchall()
     cur.close()
     commands_folder = UPLOAD_FOLDER / session['uuid'] / '.commands'
@@ -1288,7 +1195,6 @@ def export():
             gen_core_report = UPLOAD_FOLDER / session['uuid'] / coredump / 'gen_core_report.txt'
             backtrace = UPLOAD_FOLDER / session['uuid'] / coredump / (coredump + '.backtrace.txt')
             siginfo = UPLOAD_FOLDER / session['uuid'] / coredump / (coredump + '.siginfo.txt')
-            systeminfo = UPLOAD_FOLDER / session['uuid'] / coredump / (coredump + '.systeminfo.txt')
             decoder_output = UPLOAD_FOLDER / session['uuid'] / coredump / 'decoder_output.html'
             if gen_core_report.exists():
                 datazip.write(str(gen_core_report), session['uuid'] + '/' + coredump + '/' + 'gen_core_report.txt')
@@ -1296,8 +1202,6 @@ def export():
                 datazip.write(str(backtrace), session['uuid'] + '/' + coredump + '/' + coredump + '.backtrace.txt')
             if siginfo.exists():
                 datazip.write(str(siginfo), session['uuid'] + '/' + coredump + '/' + coredump + '.siginfo.txt')
-            if systeminfo.exists():
-                datazip.write(str(systeminfo), session['uuid'] + '/' + coredump + '/' + coredump + '.systeminfo.txt')
             if decoder_output.exists():
                 datazip.write(str(decoder_output), session['uuid'] + '/' + coredump + '/' + 'decoder_output.html')
     logger.info('exporting')

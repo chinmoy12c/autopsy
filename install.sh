@@ -1,29 +1,28 @@
 #!/bin/bash
 
-if [ ! -f schema.sql ]; then
+if [ ! -f autopsy.py ]; then
     echo "Error: running install script in wrong directory"
-    exit 1
+    return
 fi
 
 clientlessGDB_install() {
     cd ..
     git clone git@gitlab-sjc.cisco.com:SSLMIDPATH/clientlessGDB.git
     echo "Enter your Perforce ticket:"
-    #read ticket
-    #echo ${ticket} > clientlessGDB/ticket.txt
+    read ticket
+    echo ${ticket} > clientlessGDB/ticket.txt
     cd Autopsy
 }
 
-python_install() {
+python_virtualenv_flask_install() {
     cd ..
-    #echo "replace with ticket" > clientlessGDB/ticket.txt
     mkdir -p python
     cd python
     python_dir=$(pwd)
-    wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tar.xz
-    tar -xvf Python-3.7.0.tar.xz
-    rm Python-3.7.0.tar.xz
-    cd Python-3.7.0
+    wget https://www.python.org/ftp/python/3.6.2/Python-3.6.2.tar.xz
+    tar -xf Python-3.6.2.tar.xz
+    rm Python-3.6.2.tar.xz
+    cd Python-3.6.2
     ./configure --prefix=${python_dir}
     make
     make test
@@ -32,7 +31,7 @@ python_install() {
     wget https://github.com/pypa/virtualenv/archive/15.1.0.tar.gz
     tar -xf 15.1.0.tar.gz
     rm 15.1.0.tar.gz
-    python virtualenv-15.1.0/virtualenv.py -p python/bin/python3.7 Autopsy/venv
+    python virtualenv-15.1.0/virtualenv.py -p python/bin/python3.6 Autopsy/venv
     cd Autopsy
     . launch.sh
     pip install Flask requests requests-ntlm pexpect gunicorn
@@ -41,27 +40,16 @@ python_install() {
     deactivate
 }
 
-flask_install() {
-    ./launch.sh
-    ../python/bin/pip3 install --upgrade pip
-    export LC_ALL=C.UTF-8
-    export LANG=C.UTF-8
-    ../python/bin/pip3 install Flask requests requests-ntlm pexpect gunicorn
-    export "FLASK_APP=autopsy.py"
-    ../python/bin/flask initdb
-    chmod 777 database/cores.sqlite
-}
-
 nginx_install() {
     cd ..
     mkdir -p nginx
     cd nginx
     nginx_dir=$(pwd)
-    wget http://nginx.org/download/nginx-1.15.1.tar.gz
-    tar -xvf nginx-1.15.1.tar.gz
-    rm nginx-1.15.1.tar.gz
-    cd nginx-1.15.1
-    ./configure --with-http_ssl_module --prefix=${nginx_dir}
+    wget http://nginx.org/download/nginx-1.13.4.tar.gz
+    tar -xf nginx-1.13.4.tar.gz
+    rm nginx-1.13.4.tar.gz
+    cd nginx-1.13.4
+    ./configure --without-http_rewrite_module --with-http_ssl_module --prefix=${nginx_dir}
     make
     make install
     cd ..
@@ -88,7 +76,7 @@ http {
     keepalive_timeout   9999;
 
     upstream app_servers {
-        server  127.0.0.1:7432;
+        server  127.0.0.1:5432;
     }
 
     server {
@@ -106,6 +94,7 @@ http {
             proxy_read_timeout  9999;
         }
 
+        ssl                 on;
         ssl_certificate     /local/certs/autopsyStackedPEMCerts.pem;
         ssl_certificate_key /local/certs/autopsy.key;
     }
@@ -138,27 +127,23 @@ EOF
 }
 
 unset OPTIND
-while getopts ":cpfnlh" opt; do
+while getopts ":cpnlh" opt; do
     case $opt in
         c)
             clientlessGDB_install
-            exit
+            return
             ;;
         p)
-            python_install
-            exit
-            ;;
-        f)
-            flask_install
-            exit
+            python_virtualenv_flask_install
+            return
             ;;
         n)
             nginx_install
-            exit
+            return
             ;;
         l)
             logrotate_install
-            exit
+            return
             ;;
         h)
             cat << 'EOF'
@@ -169,22 +154,21 @@ Previous versions of these components should be uninstalled first before using t
 
 Flags:
     -c: Install clientlessGDB
-    -p: Install Python
-    -f: Install Flask
+    -p: Install Python, virtualenv, and Flask
     -n: Install nginx
     -l: Install (set up) logrotate
 EOF
-            exit
+            return
             ;;
         \?)
             echo "-$OPTARG: Invalid flag."
-            exit 1
+            return
             ;;
     esac
 done
 unset OPTIND
 
 clientlessGDB_install
-python_install
+python_virtualenv_flask_install
 nginx_install
 logrotate_install
