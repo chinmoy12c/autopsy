@@ -151,3 +151,4 @@ You should check that `crontab -l` does not have any duplicate lines for rotatin
 
 
 See [`DOCUMENTATION.md`](DOCUMENTATION.md) for documentation on Autopsy.
+
