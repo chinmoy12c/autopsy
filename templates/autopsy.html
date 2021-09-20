@@ -29,9 +29,43 @@
                 document.execCommand('copy');
                 document.querySelector("body").removeChild(textarea);
             }
+
+            function hide() {
+                $('#exec').hide();
+                $('#version-input').hide();
+                $('#buildtype-mio').hide();
+                $('#buildtype-fxp').hide();
+            }
+
+            function change(obj) {
+                var selectBox = obj;
+                var selected = selectBox.options[selectBox.selectedIndex].value;
+
+                if(selected === 'lina'){
+                    $('#exec').hide();
+                    $('#version-input').hide();
+                    $('#buildtype').hide();
+                    $('#buildtype-mio').hide();
+                    $('#buildtype-fxp').hide();
+                }
+                else{
+                    $('#exec').show();
+                    $('#version-input').show();
+                    if(selected === 'mio')
+                    {
+                        $('#buildtype-mio').show();
+                        $('#buildtype-fxp').hide();
+                    }
+                    else{
+                        $('#buildtype-mio').hide();
+                        $('#buildtype-fxp').show();
+                    }
+                }
+            }
+
         </script>
     </head>
-    <body id="fixed">
+    <body id="fixed" onload="hide()">
         <nav class="navbar navbar-dark navbar-expand bg-dark">
             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
             <div class="navbar-nav mr-auto">
@@ -265,6 +299,38 @@
                 <div id="divider"></div>
                 <div class="upload">
                     <div class="form">
+                        
+                        <label class="text">
+                            <select name="platform" id="platform" onchange="change(this)" >
+                                <option value="lina">LINA</option>
+                                <option value="mio">MIO</option>
+                                <option value="ssp">MIO BLADE</option>
+                                <option value="fp1k">FP1K (WM)</option>
+                                <option value="fp2k">FP2K (KP)</option>
+                                <option value="fp3k">FP3K (TPK)</option>
+                                <option value="fp4200">FP4200 (WA)</option>
+                              </select>
+                        </label>
+                        
+                        <label class="text">
+                            <input type="text" id="version-input" placeholder="FXOS Version" pattern="^\d{1,4}\.\d{1,4}\.\d{1,4}\.\d{1,4}$">
+                        </label>
+
+                        <select name="buildtype-mio" id="buildtype-mio" >
+                            <option value="final">Final</option>
+                            <option value="gdb">GDB</option>
+                        </select>
+
+                        <select name="buildtype-fxp" id="buildtype-fxp" >
+                            <option value="release">Release</option>
+                            <option value="internal">Internal</option>
+                            <option value="debug">Debug</option>
+                        </select>
+
+                        <label class="text">
+                            <input type="text" id="exec" placeholder="Executable(Optional)" pattern="^[A-Za-z_]{1,20}$">
+                        </label>
+
                         <label class="file">
                             <input type="file" id="file-input">
                             <span id="file-picker">
@@ -298,10 +364,10 @@
                         <a class="nav-link active" id="console-tab" data-toggle="tab" href="#console" role="tab">Console</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
+                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
+                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
                     </li>
                 </ul>
                 <div class="tab-content">
@@ -335,6 +401,7 @@
                         </div>
                     </div>
                     <div class="tab-pane" id="editor" role="tab-panel">
+                        <div id="no-python"></div>
                         <div class="btn-toolbar" id="editor-commands" role="toolbar" aria-label="editor-commands">
                             <div class="input-group mr-2">
                                 <input type="text" class="form-control" id="command-search" placeholder="Search…" spellcheck="false">
@@ -351,6 +418,12 @@
                         </div>
                     </div>
                     <div class="tab-pane active" id="console" role="tab-panel">
+                        <div class="btn-toolbar" id="console-commands" role="toolbar" aria-label="console-commands">
+                            <div class="btn-group ml-auto" role="group" aria-label="export">
+                                <button type="button" id="export-file" class="btn btn-light btn-command">Export Console to File</button>
+                            </div>
+                        </div>
+                        <br/>
                         <div id="console-container">
                         </div>
                     </div>
@@ -433,6 +506,12 @@
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
             timeout.value = {{ timeout }};
+
+            $('input').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid FXOS Version or Executable!');
+            });
         </script>
     </body>
 </html>
