@@ -1,0 +1,637 @@
+diff --git a/autopsy.py b/autopsy.py
+index 0f7fcd9..672689f 100755
+--- a/autopsy.py
++++ b/autopsy.py
+@@ -3,15 +3,15 @@ from datetime import datetime
+ from hashlib import sha512
+ from logging import DEBUG, Formatter, getLogger, StreamHandler
+ from logging.handlers import RotatingFileHandler
+-from os import kill, devnull
+-from os.path import basename, getmtime, exists
++from os import kill, devnull, walk
++from os.path import basename, getmtime, exists, join, isfile
+ from pathlib import Path
+ from queue import Queue, Empty
+ from re import findall, match, sub
+ from sched import scheduler
+ from secrets import token_bytes
+ from signal import SIGINT
+-from subprocess import PIPE, Popen, run, STDOUT
++from subprocess import PIPE, Popen, run, STDOUT, getoutput
+ from shutil import rmtree, copyfile
+ from sqlite3 import connect
+ from sys import exc_info, stdout, version
+@@ -134,38 +134,124 @@ def delete_queues(count):
+         del abort_queues[count]
+         del output_queues[count]
+ 
++# return content from info.txt
++@app.route('/getinfo', methods=['POST'])
++def get_info():
++    coredump_path = UPLOAD_FOLDER / request.form['uuid'] / request.form['core'] / request.form['core']
++    if request.form['required'] == 'platform':
++        try:
++            ns = open(coredump_path.parent / 'info.txt').readlines()[2].strip('\t\n\r')
++            print('DEBUG:', ns)
++            if ns == "not supported":
++                return "Python not supported."        
++            return open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')  
++    
++        except IndexError:
++            return open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')  
++        
++    else:
++        return "Invalid request"    
++
+ # runs GDB, called as a separate thread
+ def run_gdb(count, uuid, workspace, gdb_location):
+     logger.info('count %d - start', count)
+     global coredump_queues, command_queues, abort_queues, output_queues
+     start_coredump = coredump_queues[count].get()
+     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
+-    img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
+-    if not img_path.exists():
+-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
+-    if not img_path.exists():
+-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
+-    if not img_path.exists():
+-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'mips'
+-    if not img_path.exists():
+-        logger.info('img_path %s does not exist', str(img_path))
+-        running_counts.remove(count)
+-        output_queues[count].put('dne')
+-        return
+-    logger.info(gdb_location)
+-    logger.info(str(img_path))
+-    lina_path = img_path / 'asa' / 'bin' / 'lina'
+-    if not lina_path.exists():
+-        lina_path = img_path / 'lina'
+-    if not lina_path.exists():
+-        lina_path = img_path / 'smp'
+-    if not lina_path.exists():
+-        logger.info('lina_path %s does not exist', str(lina_path))
+-        running_counts.remove(count)
+-        output_queues[count].put('dne')
+-        return
+-    logger.info(str(lina_path))
+-    gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
++    core_report = coredump_path.parent / 'gen_core_report.txt'
++    PLATFORM = open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
++    EXECUTABLE = open(coredump_path.parent / 'info.txt').readlines()[1].split(" ")[1].strip(' \t\n\r')
++    logger.info("DEBUG: %s %s \n", PLATFORM, EXECUTABLE)
++    libs = getoutput('find . -name "lib" | tr "\n" ":"')
++
++    if PLATFORM == "lina":
++        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
++        if not img_path.exists():
++            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
++        if not img_path.exists():
++            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
++        if not img_path.exists():
++            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'mips'
++        if not img_path.exists():
++            logger.info('img_path %s does not exist', str(img_path))
++            running_counts.remove(count)
++            output_queues[count].put('dne')
++            return
++        logger.info(gdb_location)
++        logger.info(str(img_path))
++        image = img_path / 'asa' / 'bin' / 'lina'
++        if not image.exists():
++            image = img_path / 'lina'
++        if not image.exists():
++            image = img_path / 'smp'
++        if not image.exists():
++            logger.info('image %s does not exist', str(image))
++            running_counts.remove(count)
++            output_queues[count].put('dne')
++            return
++    else:
++        img_path = coredump_path.parent / workspace / 'target'
++
++        if not img_path.exists():
++            logger.info('img_path %s does not exist', str(img_path))
++            running_counts.remove(count)
++            output_queues[count].put('dne')
++            return
++
++        logger.info("gdb_location: " + str(gdb_location))
++        logger.info(str(img_path))
++
++        image = img_path
++        # For core files whose name is of the form - core.svc_sam_dme.123.456789.gz
++        if str(start_coredump).startswith("core."):
++            names = str(start_coredump).split(".")
++            corename = names[1]
++            
++        else:    
++            names = str(start_coredump).split("_")
++            size = len(names)
++            if names[size-1].startswith("core."):
++                if match("^[0-9]", names[0]):
++                    # when core file name is of the form - 123_snm_core.3423.gz
++                    if size == 3:
++                        corename = names[1]
++                    # when core file name is of the form - 123_svc_sam_dme_core.3423.gz
++                    else:
++                        i = 1
++                        corename = ""
++                        while i < size - 1:
++                            corename += names[i]
++                            if i != size - 2:
++                                corename += "_"
++                            i += 1
++
++                # For core files whose name is of the form - svc_sam_dcosAG_core.5545                
++                else:    
++                    corename = ""
++                    for i in range(0, size - 2):
++                        corename = corename + names[i] + "_"
++                    corename = corename + names[size - 2]    
++        
++        if PLATFORM == "mio":
++            artifact = 'gdblinks'
++        else:
++            artifact = 'usr/bin'            
++        if EXECUTABLE != "":
++            corename = EXECUTABLE    
++        for root, folders, files in walk(str(img_path) + "/" + artifact):
++            for filename in folders + files:
++                if filename == corename:
++                    image = Path(join(root, filename))
++                    print('PATH:', str(image))
++
++        if not image.exists():
++            logger.info('image %s does not exist', str(image))
++            running_counts.remove(count)
++            output_queues[count].put('dne')
++            return        
++
++    logger.info(str(image))
++    gdb = Popen([gdb_location, str(image)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
+     read_queue = Queue()
+     def enqueue_output(out, queue):
+         for line in iter(out.readline, ''):
+@@ -184,6 +270,11 @@ def run_gdb(count, uuid, workspace, gdb_location):
+     else:
+         enter_command('source ' + str(CLIENTLESS_GDB))
+     enter_command('source ./.gdbinit')
++    print("DEBUG: " + str(PLATFORM))
++    if PLATFORM != "lina":
++        enter_command('set sysroot ' + str(img_path))
++        if PLATFORM != "mio":
++            enter_command('set solib-search-path ' + str(img_path) + '/fxmgr/sam/src/.debug/lib.out/public:' + str(libs)) 
+     enter_command('core-file ' + str(coredump_path))
+     running = True
+     restart = False
+@@ -720,7 +811,7 @@ def http_link_upload(parsed_url, request):
+     if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+         logger.info('gz ok')
+         return 'gz ok'
+-    if file_test.startswith('ELF 64-bit LSB core file'):
++    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+         logger.info('core ok')
+         return 'core ok'
+     logger.info('removing file')
+@@ -758,7 +849,7 @@ def ftp_link_upload(parsed_url, request):
+         if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+             logger.info('gz ok')
+             return 'gz ok'
+-        if file_test.startswith('ELF 64-bit LSB core file'):
++        if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+             logger.info('core ok')
+             return 'core ok'
+         logger.info('removing file')
+@@ -795,7 +886,7 @@ def tftp_link_upload(parsed_url, request):
+         if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+             logger.info('gz ok')
+             return 'gz ok'
+-        if file_test.startswith('ELF 64-bit LSB core file'):
++        if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+             logger.info('core ok')
+             return 'core ok'
+         logger.info('removing file')
+@@ -860,7 +951,7 @@ def shared_upload():
+         session['current'] = filename
+         logger.info('gz ok')
+         return 'gz ok'
+-    if file_test.startswith('ELF 64-bit LSB core file'):
++    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+         session['current'] = filename
+         logger.info('core ok')
+         return 'core ok'
+@@ -991,7 +1082,7 @@ def file_upload():
+                 if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
+                     logger.info('gz ok')
+                     return 'gz ok'
+-                if file_test.startswith('ELF 64-bit LSB core file'):
++                if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+                     logger.info('core ok')
+                     return 'core ok'
+                 logger.info('removing file')
+@@ -1047,7 +1138,7 @@ def upload():
+         session['current'] = filename
+         logger.info('gz ok')
+         return 'gz ok'
+-    if file_test.startswith('ELF 64-bit LSB core file'):
++    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
+         session['current'] = filename
+         logger.info('core ok')
+         return 'core ok'
+@@ -1107,6 +1198,10 @@ def build():
+     filename = session['current']
+     directory = UPLOAD_FOLDER / session['uuid'] / filename
+     filepath = directory / filename
++    f = open(directory / 'info.txt', "w")
++    f.write("PLATFORM: " + str(request.form['platform']) + '\n')
++    f.write("EXECUTABLE: " + str(request.form['exec']) + '\n')
++    f.close()
+     if not filepath.exists():
+         logger.info('filepath %s does not exist', str(filepath))
+         session.pop('current', None)
+@@ -1118,8 +1213,8 @@ def build():
+         if duplicates is not None:
+             logger.info("duplicate core with same hash found in another session")
+             return jsonify(output='hash duplicate', uuid=duplicates[0], oldfilename=duplicates[1], newfilename=filename)
+-
+-    report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
++    logger.info('DEBUG: %s,%s,%s',request.form['version'],request.form['platform'],request.form['buildtype'])
++    report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath), '-v', request.form['version'], '-p', request.form['platform'], '-e', request.form['exec'], '-b', request.form['buildtype']], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
+     if not filepath.exists():
+         logger.info('gen_core_report removed filepath %s', str(filepath))
+         session.pop('current', None)
+@@ -1133,7 +1228,7 @@ def build():
+     try:
+         workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
+         gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
+-
++        logger.info('DEBUG: %s, %s',workspace,gdb_location)
+         core_hash = sha512()
+         with open(filepath, 'rb') as core_file:
+             file_buffer = core_file.read(8192)
+@@ -1150,10 +1245,10 @@ def build():
+         logger.info('workspace failed')
+         remove_directory_and_parent(directory)
+         return jsonify(report=report)
+-
+-    dev_null = open(devnull, 'wb')
+-    script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
+-    Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
++    if request.form['platform'] == "lina":
++        dev_null = open(devnull, 'wb')
++        script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
++        Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
+     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
+     
+ 
+@@ -1181,7 +1276,10 @@ def backtrace():
+         logger.info('no such coredump')
+         return jsonify(output='no such coredump', timestamp=timestamp)
+     backtrace_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.backtrace.txt')
+-    return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
++    if isfile(backtrace_file):
++        return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
++    else:
++        return jsonify(output="This feature is not available in GDB version used for this corefile.", timestamp=timestamp)  
+ 
+ # returns the contents of the relevant files for a core dump
+ @app.route('/siginfo', methods=['POST'])
+@@ -1297,6 +1395,9 @@ def decode():
+         logger.info('no such coredump')
+         return jsonify(output='no such coredump', timestamp=timestamp)
+     directory = UPLOAD_FOLDER / session['uuid'] / coredump
++    PLATFORM = open(directory / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
++    if PLATFORM != "lina":
++        return "Not Yet Implemented."
+     decoder_output = directory / 'decoder_output.html'
+     if decoder_output.exists():
+         logger.info('already generated')
+diff --git a/static/autopsy.css b/static/autopsy.css
+index 67968fa..8271031 100755
+--- a/static/autopsy.css
++++ b/static/autopsy.css
+@@ -347,7 +347,7 @@ input {
+ 
+ #downloaded {
+     position: absolute;
+-    top: 3rem;
++    top: 5rem;
+     left: 1rem;
+     margin-left: 1px;
+     font-size: 10pt;
+diff --git a/static/autopsy.js b/static/autopsy.js
+index f47a745..3154a12 100755
+--- a/static/autopsy.js
++++ b/static/autopsy.js
+@@ -18,6 +18,11 @@ var file_password = document.getElementById("file-password");
+ var file_button = document.getElementById("file-button");
+ var browse = document.getElementById("browse");
+ var input = document.getElementById("file-input");
++var version = document.getElementById("version-input");
++var platform = document.getElementById("platform");
++var exec = document.getElementById("exec");
++var buildtype_mio = document.getElementById("buildtype-mio");
++var buildtype_fxp = document.getElementById("buildtype-fxp");
+ var file_picker = document.getElementById("file-picker");
+ var file_name = document.getElementById("file-name");
+ var upload_button = document.getElementById("upload-button");
+@@ -31,6 +36,7 @@ var siginfo = document.getElementById("siginfo");
+ var decode = document.getElementById("decode");
+ var clear_output = document.getElementById("clear-output");
+ var abort_gdb = document.getElementById("abort-gdb");
++var export_file = document.getElementById("export-file");
+ var command_input = document.getElementById("command-input");
+ var autocomplete = document.getElementById("autocomplete");
+ var output_text = document.getElementById("output-text");
+@@ -41,6 +47,7 @@ var timeout = document.getElementById("timeout");
+ var command_list = document.getElementById("command-list");
+ var editor_program = document.getElementById("editor-program");
+ var console_tab = document.getElementById('console');
++var crash_info = document.getElementById('crash-info-tab');
+ var crash_info_text = document.getElementById('crash-info-text');
+ var exists_new_core = document.getElementById('exists-new-core');
+ var exists_old_core = document.getElementById('exists-old-core');
+@@ -98,7 +105,7 @@ fitAddon.fit();
+ // Command history
+ var command_history = new Array();
+ var history_pos = -1; // -1 is the default, when Up arrow key is pressed, increment, Down arrow key, decrement
+-
++var exportFile = ""; //variable to store contents of console to provide export feature
+ var cursor = 0;
+ 
+ // Initialize the malloc table display
+@@ -280,15 +287,47 @@ function check(id) {
+         command_history = new Array();
+         history_pos = -1;
+         checked = id;
+-        if (document.getElementById("crash-info-general-tab").classList.contains("active")) {
+-            getCrashInfo();
+-        }
+-        malloc_table.clear().draw();
+-        malloc_unavailable_alert.style.setProperty("display", "none");
+-        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
+-        if (document.getElementById("crash-info-malloc-tab").classList.contains("active")) {
+-            getMallocDump();
+-        }
++        //below code of the function hides lina specific UI for non-lina core files.
++        siginfo.style.visibility = 'visible';
++        decode.style.visibility = 'visible';
++        crash_info.style.visibility = 'visible';
++        document.getElementById("editor-container").style.visibility = 'visible';
++        document.getElementById("editor-commands").style.visibility = 'visible';
++        document.getElementById("no-python").innerHTML = ""
++        var xhr = new XMLHttpRequest();
++        var fd = new FormData();
++        fd.append("required", "platform");
++        fd.append("uuid", uuid_value);
++        fd.append("core", id);
++        xhr.open("POST", "/getinfo", true);
++        xhr.responseType = "text";
++        xhr.addEventListener("readystatechange", function() {
++            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
++                switch (xhr.responseText) {
++                    case "lina":
++                        if (document.getElementById("crash-info-general-tab").classList.contains("active")) {
++                            getCrashInfo();
++                        }
++                        malloc_table.clear().draw();
++                        malloc_unavailable_alert.style.setProperty("display", "none");
++                        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
++                        if (document.getElementById("crash-info-malloc-tab").classList.contains("active")) {
++                            getMallocDump();
++                        }
++                        break;
++                    case "Python not supported.":
++                        document.getElementById("editor-container").style.visibility = 'hidden';
++                        document.getElementById("editor-commands").style.visibility = 'hidden';
++                        document.getElementById("no-python").innerHTML = "This feature is not available in GDB version used for this corefile.";
++                    default:
++                        siginfo.style.visibility = 'hidden';
++                        decode.style.visibility = 'hidden';
++                        crash_info.style.visibility = 'hidden';
++                        break;
++                }
++            }
++        });
++        xhr.send(fd);
+         disableCommandButtons(false);
+     }
+     else {
+@@ -1322,6 +1361,16 @@ function build(duplicate) {
+     xhr.open("POST", "/build", true);
+     var fd = new FormData();
+     fd.append("duplicate", String(duplicate));
++    fd.append("version", version.value);
++    fd.append("platform", platform.value);
++    fd.append("exec", exec.value);
++    if(platform.value === "mio")
++    {
++        fd.append("buildtype", buildtype_mio.value);
++    }
++    else{
++        fd.append("buildtype", buildtype_fxp.value);
++    }
+     xhr.responseType = "json";
+     xhr.addEventListener("readystatechange", function() {
+         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
+@@ -1488,6 +1537,26 @@ abort_gdb.addEventListener("click", function() {
+     xhr.send();
+ });
+ 
++export_file.addEventListener("click", function() {
++    
++    if(!exportFile || exportFile === "")
++    {
++        alert("Console is Empty!");
++    }
++    else {
++    var element = document.createElement('a');
++    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(exportFile));
++    element.setAttribute('download', "console.txt");
++
++    element.style.display = 'none';
++    document.body.appendChild(element);
++
++    element.click();
++
++    document.body.removeChild(element);
++    }
++});
++
+ function updateAutocomplete() {
+     autocomplete_text = command_input.value;
+     var command = autocomplete_text.toLowerCase();
+@@ -1946,6 +2015,8 @@ term.onData( (eventData) => {
+                 var coredump = checked;
+                 fd.append("coredump", checked);
+                 fd.append("command", console_input);
++                exportFile = exportFile.concat(String(console_input));
++                exportFile = exportFile.concat('\n');
+                 xhr.open("POST", "/commandinput", true);
+                 xhr.responseType = "json";
+                 xhr.addEventListener("readystatechange", function() {
+@@ -1954,6 +2025,8 @@ term.onData( (eventData) => {
+                         showOutput(xhr.response.output, coredump, xhr.response.timestamp);
+                         var output = decodeHtml(xhr.response.output);
+                         output = output.replace(/\n/g, "\r\n");
++                        exportFile = exportFile.concat(String(output));
++                        exportFile = exportFile.concat('\n');
+                         term.write(output);
+                         term.write('\x1b[1;32m\r\ngdb $ ');
+                         abort_gdb.disabled = true;
+diff --git a/templates/autopsy.html b/templates/autopsy.html
+index a0b1ab4..e3020a0 100755
+--- a/templates/autopsy.html
++++ b/templates/autopsy.html
+@@ -29,9 +29,43 @@
+                 document.execCommand('copy');
+                 document.querySelector("body").removeChild(textarea);
+             }
++
++            function hide() {
++                $('#exec').hide();
++                $('#version-input').hide();
++                $('#buildtype-mio').hide();
++                $('#buildtype-fxp').hide();
++            }
++
++            function change(obj) {
++                var selectBox = obj;
++                var selected = selectBox.options[selectBox.selectedIndex].value;
++
++                if(selected === 'lina'){
++                    $('#exec').hide();
++                    $('#version-input').hide();
++                    $('#buildtype').hide();
++                    $('#buildtype-mio').hide();
++                    $('#buildtype-fxp').hide();
++                }
++                else{
++                    $('#exec').show();
++                    $('#version-input').show();
++                    if(selected === 'mio')
++                    {
++                        $('#buildtype-mio').show();
++                        $('#buildtype-fxp').hide();
++                    }
++                    else{
++                        $('#buildtype-mio').hide();
++                        $('#buildtype-fxp').show();
++                    }
++                }
++            }
++
+         </script>
+     </head>
+-    <body id="fixed">
++    <body id="fixed" onload="hide()">
+         <nav class="navbar navbar-dark navbar-expand bg-dark">
+             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
+             <div class="navbar-nav mr-auto">
+@@ -265,6 +299,38 @@
+                 <div id="divider"></div>
+                 <div class="upload">
+                     <div class="form">
++                        
++                        <label class="text">
++                            <select name="platform" id="platform" onchange="change(this)" >
++                                <option value="lina">LINA</option>
++                                <option value="mio">MIO</option>
++                                <option value="ssp">MIO BLADE</option>
++                                <option value="fp1k">FP1K (WM)</option>
++                                <option value="fp2k">FP2K (KP)</option>
++                                <option value="fp3k">FP3K (TPK)</option>
++                                <option value="fp4200">FP4200 (WA)</option>
++                              </select>
++                        </label>
++                        
++                        <label class="text">
++                            <input type="text" id="version-input" placeholder="FXOS Version" pattern="^\d{1,4}\.\d{1,4}\.\d{1,4}\.\d{1,4}$">
++                        </label>
++
++                        <select name="buildtype-mio" id="buildtype-mio" >
++                            <option value="final">Final</option>
++                            <option value="gdb">GDB</option>
++                        </select>
++
++                        <select name="buildtype-fxp" id="buildtype-fxp" >
++                            <option value="release">Release</option>
++                            <option value="internal">Internal</option>
++                            <option value="debug">Debug</option>
++                        </select>
++
++                        <label class="text">
++                            <input type="text" id="exec" placeholder="Executable(Optional)" pattern="^[A-Za-z_]{1,20}$">
++                        </label>
++
+                         <label class="file">
+                             <input type="file" id="file-input">
+                             <span id="file-picker">
+@@ -298,10 +364,10 @@
+                         <a class="nav-link active" id="console-tab" data-toggle="tab" href="#console" role="tab">Console</a>
+                     </li>
+                     <li class="nav-item">
+-                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
++                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
+                     </li>
+                     <li class="nav-item">
+-                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
++                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
+                     </li>
+                 </ul>
+                 <div class="tab-content">
+@@ -335,6 +401,7 @@
+                         </div>
+                     </div>
+                     <div class="tab-pane" id="editor" role="tab-panel">
++                        <div id="no-python"></div>
+                         <div class="btn-toolbar" id="editor-commands" role="toolbar" aria-label="editor-commands">
+                             <div class="input-group mr-2">
+                                 <input type="text" class="form-control" id="command-search" placeholder="Search…" spellcheck="false">
+@@ -351,6 +418,12 @@
+                         </div>
+                     </div>
+                     <div class="tab-pane active" id="console" role="tab-panel">
++                        <div class="btn-toolbar" id="console-commands" role="toolbar" aria-label="console-commands">
++                            <div class="btn-group ml-auto" role="group" aria-label="export">
++                                <button type="button" id="export-file" class="btn btn-light btn-command">Export Console to File</button>
++                            </div>
++                        </div>
++                        <br/>
+                         <div id="console-container">
+                         </div>
+                     </div>
+@@ -433,6 +506,12 @@
+             loadCoredumps({{ coredumps|tojson }});
+             loadPython();
+             timeout.value = {{ timeout }};
++
++            $('input').blur(function(evt) {
++                evt.target.checkValidity();
++            }).bind('invalid', function(event) {
++            alert('Invalid FXOS Version or Executable!');
++            });
+         </script>
+     </body>
+ </html>
+diff --git a/templates/help.html b/templates/help.html
+index a7b29c9..bd21ba6 100644
+--- a/templates/help.html
++++ b/templates/help.html
+@@ -27,6 +27,7 @@
+             <h2>Analyzing a core dump</h2>
+             <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
+             <ol>
++                <li>First, You need to choose the platform of the core dump you want to analyze. If it is a Lina core dump, skip to the next step. For non-Lina core dump(s), you need to provide additional information regarding the core dump such as 'FXOS version'(Example: 2.3.1.61) and 'Build type'. You can also provide an optional input 'Executable'(process name of the crash dump), when the crash dump file's name does not contain its process name.</li>
+                 <li>You can choose to upload a local file, submit a link to a core dump, or <a href="https://en.wikipedia.org/wiki/Secure_copy" target="_blank">SCP</a> a file from a remote server. The core dump can either be a <a href="https://en.wikipedia.org/wiki/Gzip" target="_blank">gzip</a> file (i.e. its filename ends in <code>.gz</code>) or an unzipped core dump.</li>
+                 <ul>
+                     <li>To upload a file, click on the file uploader and select a core dump to analyze. Then, click the blue "Upload" button.</li>
+@@ -143,7 +144,7 @@
+             <h4>Key expiration</h4>
+             <p>If a window pops up indicating that your key has expired, this means that the key stored in your cookie has been modified from somewhere other than the Autopsy window. This can happen either by deleting your key or by loading another key in a second Autopsy session. (Autopsy does not currently support using multiple keys at the same time.) You can recover the cookie by simply refreshing the page and loading your previous key.</p>
+             <h3 class="h3-margin">Terminal interface</h3>
+-            <p>The terminal interface can be accessed by clicking the "Console" tab. Simply enter commands into the prompt and press Enter to execute it. The output will be displayed after the command finishes executing. The output of previous commands is preserved in the terminal, so you can simply scroll as needed. Up and down arrows allow you to navigate through the command history.</p>
++            <p>The terminal interface can be accessed by clicking the "Console" tab. Simply enter commands into the prompt and press Enter to execute it. The output will be displayed after the command finishes executing. The output of previous commands is preserved in the terminal, so you can simply scroll as needed. Up and down arrows allow you to navigate through the command history. You can also choose to export all the commands you executed in the terminal interface and its output into a text file. This can be done by clicking the 'Export Console to File' button present on the top-right corner of the terminal interface. The exported file would be downloaded upon clicking the button.</p>
+         </div>
+     </body>
+ </html>
