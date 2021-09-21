@@ -273,7 +273,7 @@ p {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    padding: 2rem;
+    padding: 1.5rem;
     min-width: 0;
     position: relative;
 }
@@ -385,7 +385,7 @@ input {
 
 .nav-tabs {
     flex: none;
-    margin-top: 2rem;
+    margin-top: 1.5rem;
 }
 
 .tab-content {
