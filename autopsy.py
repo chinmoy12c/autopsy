@@ -234,6 +234,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
         
         if PLATFORM == "mio":
             artifact = 'gdblinks'
+        # elif PLATFORM == "ssp":
+        #     artifact = 'usr/sbin'
         else:
             artifact = 'usr/bin'            
         if EXECUTABLE != "":
