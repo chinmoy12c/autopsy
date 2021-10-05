@@ -315,14 +315,14 @@
                         </label>
 
                         <select name="buildtype-mio" id="buildtype-mio" >
-                            <option value="final">Final</option>
-                            <option value="gdb">GDB</option>
+                            <option value="final">Release</option>
+                            <option value="gdb">Internal</option>
                         </select>
 
                         <select name="buildtype-fxp" id="buildtype-fxp" >
                             <option value="release">Release</option>
-                            <option value="internal">Internal</option>
-                            <option value="debug">Debug</option>
+                            <option value="internal">Internal(Nightly)</option>
+                            <option value="debug">Debug(Dev)</option>
                         </select>
 
                         <label class="text">
@@ -367,7 +367,6 @@
                     <li class="nav-item">
                         <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
                     </li>
-                    <button type="button" id="export-file" class="btn btn-light btn-command" style="position:absolute; right: 1cm;">Export Console to File</button>
                 </ul>
                 <div class="tab-content">
                     <div class="tab-pane" id="prompt" role="tab-panel">
@@ -418,8 +417,9 @@
                     </div>
                     <div class="tab-pane active" id="console" role="tab-panel">
                         <div class="btn-toolbar" id="console-commands" role="toolbar" aria-label="console-commands">
-                            <div class="btn-group ml-auto" role="group" aria-label="fullscreen">
-                                <button type="button" id="fullscr" class="btn btn-light btn-command"><i class="material-icons">fullscreen</i></button>
+                            <div class="btn-group ml-auto" role="group" aria-label="console-buttons">
+                                <button title="Export Console to File" type="button" id="export-file" class="btn btn-light btn-command"><i class="material-icons">save_alt</i></button>
+                                <button title="Fullscreen" type="button" id="fullscr" class="btn btn-light btn-command"><i class="material-icons">fullscreen</i></button>
                             </div>
                         </div>
                         <div id="console-container">
