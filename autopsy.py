@@ -161,8 +161,7 @@ def run_gdb(count, uuid, workspace, gdb_location):
     core_report = coredump_path.parent / 'gen_core_report.txt'
     PLATFORM = open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
     EXECUTABLE = open(coredump_path.parent / 'info.txt').readlines()[1].split(" ")[1].strip(' \t\n\r')
-    logger.info("DEBUG: %s %s \n", PLATFORM, EXECUTABLE)
-    libs = getoutput('find . -name "lib" | tr "\n" ":"')
+    logger.info("DEBUG: PLATFORM=%s , EXECUTABLE=%s \n", PLATFORM, EXECUTABLE)
 
     if PLATFORM == "lina":
         img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
@@ -201,58 +200,14 @@ def run_gdb(count, uuid, workspace, gdb_location):
         logger.info("gdb_location: " + str(gdb_location))
         logger.info(str(img_path))
 
-        image = img_path
-        # For core files whose name is of the form - core.svc_sam_dme.123.456789.gz
-        if str(start_coredump).startswith("core."):
-            names = str(start_coredump).split(".")
-            corename = names[1]
-            
-        else:    
-            names = str(start_coredump).split("_")
-            size = len(names)
-            if names[size-1].startswith("core."):
-                if match("^[0-9]", names[0]):
-                    # when core file name is of the form - 123_snm_core.3423.gz
-                    if size == 3:
-                        corename = names[1]
-                    # when core file name is of the form - 123_svc_sam_dme_core.3423.gz
-                    else:
-                        i = 1
-                        corename = ""
-                        while i < size - 1:
-                            corename += names[i]
-                            if i != size - 2:
-                                corename += "_"
-                            i += 1
-
-                # For core files whose name is of the form - svc_sam_dcosAG_core.5545                
-                else:    
-                    corename = ""
-                    for i in range(0, size - 2):
-                        corename = corename + names[i] + "_"
-                    corename = corename + names[size - 2]    
-        
-        if PLATFORM == "mio":
-            artifact = 'gdblinks'
-        # elif PLATFORM == "ssp":
-        #     artifact = 'usr/sbin'
-        else:
-            artifact = 'usr/bin'            
-        if EXECUTABLE != "":
-            corename = EXECUTABLE    
-        for root, folders, files in walk(str(img_path) + "/" + artifact):
-            for filename in folders + files:
-                if filename == corename:
-                    image = Path(join(root, filename))
-                    print('PATH:', str(image))
-
+        image = Path(EXECUTABLE)
         if not image.exists():
             logger.info('image %s does not exist', str(image))
             running_counts.remove(count)
             output_queues[count].put('dne')
             return        
 
-    logger.info(str(image))
+    logger.info("Spawning GDB with IMAGE %s...", str(image))
     gdb = Popen([gdb_location, str(image)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
     read_queue = Queue()
     def enqueue_output(out, queue):
@@ -272,11 +227,6 @@ def run_gdb(count, uuid, workspace, gdb_location):
     else:
         enter_command('source ' + str(CLIENTLESS_GDB))
     enter_command('source ./.gdbinit')
-    print("DEBUG: " + str(PLATFORM))
-    if PLATFORM != "lina":
-        enter_command('set sysroot ' + str(img_path))
-        if PLATFORM != "mio":
-            enter_command('set solib-search-path ' + str(img_path) + '/fxmgr/sam/src/.debug/lib.out/public:' + str(libs)) 
     enter_command('core-file ' + str(coredump_path))
     running = True
     restart = False
