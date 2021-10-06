@@ -3,15 +3,15 @@ from datetime import datetime
 from hashlib import sha512
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
-from os import kill, devnull
-from os.path import basename, getmtime, exists
+from os import kill, devnull, walk
+from os.path import basename, getmtime, exists, join, isfile
 from pathlib import Path
 from queue import Queue, Empty
 from re import findall, match, sub
 from sched import scheduler
 from secrets import token_bytes
 from signal import SIGINT
-from subprocess import PIPE, Popen, run, STDOUT
+from subprocess import PIPE, Popen, run, STDOUT, getoutput
 from shutil import rmtree, copyfile
 from sqlite3 import connect
 from sys import exc_info, stdout, version
@@ -134,38 +134,81 @@ def delete_queues(count):
         del abort_queues[count]
         del output_queues[count]
 
+# return content from info.txt
+@app.route('/getinfo', methods=['POST'])
+def get_info():
+    coredump_path = UPLOAD_FOLDER / request.form['uuid'] / request.form['core'] / request.form['core']
+    if request.form['required'] == 'platform':
+        try:
+            ns = open(coredump_path.parent / 'info.txt').readlines()[2].strip('\t\n\r')
+            print('DEBUG:', ns)
+            if ns == "not supported":
+                return "Python not supported."        
+            return open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')  
+    
+        except IndexError:
+            return open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')  
+        
+    else:
+        return "Invalid request"    
+
 # runs GDB, called as a separate thread
 def run_gdb(count, uuid, workspace, gdb_location):
     logger.info('count %d - start', count)
     global coredump_queues, command_queues, abort_queues, output_queues
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
-    img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
-    if not img_path.exists():
-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
-    if not img_path.exists():
-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
-    if not img_path.exists():
-        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'mips'
-    if not img_path.exists():
-        logger.info('img_path %s does not exist', str(img_path))
-        running_counts.remove(count)
-        output_queues[count].put('dne')
-        return
-    logger.info(gdb_location)
-    logger.info(str(img_path))
-    lina_path = img_path / 'asa' / 'bin' / 'lina'
-    if not lina_path.exists():
-        lina_path = img_path / 'lina'
-    if not lina_path.exists():
-        lina_path = img_path / 'smp'
-    if not lina_path.exists():
-        logger.info('lina_path %s does not exist', str(lina_path))
-        running_counts.remove(count)
-        output_queues[count].put('dne')
-        return
-    logger.info(str(lina_path))
-    gdb = Popen([gdb_location, str(lina_path)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
+    core_report = coredump_path.parent / 'gen_core_report.txt'
+    PLATFORM = open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
+    EXECUTABLE = open(coredump_path.parent / 'info.txt').readlines()[1].split(" ")[1].strip(' \t\n\r')
+    logger.info("DEBUG: PLATFORM=%s , EXECUTABLE=%s \n", PLATFORM, EXECUTABLE)
+
+    if PLATFORM == "lina":
+        img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'lina'
+        if not img_path.exists():
+            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'smp'
+        if not img_path.exists():
+            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'ssp'
+        if not img_path.exists():
+            img_path = coredump_path.parent / workspace / 'Xpix' / 'target' / 'mips'
+        if not img_path.exists():
+            logger.info('img_path %s does not exist', str(img_path))
+            running_counts.remove(count)
+            output_queues[count].put('dne')
+            return
+        logger.info(gdb_location)
+        logger.info(str(img_path))
+        image = img_path / 'asa' / 'bin' / 'lina'
+        if not image.exists():
+            image = img_path / 'lina'
+        if not image.exists():
+            image = img_path / 'smp'
+        if not image.exists():
+            logger.info('image %s does not exist', str(image))
+            running_counts.remove(count)
+            output_queues[count].put('dne')
+            return
+    else:
+        img_path = coredump_path.parent / workspace / 'target'
+
+        if not img_path.exists():
+            logger.info('img_path %s does not exist', str(img_path))
+            running_counts.remove(count)
+            output_queues[count].put('dne')
+            return
+
+        logger.info("gdb_location: " + str(gdb_location))
+        logger.info(str(img_path))
+
+        image = Path(EXECUTABLE)
+        if not image.exists():
+            logger.info('image %s does not exist', str(image))
+            running_counts.remove(count)
+            output_queues[count].put('dne')
+            return        
+
+    logger.info("Spawning GDB with IMAGE %s...", str(image))
+    gdb = Popen([gdb_location, str(image)], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=STDOUT, cwd=str(img_path), universal_newlines=True)
     read_queue = Queue()
     def enqueue_output(out, queue):
         for line in iter(out.readline, ''):
@@ -720,7 +763,7 @@ def http_link_upload(parsed_url, request):
     if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
         logger.info('gz ok')
         return 'gz ok'
-    if file_test.startswith('ELF 64-bit LSB core file'):
+    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
         logger.info('core ok')
         return 'core ok'
     logger.info('removing file')
@@ -758,7 +801,7 @@ def ftp_link_upload(parsed_url, request):
         if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
             logger.info('gz ok')
             return 'gz ok'
-        if file_test.startswith('ELF 64-bit LSB core file'):
+        if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
             logger.info('core ok')
             return 'core ok'
         logger.info('removing file')
@@ -795,7 +838,7 @@ def tftp_link_upload(parsed_url, request):
         if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
             logger.info('gz ok')
             return 'gz ok'
-        if file_test.startswith('ELF 64-bit LSB core file'):
+        if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
             logger.info('core ok')
             return 'core ok'
         logger.info('removing file')
@@ -860,7 +903,7 @@ def shared_upload():
         session['current'] = filename
         logger.info('gz ok')
         return 'gz ok'
-    if file_test.startswith('ELF 64-bit LSB core file'):
+    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
         session['current'] = filename
         logger.info('core ok')
         return 'core ok'
@@ -991,7 +1034,7 @@ def file_upload():
                 if filename.endswith('.gz') and file_test.startswith('gzip compressed data'):
                     logger.info('gz ok')
                     return 'gz ok'
-                if file_test.startswith('ELF 64-bit LSB core file'):
+                if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
                     logger.info('core ok')
                     return 'core ok'
                 logger.info('removing file')
@@ -1047,7 +1090,7 @@ def upload():
         session['current'] = filename
         logger.info('gz ok')
         return 'gz ok'
-    if file_test.startswith('ELF 64-bit LSB core file'):
+    if file_test.startswith(('ELF 64-bit LSB core file', 'ELF 32-bit LSB core file')):
         session['current'] = filename
         logger.info('core ok')
         return 'core ok'
@@ -1107,6 +1150,10 @@ def build():
     filename = session['current']
     directory = UPLOAD_FOLDER / session['uuid'] / filename
     filepath = directory / filename
+    f = open(directory / 'info.txt', "w")
+    f.write("PLATFORM: " + str(request.form['platform']) + '\n')
+    f.write("EXECUTABLE: " + str(request.form['exec']) + '\n')
+    f.close()
     if not filepath.exists():
         logger.info('filepath %s does not exist', str(filepath))
         session.pop('current', None)
@@ -1118,8 +1165,8 @@ def build():
         if duplicates is not None:
             logger.info("duplicate core with same hash found in another session")
             return jsonify(output='hash duplicate', uuid=duplicates[0], oldfilename=duplicates[1], newfilename=filename)
-
-    report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath)], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
+    logger.info('DEBUG: %s,%s,%s',request.form['version'],request.form['platform'],request.form['buildtype'])
+    report = run([str(GEN_CORE_REPORT), '-g', '-k', '-c', str(filepath), '-v', request.form['version'], '-p', request.form['platform'], '-e', request.form['exec'], '-b', request.form['buildtype']], cwd=str(directory), stdout=PIPE, universal_newlines=True).stdout
     if not filepath.exists():
         logger.info('gen_core_report removed filepath %s', str(filepath))
         session.pop('current', None)
@@ -1133,7 +1180,7 @@ def build():
     try:
         workspace = [line[line.rfind('/') + 1:] for line in report.splitlines() if line.startswith('A minimal')][0]
         gdb_location = [line.split()[-1] for line in report.splitlines() if line.startswith('GDB:')][0]
-
+        logger.info('DEBUG: %s, %s',workspace,gdb_location)
         core_hash = sha512()
         with open(filepath, 'rb') as core_file:
             file_buffer = core_file.read(8192)
@@ -1150,10 +1197,10 @@ def build():
         logger.info('workspace failed')
         remove_directory_and_parent(directory)
         return jsonify(report=report)
-
-    dev_null = open(devnull, 'wb')
-    script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
-    Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
+    if request.form['platform'] == "lina":
+        dev_null = open(devnull, 'wb')
+        script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
+        Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
     
 
@@ -1181,7 +1228,10 @@ def backtrace():
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=timestamp)
     backtrace_file = UPLOAD_FOLDER / session['uuid'] / request.form['coredump'] / (request.form['coredump'] + '.backtrace.txt')
-    return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
+    if isfile(backtrace_file):
+        return jsonify(output=escape(backtrace_file.read_text()), timestamp=timestamp)
+    else:
+        return jsonify(output="This feature is not available in GDB version used for this corefile.", timestamp=timestamp)  
 
 # returns the contents of the relevant files for a core dump
 @app.route('/siginfo', methods=['POST'])
@@ -1297,6 +1347,9 @@ def decode():
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=timestamp)
     directory = UPLOAD_FOLDER / session['uuid'] / coredump
+    PLATFORM = open(directory / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
+    if PLATFORM != "lina":
+        return "Not Yet Implemented."
     decoder_output = directory / 'decoder_output.html'
     if decoder_output.exists():
         logger.info('already generated')
