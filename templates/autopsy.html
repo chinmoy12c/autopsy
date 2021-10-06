@@ -14,7 +14,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css" crossorigin="anonymous">
         <link rel="stylesheet" href="{{ url_for('static', filename='autopsy.css') }}">
         <link rel="icon" type="image/png" href="{{ url_for('static', filename='scalpel.png') }}">
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <!--xterm.css-->
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/xterm@4.4.0/css/xterm.css" />
         <script type = "text/javascript">
@@ -30,43 +29,9 @@
                 document.execCommand('copy');
                 document.querySelector("body").removeChild(textarea);
             }
-
-            function hide() {
-                $('#exec').hide();
-                $('#version-input').hide();
-                $('#buildtype-mio').hide();
-                $('#buildtype-fxp').hide();
-            }
-
-            function change(obj) {
-                var selectBox = obj;
-                var selected = selectBox.options[selectBox.selectedIndex].value;
-
-                if(selected === 'lina'){
-                    $('#exec').hide();
-                    $('#version-input').hide();
-                    $('#buildtype').hide();
-                    $('#buildtype-mio').hide();
-                    $('#buildtype-fxp').hide();
-                }
-                else{
-                    $('#exec').show();
-                    $('#version-input').show();
-                    if(selected === 'mio')
-                    {
-                        $('#buildtype-mio').show();
-                        $('#buildtype-fxp').hide();
-                    }
-                    else{
-                        $('#buildtype-mio').hide();
-                        $('#buildtype-fxp').show();
-                    }
-                }
-            }
-
         </script>
     </head>
-    <body id="fixed" onload="hide()">
+    <body id="fixed">
         <nav class="navbar navbar-dark navbar-expand bg-dark">
             <p class="navbar-brand"><img src="/static/scalpel.svg" width="32" height="32" alt="">Autopsy</p>
             <div class="navbar-nav mr-auto">
@@ -89,7 +54,9 @@
                 </div>
             </div>
         </nav>
-        
+        <div class="message alert-primary">
+            Found an issue? Email <a class="alert-link" href="mailto:autopsy@cisco.com">autopsy@cisco.com</a>.
+        </div>
         <div class="modal fade" id="previous-modal" tabindex="-1" role="dialog" aria-labelledby="previous-modal-label" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -298,37 +265,6 @@
                 <div id="divider"></div>
                 <div class="upload">
                     <div class="form">
-                        <label class="text">
-                            <select name="platform" id="platform" onchange="change(this)" >
-                                <option value="lina">LINA</option>
-                                <option value="mio">MIO</option>
-                                <option value="ssp">MIO BLADE</option>
-                                <option value="fp1k">FP1K (WM)</option>
-                                <option value="fp2k">FP2K (KP)</option>
-                                <option value="fp3k">FP3K (TPK)</option>
-                                <option value="fp4200">FP4200 (WA)</option>
-                              </select>
-                        </label>
-                        
-                        <label class="text">
-                            <input type="text" id="version-input" placeholder="FXOS Version" pattern="^\d{1,4}\.\d{1,4}\.\d{1,4}\.\d{1,4}$">
-                        </label>
-
-                        <select name="buildtype-mio" id="buildtype-mio" >
-                            <option value="final">Release</option>
-                            <option value="gdb">Internal</option>
-                        </select>
-
-                        <select name="buildtype-fxp" id="buildtype-fxp" >
-                            <option value="release">Release</option>
-                            <option value="internal">Internal(Nightly)</option>
-                            <option value="debug">Debug(Dev)</option>
-                        </select>
-
-                        <label class="text">
-                            <input type="text" id="exec" placeholder="Executable(Optional)" pattern="^[A-Za-z_]{1,20}$">
-                        </label>
-
                         <label class="file">
                             <input type="file" id="file-input">
                             <span id="file-picker">
@@ -351,7 +287,7 @@
                             </span>
                         </label>
                     </div>
-                    <button type="button" class="btn btn-primary" style="height:40px;margin-top: 34px;" disabled id="upload-button">Upload</button>
+                    <button type="button" class="btn btn-primary" disabled id="upload-button">Upload</button>
                     <div id="downloaded"></div>
                 </div>
                 <ul class="nav nav-tabs" role="tablist">
@@ -362,10 +298,10 @@
                         <a class="nav-link active" id="console-tab" data-toggle="tab" href="#console" role="tab">Console</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
+                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="crash-info-tab" data-toggle="tab" href="#crash-info" role="tab">Crash Info</a>
+                        <a class="nav-link" id="editor-tab" data-toggle="tab" href="#editor" role="tab">Editor</a>
                     </li>
                 </ul>
                 <div class="tab-content">
@@ -399,7 +335,6 @@
                         </div>
                     </div>
                     <div class="tab-pane" id="editor" role="tab-panel">
-                        <div id="no-python"></div>
                         <div class="btn-toolbar" id="editor-commands" role="toolbar" aria-label="editor-commands">
                             <div class="input-group mr-2">
                                 <input type="text" class="form-control" id="command-search" placeholder="Search…" spellcheck="false">
@@ -416,12 +351,6 @@
                         </div>
                     </div>
                     <div class="tab-pane active" id="console" role="tab-panel">
-                        <div class="btn-toolbar" id="console-commands" role="toolbar" aria-label="console-commands">
-                            <div class="btn-group ml-auto" role="group" aria-label="console-buttons">
-                                <button title="Export Console to File" type="button" id="export-file" class="btn btn-light btn-command"><i class="material-icons">save_alt</i></button>
-                                <button title="Fullscreen" type="button" id="fullscr" class="btn btn-light btn-command"><i class="material-icons">fullscreen</i></button>
-                            </div>
-                        </div>
                         <div id="console-container">
                         </div>
                     </div>
@@ -476,9 +405,6 @@
                 </div>
             </div>
         </div>
-        <div class="message alert-primary">
-            Found an issue? Email <a class="alert-link" href="mailto:autopsy@cisco.com">autopsy@cisco.com</a>.
-        </div>
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
@@ -507,16 +433,6 @@
             loadCoredumps({{ coredumps|tojson }});
             loadPython();
             timeout.value = {{ timeout }};
-
-            $('input').blur(function(evt) {
-                evt.target.checkValidity();
-            }).bind('invalid', function(event) {
-            alert('Invalid FXOS Version or Executable!');
-            });
-
-            document.getElementById('fullscr').addEventListener('click', function() {
-            toggleFullscreen(document.getElementById('console-container'));
-            });
         </script>
     </body>
 </html>

@@ -27,20 +27,6 @@
             <h2>Analyzing a core dump</h2>
             <p>It is straightforward to start analyzing a core dump, as the process only involves a few steps.</p>
             <ol>
-                <li>First, You need to choose the platform of the core dump you want to analyze. If it is a Lina core dump, skip to the next step. For non-Lina core dump(s), you need to provide additional information regarding the core dump such as:</li> 
-                <ul>
-                    <li><span class="bold">'FXOS version':</span> Example: 2.3.1.61</li>
-                    <li><span class="bold">'Build type':</span>
-                    <ul>
-                        <li>MIO “release/final” images : Deployed by customers.</li>
-                        <li>MIO “internal/GDB” images : Internal only. NOT shipped to customers.</li>
-                        <li>Fxplatform “release” images : Deployed by customers.</li>
-                        <li>Fxplatform “internal” images : Nightly builds. Internal only. NOT shipped to customers.</li>
-                        <li>Fxplatform “debug” images : Dev images. Internal only. NOT shipped to customers.</li>
-                    </ul>
-                    </li>
-                    <li><span class="bold">'Executable':</span> is an optional input. It refers to process name of the crash dump and can be specified when the crash dump file's name does not contain its process name.</li>
-                </ul>
                 <li>You can choose to upload a local file, submit a link to a core dump, or <a href="https://en.wikipedia.org/wiki/Secure_copy" target="_blank">SCP</a> a file from a remote server. The core dump can either be a <a href="https://en.wikipedia.org/wiki/Gzip" target="_blank">gzip</a> file (i.e. its filename ends in <code>.gz</code>) or an unzipped core dump.</li>
                 <ul>
                     <li>To upload a file, click on the file uploader and select a core dump to analyze. Then, click the blue "Upload" button.</li>
@@ -157,7 +143,7 @@
             <h4>Key expiration</h4>
             <p>If a window pops up indicating that your key has expired, this means that the key stored in your cookie has been modified from somewhere other than the Autopsy window. This can happen either by deleting your key or by loading another key in a second Autopsy session. (Autopsy does not currently support using multiple keys at the same time.) You can recover the cookie by simply refreshing the page and loading your previous key.</p>
             <h3 class="h3-margin">Terminal interface</h3>
-            <p>The terminal interface can be accessed by clicking the "Console" tab. Simply enter commands into the prompt and press Enter to execute it. The output will be displayed after the command finishes executing. The output of previous commands is preserved in the terminal, so you can simply scroll as needed. Up and down arrows allow you to navigate through the command history. You can also choose to export all the commands you executed in the terminal interface and its output into a text file. This can be done by clicking the 'Export Console to File' button(represented by download icon) present on the top-right corner of the terminal interface. The exported file would be downloaded upon clicking the button. The Console can also be used in Fullscreen by clicking on 'fullscreen' icon.</p>
+            <p>The terminal interface can be accessed by clicking the "Console" tab. Simply enter commands into the prompt and press Enter to execute it. The output will be displayed after the command finishes executing. The output of previous commands is preserved in the terminal, so you can simply scroll as needed. Up and down arrows allow you to navigate through the command history.</p>
         </div>
     </body>
 </html>

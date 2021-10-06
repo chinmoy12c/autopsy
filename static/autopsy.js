@@ -18,11 +18,6 @@ var file_password = document.getElementById("file-password");
 var file_button = document.getElementById("file-button");
 var browse = document.getElementById("browse");
 var input = document.getElementById("file-input");
-var version = document.getElementById("version-input");
-var platform = document.getElementById("platform");
-var exec = document.getElementById("exec");
-var buildtype_mio = document.getElementById("buildtype-mio");
-var buildtype_fxp = document.getElementById("buildtype-fxp");
 var file_picker = document.getElementById("file-picker");
 var file_name = document.getElementById("file-name");
 var upload_button = document.getElementById("upload-button");
@@ -36,7 +31,6 @@ var siginfo = document.getElementById("siginfo");
 var decode = document.getElementById("decode");
 var clear_output = document.getElementById("clear-output");
 var abort_gdb = document.getElementById("abort-gdb");
-var export_file = document.getElementById("export-file");
 var command_input = document.getElementById("command-input");
 var autocomplete = document.getElementById("autocomplete");
 var output_text = document.getElementById("output-text");
@@ -47,7 +41,6 @@ var timeout = document.getElementById("timeout");
 var command_list = document.getElementById("command-list");
 var editor_program = document.getElementById("editor-program");
 var console_tab = document.getElementById('console');
-var crash_info = document.getElementById('crash-info-tab');
 var crash_info_text = document.getElementById('crash-info-text');
 var exists_new_core = document.getElementById('exists-new-core');
 var exists_old_core = document.getElementById('exists-old-core');
@@ -105,7 +98,7 @@ fitAddon.fit();
 // Command history
 var command_history = new Array();
 var history_pos = -1; // -1 is the default, when Up arrow key is pressed, increment, Down arrow key, decrement
-var exportFile = ""; //variable to store contents of console to provide export feature
+
 var cursor = 0;
 
 // Initialize the malloc table display
@@ -287,47 +280,15 @@ function check(id) {
         command_history = new Array();
         history_pos = -1;
         checked = id;
-        //below code of the function hides lina specific UI for non-lina core files.
-        siginfo.style.visibility = 'visible';
-        decode.style.visibility = 'visible';
-        crash_info.style.visibility = 'visible';
-        document.getElementById("editor-container").style.visibility = 'visible';
-        document.getElementById("editor-commands").style.visibility = 'visible';
-        document.getElementById("no-python").innerHTML = ""
-        var xhr = new XMLHttpRequest();
-        var fd = new FormData();
-        fd.append("required", "platform");
-        fd.append("uuid", uuid_value);
-        fd.append("core", id);
-        xhr.open("POST", "/getinfo", true);
-        xhr.responseType = "text";
-        xhr.addEventListener("readystatechange", function() {
-            if (xhr.readyState === xhr.DONE && xhr.status === 200) {
-                switch (xhr.responseText) {
-                    case "lina":
-                        if (document.getElementById("crash-info-general-tab").classList.contains("active")) {
-                            getCrashInfo();
-                        }
-                        malloc_table.clear().draw();
-                        malloc_unavailable_alert.style.setProperty("display", "none");
-                        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
-                        if (document.getElementById("crash-info-malloc-tab").classList.contains("active")) {
-                            getMallocDump();
-                        }
-                        break;
-                    case "Python not supported.":
-                        document.getElementById("editor-container").style.visibility = 'hidden';
-                        document.getElementById("editor-commands").style.visibility = 'hidden';
-                        document.getElementById("no-python").innerHTML = "This feature is not available in GDB version used for this corefile.";
-                    default:
-                        siginfo.style.visibility = 'hidden';
-                        decode.style.visibility = 'hidden';
-                        crash_info.style.visibility = 'hidden';
-                        break;
-                }
-            }
-        });
-        xhr.send(fd);
+        if (document.getElementById("crash-info-general-tab").classList.contains("active")) {
+            getCrashInfo();
+        }
+        malloc_table.clear().draw();
+        malloc_unavailable_alert.style.setProperty("display", "none");
+        $('#malloc-table').parents('div.dataTables_wrapper').first().hide();
+        if (document.getElementById("crash-info-malloc-tab").classList.contains("active")) {
+            getMallocDump();
+        }
         disableCommandButtons(false);
     }
     else {
@@ -1361,16 +1322,6 @@ function build(duplicate) {
     xhr.open("POST", "/build", true);
     var fd = new FormData();
     fd.append("duplicate", String(duplicate));
-    fd.append("version", version.value);
-    fd.append("platform", platform.value);
-    fd.append("exec", exec.value);
-    if(platform.value === "mio")
-    {
-        fd.append("buildtype", buildtype_mio.value);
-    }
-    else{
-        fd.append("buildtype", buildtype_fxp.value);
-    }
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
         if (xhr.readyState === xhr.DONE && xhr.status === 200) {
@@ -1535,26 +1486,6 @@ abort_gdb.addEventListener("click", function() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/abort", true);
     xhr.send();
-});
-
-export_file.addEventListener("click", function() {
-    
-    if(!exportFile || exportFile === "")
-    {
-        alert("Console is Empty!");
-    }
-    else {
-    var element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(exportFile));
-    element.setAttribute('download', "console.txt");
-
-    element.style.display = 'none';
-    document.body.appendChild(element);
-
-    element.click();
-
-    document.body.removeChild(element);
-    }
 });
 
 function updateAutocomplete() {
@@ -2015,8 +1946,6 @@ term.onData( (eventData) => {
                 var coredump = checked;
                 fd.append("coredump", checked);
                 fd.append("command", console_input);
-                exportFile = exportFile.concat(String(console_input));
-                exportFile = exportFile.concat('\n');
                 xhr.open("POST", "/commandinput", true);
                 xhr.responseType = "json";
                 xhr.addEventListener("readystatechange", function() {
@@ -2025,8 +1954,6 @@ term.onData( (eventData) => {
                         showOutput(xhr.response.output, coredump, xhr.response.timestamp);
                         var output = decodeHtml(xhr.response.output);
                         output = output.replace(/\n/g, "\r\n");
-                        exportFile = exportFile.concat(String(output));
-                        exportFile = exportFile.concat('\n');
                         term.write(output);
                         term.write('\x1b[1;32m\r\ngdb $ ');
                         abort_gdb.disabled = true;
@@ -2242,31 +2169,4 @@ function showElementLoading(element) {
     element.classList.add("mono-text");
     element.innerHTML = "Loading.<span id=\"dots\"><span>.</span><span>.</span></span>";
     element_loading = true;
-}
-
-function toggleFullscreen(elem) {
-    elem = elem || document.documentElement;
-
-    if (!document.fullscreenElement && !document.mozFullScreenElement &&
-        !document.webkitFullscreenElement && !document.msFullscreenElement) {
-        if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-        } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-        } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-        }
-    } else {
-        if (document.exitFullscreen) {
-        document.exitFullscreen();
-        } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-        }
-    }
 }
