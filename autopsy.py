@@ -134,10 +134,19 @@ def delete_queues(count):
         del abort_queues[count]
         del output_queues[count]
 
+# create info.txt if doesn't exists already - support for already made builds
+def create_info(filepath):
+    f = open(filepath, "w")
+    f.write("PLATFORM: lina" + '\n')
+    f.write("EXECUTABLE: " + '\n')
+    f.close()
+
 # return content from info.txt
 @app.route('/getinfo', methods=['POST'])
 def get_info():
     coredump_path = UPLOAD_FOLDER / request.form['uuid'] / request.form['core'] / request.form['core']
+    if not isfile(coredump_path.parent / 'info.txt'):
+        create_info(coredump_path.parent / 'info.txt')
     if request.form['required'] == 'platform':
         try:
             ns = open(coredump_path.parent / 'info.txt').readlines()[2].strip('\t\n\r')
@@ -159,6 +168,8 @@ def run_gdb(count, uuid, workspace, gdb_location):
     start_coredump = coredump_queues[count].get()
     coredump_path = UPLOAD_FOLDER / uuid / start_coredump / start_coredump
     core_report = coredump_path.parent / 'gen_core_report.txt'
+    if not isfile(coredump_path.parent / 'info.txt'):
+        create_info(coredump_path.parent / 'info.txt')
     PLATFORM = open(coredump_path.parent / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
     EXECUTABLE = open(coredump_path.parent / 'info.txt').readlines()[1].split(" ")[1].strip(' \t\n\r')
     logger.info("DEBUG: PLATFORM=%s , EXECUTABLE=%s \n", PLATFORM, EXECUTABLE)
@@ -1347,6 +1358,8 @@ def decode():
         logger.info('no such coredump')
         return jsonify(output='no such coredump', timestamp=timestamp)
     directory = UPLOAD_FOLDER / session['uuid'] / coredump
+    if not isfile(directory / 'info.txt'):
+        create_info(directory / 'info.txt')
     PLATFORM = open(directory / 'info.txt').readlines()[0].split(" ")[1].strip(' \t\n\r')
     if PLATFORM != "lina":
         return "Not Yet Implemented."
