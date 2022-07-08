@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=/usr
+libdir=/lib64
+includedir=/usr/include/libtac
+
+Name: libtac
+Description: A TACACS+ protocol client implementation
+URL: https://github.com/jeroennijhof/pam_tacplus
+Version: 1.6.0
+Libs: -L${libdir} -ltac
+Cflags: -I${includedir} 

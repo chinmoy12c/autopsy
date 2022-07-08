@@ -165,28 +165,6 @@ class DownloadHandler:
         fp.write(directory)
         fp.close()
 
-    def get_system_libs(self, debug_directory):
-        libs_directories = (
-            "ngfw/lib",
-            "ngfw/lib64",
-            "ngfw/usr/lib",
-            "ngfw/usr/lib64",
-            "ngfw/usr/local/sf/lib",
-            "ngfw/usr/local/sf/lib64",
-            "ngfw/usr/local/asa/lib",
-            "usr/lib64",
-            "lib64"
-        )
-        print("Moving Files....")
-        for lib_directory in libs_directories:
-            print("Looking into: " + os.path.join(os.path.expanduser("~/debug"), lib_directory))
-            for file in os.listdir(os.path.join(os.path.expanduser("~/debug"), lib_directory)):
-                abspath = os.path.join(os.path.join(os.path.expanduser("~/debug"), lib_directory), file)
-                print(abspath)
-                if (os.path.isfile(abspath) and not os.path.exists(os.path.join(debug_directory, file))):
-                    print("Copying file: " + abspath)
-                    shutil.copy(abspath, debug_directory)
-
     def dnld_strings_file(self, directory):
         wget_url = "wget -q -P " + directory + " " + STRINGS_URL
         try:
@@ -395,7 +373,6 @@ class DownloadHandler:
         # Download GDB from the above location
         if not self.download_gdb(directory, abs_model):
             return False
-        self.get_system_libs(directory)
         # Fetch URL
         self.dnld_file(app_id_url, "thirdparty_appid_impl_navl.so")
 

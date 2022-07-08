@@ -1,0 +1,264 @@
+-- ********************************************************************
+-- * CISCO-REMOTE-ACCESS-VPN-VLAN-MIB.my:  Cisco Remote Access
+-- *                                       VPN VLAN MIB
+-- *
+-- * July 2006, H. Cui
+-- *
+-- * Copyright (c) 2006-2007 by cisco Systems, Inc.
+-- * All rights reserved.
+-- *
+-- ********************************************************************
+
+CISCO-REMOTE-ACCESS-VPN-VLAN-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    InetAddressType,
+    InetAddress
+        FROM INET-ADDRESS-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    VlanId
+        FROM Q-BRIDGE-MIB
+    ciscoExperiment
+        FROM CISCO-SMI;
+
+
+ciscoRemoteAccessVpnVlanMIB MODULE-IDENTITY
+    LAST-UPDATED    "200611060000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+            Postal: 170 W Tasman Drive
+            San Jose, CA  95134
+            USA
+
+            Tel: +1 800 553-NETS
+            E-mail: cs-asa@cisco.com"
+    DESCRIPTION
+        "Acronyms and Definitions
+
+        The following acronyms and terms are used in this 
+        document:
+
+        NACApp:   Cisco NAC Appliance(Clean Access) 
+
+        VPN:      Virtual Private Network
+
+        RAS:      Remote Access Service
+
+        Session:  A Remote Access Session.
+
+
+        Overview of the MIB
+
+        This is a MIB Module for configuring and monitoring 
+        the 802.1q VLAN Identification value for a Virtual 
+        Private Networks(VPN) based remote access session. 
+        The MIB defines objects of interest to manage the 
+        VLAN of a remote access VPN session. This MIB is 
+        intended to be used by the Cisco VPN devices and 
+        the Cisco NAC Appliance(Clean Access).   
+
+        "
+    REVISION        "200611060000Z"
+    DESCRIPTION
+        "This is the initial version of this MIB"
+          ::= { ciscoExperiment 135 }
+
+
+-- Tentative anchor under ciscoExperiment
+-- Caution. This MIB is temporary and experimental.? In the future it
+-- will be removed from products, perhaps with short notice, in favor
+-- of more standard or generic MIBs. Application developers should not
+-- depend on long-term access to this MIB.
+-- This number will be assigned by cana@cisco.com.
+--   
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++
+-- Local Textual Conventions
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++
+
+CRASVpnVlanType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The vlan type is assigned by the NACApp to a vlan.
+        The following values are defined:
+        'none' --  There is no specifc NACApp vlan type can be applied 
+                   to the vlan.
+        'auth' --  This is the NACApp authentication vlan. Initially, 
+                   a RAS VPN session will be assigned to an auth vlan by
+                   the NACApp to get posture assessment.        
+        'access' --  This is the NACApp access vlan. After a RAS VPN
+                     session passed the posture assessment and the user
+                     is not a guest, it will be assigned to an access
+                     vlan.
+        'guest' --  This is the NACApp guest vlan. After a RAS VPN
+                    session passed the posture assessment and the user
+                    is a guest, it will be assigned to a guest vlan. 
+        'quarantine' --  This is the NACapp quarantine vlan. After a RAS
+                         VPN session failed the posture assessment, it 
+                         may be assigned to a quarantine vlan. 
+        "
+    SYNTAX          INTEGER  {
+                        none(1),
+                        auth(2),
+                        access(3),
+                        guest(4),
+                        quarantine(5)
+                    }
+-- ********************************************************************
+-- The Remote Access VPN VLAN MIB Object Group
+-- This group consists of a :
+-- 1) Remote Access VPN Session VLAN Table
+-- ********************************************************************
+crasVpnVlanMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoRemoteAccessVpnVlanMIB 1 }
+
+-- ********************************************************************
+-- The Remote Access VPN Session VLAN table
+-- ********************************************************************
+
+crasVpnVlanTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CrasVpnVlanEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table lists all the currently active remote
+        access VPN sessions. For each session, it lists the 
+        attributes (crasVpnLocalAddressType, crasVpnLocalAddress,
+        crasVpnUserName, crasVpnUserVlanId, crasVpnVlanType).
+        An entry will be added after a remote access VPN session 
+        is successfully established. The entry will be removed after
+        the remote access VPN session is terminated."
+    ::= { crasVpnVlanMIBObjects 1 }
+
+crasVpnVlanEntry OBJECT-TYPE
+    SYNTAX          CrasVpnVlanEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry contains the attributes (crasVpnLocalAddressType,
+        crasVpnLocalAddress, crasVpnUserName, crasVpnUserVlanId and
+                    crasVpnVlanType) for an active remote access VPN session."
+    INDEX           {
+                        crasVpnLocalAddressType,
+                        crasVpnLocalAddress
+                    } 
+    ::= { crasVpnVlanTable 1 }
+
+CrasVpnVlanEntry ::= SEQUENCE {
+        crasVpnLocalAddressType InetAddressType,
+        crasVpnLocalAddress     InetAddress,
+        crasVpnUsername         SnmpAdminString,
+        crasVpnUserVlanId       VlanId,
+        crasVpnVlanType         CRASVpnVlanType
+}
+
+crasVpnLocalAddressType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The type of the address returned in
+        'crasVpnLocalAddress'. Both IPv4 and 
+        IPv6 address types are supported." 
+    ::= { crasVpnVlanEntry 1 }
+
+crasVpnLocalAddress OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The IP address assigned to the client of this session
+        in the private network by the managed entity." 
+    ::= { crasVpnVlanEntry 2 }
+
+crasVpnUsername OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The name of the user associated with this remote
+        access session." 
+    ::= { crasVpnVlanEntry 3 }
+
+crasVpnUserVlanId OBJECT-TYPE
+    SYNTAX          VlanId
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The VLAN ID assigned to the client of this session
+        in the private network by the managed entity or the 
+        manage station." 
+    ::= { crasVpnVlanEntry 4 }
+
+crasVpnVlanType OBJECT-TYPE
+    SYNTAX          CRASVpnVlanType
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The VLAN Type assigned to the client of this session
+        in the private network by the managed entity or the 
+        manage station." 
+    ::= { crasVpnVlanEntry 5 }
+ 
+
+-- ********************************************************************
+-- Notifications
+-- ********************************************************************
+--   
+-- ********************************************************************
+-- Conformance
+-- ********************************************************************
+ciscoRemoteAccessVpnVlanMIBConformance  OBJECT IDENTIFIER
+    ::= { ciscoRemoteAccessVpnVlanMIB 2 }
+
+ciscoRemoteAccessVpnVlanMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoRemoteAccessVpnVlanMIBConformance 1 }
+
+ciscoRemoteAccessVpnVlanMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoRemoteAccessVpnVlanMIBConformance 2 }
+
+
+-- ********************************************************************
+-- Compliance
+-- ********************************************************************
+ciscoRemoteAccessVpnVlanMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for SNMP entities the Cisco
+        Remote Access VPN VLAN MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoRemoteAccessVpnVlanGroup }
+    ::= { ciscoRemoteAccessVpnVlanMIBCompliances 1 }
+
+-- ********************************************************************
+-- Units of Conformance
+-- ********************************************************************
+ciscoRemoteAccessVpnVlanGroup OBJECT-GROUP
+    OBJECTS         {
+                        crasVpnUsername,
+                        crasVpnUserVlanId,
+                        crasVpnVlanType
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This group consists of the MIB objects pertaining
+        to Remote Access VPN VLAN defined in the Cisco Remote
+        Access VPN VLAN MIB."
+    ::= { ciscoRemoteAccessVpnVlanMIBGroups 1 }
+
+END
+
+
+-- %DNP%  MLC -Edit MLC
+

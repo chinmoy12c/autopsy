@@ -11,8 +11,27 @@ class GdbHandler:
     def get_snort_file(self, exec_location):
         return os.path.join(exec_location, "snort")
 
+    # Temporary workaround to set path for FTD system libraries using
+    # manual archive
     def get_lib_path(self, exec_location):
-        return exec_location #+ ":/lib64:/usr/lib64:" + "/home/chinchak/debug/ngfw/lib64:/home/chinchak/debug/ngfw/usr/lib64:/home/chinchak/debug/ngfw/lib:/home/chinchak/debug/ngfw/usr/lib:/home/chinchak/debug/ngfw/usr/local/lib:/home/chinchak/debug/ngfw/usr/local/sf/lib:/home/chinchak/debug/ngfw/usr/local/sf/lib/daq:/home/chinchak/debug/ngfw/usr/local/sf/lib/sftunnel:/home/chinchak/debug/ngfw/usr/local/sf/lib64:/home/chinchak/debug/ngfw/usr/local/sf/lib64/cloud:/home/chinchak/debug/ngfw/usr/local/sf/lib64/datastore:/home/chinchak/debug/ngfw/usr/local/asa/lib:/home/chinchak/debug/ngfw/usr/local/drt/lib"
+        libs_directory_base = os.path.join(os.getcwd(), "libarchive")
+        libs_directories = (
+            "ngfw/usr/lib64",
+            "/ngfw/usr/lib",
+            "ngfw/usr/local/sf/lib",
+            "ngfw/usr/local/sf/lib/daq",
+            "ngfw/usr/local/sf/lib/daq3",
+            "ngfw/usr/local/sf/lib64",
+            "ngfw/usr/local/sf/lib64/cloud",
+            "ngfw/usr/local/sf/lib64/datastore",
+            "ngfw/usr/local/asa/lib",
+            "usr/lib64",
+            "lib64"
+        )
+        libs_path = exec_location
+        for lib_directory in libs_directories:
+            libs_path += ":" + os.path.join(libs_directory_base, lib_directory)
+        return libs_path
 
     def get_backtrace_file(self, core_file):
         basename = os.path.basename(core_file)
