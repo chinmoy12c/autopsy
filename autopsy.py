@@ -1224,8 +1224,10 @@ def build():
         model = request.form['ftd-model']
         snort_ver = request.form['snort-version']
         fmc_version = request.form['fmc-version']
-        fmc_ver = fmc_version[:fmc_version.index("-")]
-        fmc_build = fmc_version[fmc_version.index("-") + 1:]
+        fmc_ver, fmc_build = None, None
+        if (fmc_version != ""):
+            fmc_ver = fmc_version[:fmc_version.index("-")]
+            fmc_build = fmc_version[fmc_version.index("-") + 1:]
         generate_backtrace(ftd_ver=ftd_ver, ftd_build=ftd_build, model=model, snort_ver=snort_ver, fmc_ver=fmc_ver, fmc_build=fmc_build, directory=directory, filepath=filepath, no_cleanup=True)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
 

@@ -1193,10 +1193,6 @@ upload_button.addEventListener("click", function() {
             alert("FTD version is required");
             return;
         }
-        if (fmc_version.value.trim() === "") {
-            alert("FMC version is required");
-            return;
-        }
         if (ftd_model.value.trim() === "") {
             alert("FTD model is required");
             return;

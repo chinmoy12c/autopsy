@@ -355,20 +355,9 @@ class DownloadHandler:
 
         self.logger.debug("Avoid Checking FMC version from the device is provided "
                         "throuh command line option")
-        if fmc_version is None:
-            # Find the FMC version from sftunnel_status output
-            self.logger.debug("Checking FMC version from device throuh sf_tunnel "
-                            "Command output")
-            sf_tunn_cmd_outp = os.popen('sftunnel_status.pl').read()
-            #self.logger.debug("Command Output = {}".format(sf_tunn_cmd_outp))
-            if re.search('sw_version\s+(\S+)', sf_tunn_cmd_outp):
-                fmc_version = re.search('sw_version\s+(\S+)', sf_tunn_cmd_outp).group(1)
-            if re.search('sw_build\s+(\S+)', sf_tunn_cmd_outp):
-                fmc_build = re.search('sw_build\s+(\S+)', sf_tunn_cmd_outp).group(1)
-            #
         # Check if the FMC version is provided, if not, will assume FMC version same as
         # FTD version
-        if fmc_version is None:
+        if fmc_version == "" or fmc_version == None:
             fmc_version = ftd_ver
             fmc_build = ftd_build
         FTD_VERSION = ftd_ver
