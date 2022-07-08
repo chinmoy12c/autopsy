@@ -187,13 +187,58 @@ class DownloadHandler:
                     print("Copying file: " + abspath)
                     shutil.copy(abspath, debug_directory)
 
+    def dnld_strings_file(self, directory):
+        wget_url = "wget -q -P " + directory + " " + STRINGS_URL
+        try:
+            if not os.path.isfile(os.path.join(directory, "strings")):
+                if not self.dnld_file(wget_url, "strings"):
+                    return False
+            else:
+                self.logger.info("Strings file exists, will re-use")
+            os.chmod(os.path.join(directory, "strings"), 111)
+        except Exception as e:
+            self.logger.error("Exception - {}".format(str(e)))
+        return True
+
+    def get_snort_ver(self, directory, core_location):
+        # Snort3 cores are too big to run strings directly, hence piking the
+        # initial 2G to fetch the snort version.
+        self.dnld_strings_file(directory)
+        self.logger.info("Checking Snort version from core dump")
+        core_location = str(core_location)
+        tr_file_name = core_location + '_trunc'
+        tr_cmd = 'head -c 2000000000 ' + core_location + ' >' + tr_file_name
+        trunc_core_file = os.popen(tr_cmd).read()
+        cmd = directory + "/strings " + tr_file_name + "| egrep \'(Snort|DC) Version\' "
+        sVersion = os.popen(cmd).read()
+        os.remove(tr_file_name)
+        # There are instances where the version was not part of Initial 2G but
+        # was able to find from end of the 2G
+        self.logger.debug("Checking Snort version on bottom 2Gb of core")
+        tr_cmd = 'tail -c 2000000000 ' + core_location + ' >' + tr_file_name
+        trunc_core_file = os.popen(tr_cmd).read()
+        cmd = directory + "/strings " + tr_file_name + "| egrep \'(Snort|DC) Version\' "
+        sVersion += os.popen(cmd).read()
+        os.remove(tr_file_name)
+
+        if re.search(r"Snort\s+Version\s+(\S+)\s+Build\s+(\S+)", sVersion):
+            version = re.search(r"Snort\s+Version\s+(\S+)\s+Build\s+(\S+)",
+                                sVersion)
+        else:
+            self.logger.info ("ERROR: Couldn't find the Snort version from core file, please specify the snort version as part of -s argument")
+            sys.exit(1)
+        self.logger.info("\
+            Snort Version From Core Dump = %s" % (version.group(1) + "-" + version \
+            .group(2)))
+        return version.group(1) + "-" + version.group(2)
+
     def create_wget_link(self, ftd_ver, ftd_build, model, snort_ver, fmc_version , fmc_build , directory,
                         core_location,
                         no_cleanup):
         "Create wget links to download DAQ and snort libraries"
         global FTD_VERSION, FMC_VERSION, DEVICE_MODEL
         # Copy the strings file before checking Snort version
-        #dnld_strings_file(directory)
+        self.dnld_strings_file(directory)
         if self.find_nearest_srvr() == 'BGL':
             SERVER_URL = 'https://' + BGL_SRVR + '/netboot/ims/'
         else:
@@ -334,7 +379,8 @@ class DownloadHandler:
 
         # Check for path if it is RELEASE or DEVELOPMENT
         #
-        # snort_ver = get_snort_version(directory, core_location)
+        if (snort_ver == ""):
+            snort_ver = self.get_snort_ver(directory, core_location)
         self.logger.debug("CHecking for build path for FMC version - {}-{}".format(fmc_version, fmc_build))
         path = self.get_build_path(fmc_version, fmc_build)
         self.logger.debug(

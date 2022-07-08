@@ -1189,10 +1189,6 @@ file_button.addEventListener("click", function() {
 
 upload_button.addEventListener("click", function() {
     if (platform.value == 'snort') {
-        if (snort_version.value.trim() === "") {
-            alert("Snort version is required");
-            return;
-        }
         if (ftd_version.value.trim() === "") {
             alert("FTD version is required");
             return;

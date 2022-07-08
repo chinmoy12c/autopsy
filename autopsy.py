@@ -1242,7 +1242,6 @@ def generate_backtrace(ftd_ver, ftd_build, model, snort_ver, fmc_ver, fmc_build,
     gdb_handler.generate_gdbinit(exec_location=exec_location, core_files = [filepath])
     gdb_handler.run_gdb(exec_location=exec_location)
 
-
 # returns the contents of the relevant files for a core dump
 @app.route('/getreport', methods=['POST'])
 def get_report():
