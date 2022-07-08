@@ -36,6 +36,10 @@
                 $('#version-input').hide();
                 $('#buildtype-mio').hide();
                 $('#buildtype-fxp').hide();
+                $('#fmc-version-input').hide();
+                $('#ftd-version-input').hide();
+                $('#snort-version-input').hide();
+                $('#ftd-model-input').hide();
             }
 
             function change(obj) {
@@ -45,12 +49,30 @@
                 if(selected === 'lina'){
                     $('#exec').hide();
                     $('#version-input').hide();
+                    $('#fmc-version-input').hide();
+                    $('#ftd-version-input').hide();
+                    $('#ftd-model-input').hide();
+                    $('#snort-version-input').hide();
+                    $('#buildtype-mio').hide();
+                    $('#buildtype-fxp').hide();
+                }
+                else if (selected === 'snort') {
+                    $('#exec').hide();
+                    $('#fmc-version-input').show();
+                    $('#ftd-version-input').show();
+                    $('#ftd-model-input').show();
+                    $('#snort-version-input').show();
+                    $('#version-input').hide();
                     $('#buildtype-mio').hide();
                     $('#buildtype-fxp').hide();
                 }
                 else{
                     $('#exec').show();
                     $('#version-input').show();
+                    $('#fmc-version-input').hide();
+                    $('#ftd-version-input').hide();
+                    $('#ftd-model-input').hide();
+                    $('#snort-version-input').hide();
                     if(selected === 'mio')
                     {
                         $('#buildtype-mio').show();
@@ -306,11 +328,24 @@
                                 <option value="fp2k">FP2K (KP)</option>
                                 <option value="fp3k">FP3K (TPK)</option>
                                 <option value="fp4200">FP4200 (WA)</option>
+                                <option value="snort">SNORT</option>
                               </select>
                         </label>
                         
                         <label class="text">
                             <input type="text" id="version-input" placeholder="FXOS Version" pattern="^\d{1,4}\.\d{1,4}\.\d{1,4}\.\d{1,4}$">
+                        </label>
+                        <label class="text">
+                            <input type="text" id="snort-version-input" placeholder="Snort Version" pattern="^([0-9][0-9]*).([0-9][0-9]*).([0-9][0-9]*)-([0-9][0-9]*)$">
+                        </label>
+                        <label class="text">
+                            <input type="text" id="fmc-version-input" placeholder="FMC Version" pattern="^([0-9][0-9]*).([0-9][0-9]*).([0-9][0-9]*)-([0-9][0-9]*)$">
+                        </label>
+                        <label class="text">
+                            <input type="text" id="ftd-version-input" placeholder="FTD Version" pattern="^([0-9][0-9]*).([0-9][0-9]*).([0-9][0-9]*)-([0-9][0-9]*)$">
+                        </label>
+                        <label class="text">
+                            <input type="text" id="ftd-model-input" placeholder="FTD Model" pattern="^(51|63|75)$">
                         </label>
 
                         <select name="buildtype-mio" id="buildtype-mio" >
@@ -507,10 +542,40 @@
             loadPython();
             timeout.value = {{ timeout }};
 
-            $('input').blur(function(evt) {
+            $('#version-input').blur(function(evt) {
                 evt.target.checkValidity();
             }).bind('invalid', function(event) {
-            alert('Invalid FXOS Version or Executable!');
+            alert('Invalid FXOS Version');
+            });
+
+            $('#exec').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid Executable');
+            });
+
+            $('#fmc-version-input').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid FMC version. Please enter in x.x.x-<build> format.');
+            });
+
+            $('#ftd-version-input').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid FTD version. Please enter in x.x.x-<build> format.');
+            });
+
+            $('#snort-version-input').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid Snort version. Please enter in x.x.x-<build> format.');
+            });
+
+            $('#ftd-model-input').blur(function(evt) {
+                evt.target.checkValidity();
+            }).bind('invalid', function(event) {
+            alert('Invalid FTD Model. Supported values are: 51,63(Firepower),75(NGFW)');
             });
 
             document.getElementById('fullscr').addEventListener('click', function() {

@@ -1,9 +1,9 @@
-from cgi import escape
+from html import escape
 from datetime import datetime
 from hashlib import sha512
 from logging import DEBUG, Formatter, getLogger, StreamHandler
 from logging.handlers import RotatingFileHandler
-from os import kill, devnull, walk
+from os import kill, devnull, walk, chmod
 from os.path import basename, getmtime, exists, join, isfile
 from pathlib import Path
 from queue import Queue, Empty
@@ -15,6 +15,7 @@ from subprocess import PIPE, Popen, run, STDOUT, getoutput
 from shutil import rmtree, copyfile
 from sqlite3 import connect
 from sys import exc_info, stdout, version
+from this import d
 from threading import Lock, Thread, enumerate as thread_enum
 from time import time
 from urllib.parse import urlparse 
@@ -31,6 +32,9 @@ from tftpy import TftpClient
 from tftpy.TftpShared import TftpTimeout
 from tftpy.TftpShared import TftpFileNotFoundError
 from werkzeug.utils import secure_filename
+
+from snort.gdb_handler import GdbHandler
+from snort.download_handler import DownloadHandler
 
 app = Flask(__name__)
 
@@ -1204,16 +1208,40 @@ def build():
         db.execute('INSERT INTO cores VALUES (?, ?, ?, ?, ?, ?, ?)', (session['uuid'], filename, filesize, timestamp, workspace, gdb_location, core_hash.hexdigest()))
         db.commit()
         logger.info('inserted %s, %s, %d, %d, %s, %s, %s into cores', session['uuid'], filename, filesize, timestamp, workspace, gdb_location, core_hash.hexdigest())
-    except:
+    except Exception as e:
         logger.info('workspace failed')
+        logger.error(e)
         remove_directory_and_parent(directory)
         return jsonify(report=report)
     if request.form['platform'] == "lina":
         dev_null = open(devnull, 'wb')
         script_path = Path(app.root_path).parent / 'clientlessGDB' / 'get_memory_dump.py'
         Popen(['nohup', 'python', script_path, str(filepath), str(filepath)+'.mallocdump.txt'], stdout=dev_null, stderr=dev_null)
+    if (request.form['platform'] == "snort"):
+        ftd_version = request.form['ftd-version']
+        ftd_ver = ftd_version[:ftd_version.index("-")]
+        ftd_build = ftd_version[ftd_version.index("-") + 1:]
+        model = request.form['ftd-model']
+        snort_ver = request.form['snort-version']
+        fmc_version = request.form['fmc-version']
+        fmc_ver = fmc_version[:fmc_version.index("-")]
+        fmc_build = fmc_version[fmc_version.index("-") + 1:]
+        generate_backtrace(ftd_ver=ftd_ver, ftd_build=ftd_build, model=model, snort_ver=snort_ver, fmc_ver=fmc_ver, fmc_build=fmc_build, directory=directory, filepath=filepath, no_cleanup=True)
     return jsonify(filename=filename, filesize=filesize, timestamp=timestamp)
-    
+
+def generate_backtrace(ftd_ver, ftd_build, model, snort_ver, fmc_ver, fmc_build, directory, filepath, no_cleanup):
+    if not filepath.exists():
+        logger.info('filepath %s does not exist', str(filepath))
+        session.pop('current', None)
+        return jsonify(output='invalid filename')
+    exec_location = "{}/debug".format(directory)
+    download_handler = DownloadHandler(logger=logger)
+    download_handler.create_wget_link(ftd_ver=ftd_ver, ftd_build=ftd_build, model=model, snort_ver=snort_ver, fmc_version=fmc_ver, fmc_build=fmc_build, directory=exec_location, core_location=filepath, no_cleanup=no_cleanup)
+    gdb_handler = GdbHandler(logger=logger)
+    gdb_handler.generate_gdbinit_home(exec_location=exec_location)
+    gdb_handler.generate_gdbinit(exec_location=exec_location, core_files = [filepath])
+    gdb_handler.run_gdb(exec_location=exec_location)
+
 
 # returns the contents of the relevant files for a core dump
 @app.route('/getreport', methods=['POST'])

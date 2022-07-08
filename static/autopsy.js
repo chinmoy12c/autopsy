@@ -19,6 +19,10 @@ var file_button = document.getElementById("file-button");
 var browse = document.getElementById("browse");
 var input = document.getElementById("file-input");
 var version = document.getElementById("version-input");
+var snort_version = document.getElementById("snort-version-input");
+var fmc_version = document.getElementById("fmc-version-input");
+var ftd_version = document.getElementById("ftd-version-input");
+var ftd_model = document.getElementById("ftd-model-input");
 var platform = document.getElementById("platform");
 var exec = document.getElementById("exec");
 var buildtype_mio = document.getElementById("buildtype-mio");
@@ -1184,6 +1188,24 @@ file_button.addEventListener("click", function() {
 });
 
 upload_button.addEventListener("click", function() {
+    if (platform.value == 'snort') {
+        if (snort_version.value.trim() === "") {
+            alert("Snort version is required");
+            return;
+        }
+        if (ftd_version.value.trim() === "") {
+            alert("FTD version is required");
+            return;
+        }
+        if (fmc_version.value.trim() === "") {
+            alert("FMC version is required");
+            return;
+        }
+        if (ftd_model.value.trim() === "") {
+            alert("FTD model is required");
+            return;
+        }
+    }
     input.disabled = true;
     upload_button.disabled = true;
     upload_button.innerHTML = "Uploading…";
@@ -1370,6 +1392,12 @@ function build(duplicate) {
     }
     else{
         fd.append("buildtype", buildtype_fxp.value);
+    }
+    if (platform.value == "snort") {
+        fd.append("fmc-version", fmc_version.value);
+        fd.append("ftd-version", ftd_version.value);
+        fd.append("ftd-model", ftd_model.value);
+        fd.append("snort-version", snort_version.value);
     }
     xhr.responseType = "json";
     xhr.addEventListener("readystatechange", function() {
